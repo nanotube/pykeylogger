@@ -19,6 +19,19 @@ setup(
     name = "python keylogger",
 
     # targets to build
-    #console = ["keylogger.pyw"],
-    windows = ["keylogger.pyw"],
+    console = [
+        {
+            "script": "keylogger.pyw",
+            "dest_base": "keylogger_debug"
+        }
+    ],
+    
+    #windows = ["keylogger.pyw"],
+    windows = [
+       {
+           "script": "keylogger.pyw",
+           "dest_base": "keylogger"
+       }
+    ],
     )
+
