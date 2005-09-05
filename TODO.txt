@@ -1,0 +1,7 @@
+TODO
+
+modify log capability to split keyboard input by window title+id
+
+create a log parser, to parse in the non-printing characters (such as arrow keys and backspace/delete), to make log easier to read
+
+enable passing options via commandline, in preparation for exe freeze
