@@ -1,0 +1,123 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>PyKeylogger</title>
+    <link rel="stylesheet" type="text/css" href="stylesheet.css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1" />
+    <meta name="robots" content="index,follow" />
+  </head>
+  <body>
+
+        <div style="display: block; clear: both"> </div>
+    <div id="main">
+      <div id="rightmenu">
+        <a href="http://sourceforge.net"><img src="http://sourceforge.net/sflogo.php?group_id=147501&amp;type=2" width="125" height="37" border="0" alt="SourceForge.net Logo" /></a>
+        <br>
+        <ul>
+          <li id="activemenu"> <a href="#intro">PyKeylogger</a></li>
+          <li><a href="#download">Download</a></li>
+          <li><a href="#instructions">Instructions</a></li>
+          <li><a href="#questions">Any questions?<a/></li>
+        </ul>
+      </div>
+      <div id="content">
+        <a name="intro"></a>
+        <h2><img class="icon" src="icon.png" alt="icon" />PyKeylogger</h2>
+          <p>
+            PyKeylogger is a simple keylogger written in the python programming language.
+            I threw it together one day after not being able to find a simple and trustworthy
+            (as in, source available) keylogger for windows. 
+          </p>
+          <p>
+            Since PyKeylogger is available as a simple python source file, there are no trust issues
+            with using it - you can just look at the source yourself and make sure that it does exactly
+            what you need it to, and nothing more. (Especially not sending your info to someone else.)
+          </p>
+        <a name="download"></a>
+        <h2><img class="icon" src="icon.png" alt="icon" />Download</h2>
+          <p>
+            You can download PyKeylogger from <a
+            href="https://sourceforge.net/project/showfiles.php?group_id=147501">the
+            SourceForge download page</a>. 
+          </p>
+        <a name="instructions"></a>
+        <h2><img class="icon" src="icon.png" alt="icon" />Instructions</h2>
+
+            <p>
+                How pykeylogger works is pretty evident if you just look at the source. 
+                But here is a brief manual for the lazy ones among us. :)
+            </p>
+            <h4>Installing pykeylogger</h4>
+            <p>
+                pykeylogger requires the following dependencies:
+                <ul>
+                    <li> <a href="http://python.org/">python</a>
+                    <li> <a href="http://sourceforge.net/projects/uncassist">pyHook</a>
+                    <li> <a href="http://starship.python.net/crew/mhammond/win32/Downloads.html">win32all extensions</a>
+                </ul>
+            </p>
+            <p>
+                After all those are installed, just double click the keylogger.pyw file,
+                and it will run in the background, logging your keys.
+            </p>
+            <h4>Running pykeylogger</h4>
+            <p>
+                Since the file's extension is ".pyw", it runs without a console window in the background,
+                if you just double-click the file. If you want to see the console (to see error output, e.g.),
+                just rename the file with ".py" extension.
+            </p>
+            <p>
+                By default, the log file is placed into "C:\Temp\log.txt"
+            </p>
+            <h4>Controlling pykeylogger:</h4>
+                <ul>
+                    <li>pressing 'f12' exits the keylogger
+                    <li>pressing 'f11' makes it flush the file write buffer (useful if you want to see what's been written to the log file without quitting)
+                </ul>
+            <h4>Reading the log file</h4>
+            <p>
+                The log file has two non-printable characters in it: backspace, and escape. Thus, opening the file with
+                Notepad or Wordpad, you will see a lot of "junk", if you press a lot of backspace (which I do).
+                To read the file properly (where backspace and escape are marked as such), use the excellent editor
+                called <a href="http://www.scintilla.org/SciTE.html">SciTE</a>. 
+            </p>
+            <p>
+                If you want to use windows notepad or wordpad, you may want to clean up the log file, by modifying the filter
+                in pykeylogger to substitute a string for those characters, as well as putting in \n\r instead of just \n 
+                in order to get the linebreaks in notepad to show up. This can be accomplished by passing appropriate function
+                arguments to keylogger (check down there toward the bottom of the source file for instructions).
+            </p>
+            <p>
+                Before checking your log file, press 'F11' on the keyboard, to flush the write buffer to the file, if you want to look
+                at the most recent input. If you use Wordpad, you will notice that Wordpad refuses to open a file that is being used, 
+                so you will have to make a copy of the logfile and open the copy with wordpad, rather than open the logfile directly.
+            </p>
+
+        <a name="questions"></a>
+        <h2><img class="icon" src="icon.png" alt="icon" />7. Where can I ask more questions?</h2>
+          <p>
+            You can report bugs, feature requests, or submit patches at PyKeylogger's sourceforge page: 
+            <a href="http://sf.net/projects/pykeylogger/">http://sf.net/projects/pykeylogger</a>
+          </p>
+          <p>
+            You can also e-mail me directly at <a href="mailto:nanotube@users.sourceforge.n0spam.net">this address (remove nospam)</a>
+          </p>
+        <h4>How can I help out?</h4>
+          <p>
+            If you're a programmer, please feel free to hack around in PyKeylogger code,
+            to add features, or anything else you would like.
+          </p>
+          <p>
+            If you're not a programmer, you could file bug reports or feature requests.
+          </p>
+          <p>
+            Any contributions will be gladly accepted as patches at sourceforge.
+          </p>
+      <span id='time'>Last changed: Sep 2 2005 17:27</span>
+    </div>
+    <div id="foot">
+      <br />
+      This page shamelessly ripped off from http://gnome-sudoku.sourceforge.net/ :) <br/>
+    </div>
+  </body>
+</html>

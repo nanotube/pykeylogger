@@ -1,0 +1,128 @@
+
+body {
+   background-color:  #ffffff;
+   font-family:      verdana, arial, helvetica, sans-serif;
+   margin: 0px;
+   padding: 0px;
+}
+
+#head {
+  width: 100%;
+/*  background-image: url('bgh.png');*/
+  background-repeat: no-repeat;
+  height: 90px;
+  margin: 0px;
+  padding: 0px;
+}
+
+#topmenu {
+  margin-left: 600px;
+  height: 90px;
+  position: relative;
+  background-image: url('bgh2.png');
+  background-position: left;
+  background-repeat: repeat-x;
+}
+
+#main {
+  font-size: 8pt;
+  border-left: solid 4px #6464ff;
+  border-right: solid 4px #6464ff;
+}
+
+#content {
+  padding-left: 3em;
+  padding-top: 1em;
+  padding-bottom: 1em;
+  padding-right: 20em;
+}
+
+#rightmenu {
+  font-size: 120%;
+  position: absolute;
+  top: 90px;
+  right: 0px;
+  width: 15em;
+  border-left: dashed 1px #6464ff;
+  border-top: dashed 1px #6464ff;
+  margin-top: 1em;
+}
+
+#rightmenu ul {
+  list-style: none;
+  margin-left: -2em;
+}
+#rightmenu li {
+  list-style: none;
+  padding-left: 2em
+}
+#activemenu {
+  background-image: url('icon.png');
+  background-repeat: no-repeat;
+}
+#rightmenu a {
+  font-weight: bold;
+  font-size: 9pt;
+  color: #000000;
+}
+
+#foot {
+  height: 40px;
+  background-image: url('bgf.png');
+  background-position: left;
+  background-repeat: repeat-x;
+  text-align: center;
+  font-weight: bold;
+  margin-top: 0px;
+  padding-top: 0em;
+  font-size: 7pt;
+  color: #808080;
+}
+h2 {
+  clear: both;
+  font-weight: bold;
+  font-size: 10pt;
+  margin-bottom: 0px;
+  margin-top: 1.5em;
+  padding: 0px;
+  border-bottom: dashed 1px #808080;
+}
+h4 {
+  margin-top: 0px;
+  font-size: 8pt;
+  width: 100%;
+}
+img.icon {
+  vertical-align: bottom;
+}
+
+img.paragraph-image {
+  float: right;
+}
+
+a, a:visited {
+  color: #808080;
+  text-decoration: none
+}
+a:hover, a:visited:hover {
+  color: #808080;
+  text-decoration: underline
+}
+#time {
+  color: #808080;
+}
+pre {
+  overflow: auto;
+  font-family: courier,monotype;
+}
+
+pre.code {
+  border: dashed 1px #6464ff;
+  margin: 10px 30px 10px 15px;
+  padding: 5px 15px 5px 15px;
+}
+
+a.f {
+  text-decoration: none;
+}
+td { vertical-align: top; }
