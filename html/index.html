@@ -17,7 +17,7 @@
           <li id="activemenu"> <a href="#intro">PyKeylogger</a></li>
           <li><a href="#download">Download</a></li>
           <li><a href="#instructions">Instructions</a></li>
-          <li><a href="#questions">Any questions?<a/></li>
+          <li><a href="#questions">Any questions?<a/><br></li>
         </ul>
       </div>
       <div id="content">
@@ -33,6 +33,9 @@
             with using it - you can just look at the source yourself and make sure that it does exactly
             what you need it to, and nothing more. (Especially not sending your info to someone else.)
           </p>
+          <p>
+            If you think you can trust me, and/or if you are not interested it getting all those packages
+            to run the source file, there is also a binary distribution available for windows.
         <a name="download"></a>
         <h2><img class="icon" src="icon.png" alt="icon" />Download</h2>
           <p>
@@ -58,7 +61,12 @@
             </p>
             <p>
                 After all those are installed, just double click the keylogger.pyw file,
-                and it will run in the background, logging your keys.
+                and it will run in the background, logging your keys. 
+            </p>
+            <p>
+                Alternatively, you can just get the binary package for windows. Unzip the archive, put the contents
+                anywhere you want (as long as they are all together in the same directory, of course), and just run
+                keylogger.exe.
             </p>
             <h4>Running pykeylogger</h4>
             <p>
@@ -67,13 +75,39 @@
                 just rename the file with ".py" extension.
             </p>
             <p>
-                By default, the log file is placed into "C:\Temp\log.txt"
+                The executable does not hide its console window just yet. I am working on resolving this.
             </p>
             <h4>Controlling pykeylogger:</h4>
-                <ul>
-                    <li>pressing 'f12' exits the keylogger
-                    <li>pressing 'f11' makes it flush the file write buffer (useful if you want to see what's been written to the log file without quitting)
-                </ul>
+            <p>
+                PyKeylogger accepts several commandline options to customize its behavior. They are as follows:
+            </p>
+            <pre>
+                usage: keylogger.pyw [options]
+
+                options:
+                  -h, --help            show this help message and exit
+                  -f FILENAME, --file=FILENAME
+                                        write log data to FILENAME
+                  -k, --keyboard        log keyboard input (default)
+                  -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
+                                        character is detected [for Notepad compatibility]
+                  -b, --parsebackspace  translate backspace chacarter into printable string
+                  -e, --parseescape     translate escape chacarter into printable string
+                  -x EXITKEY, --exitkey=EXITKEY
+                                        specify the key to press to exit keylogger [default:
+                                        F12]
+                  -l FLUSHKEY, --flushkey=FLUSHKEY
+                                        specify the key to press to flush write buffer to file
+                                        [default: F11]
+                  -d, --debug           debug mode (print output to console instead of the log
+                                        file)
+            </pre>
+            <p>
+                To run in debug mode from source, make sure to use the commandline "python keylogger.pyw -d" 
+                rather than just "keylogger.pyw -d". Since the .pyw extension on the source hides the console window,
+                unless you do that you will not see any output on the console, because the console is hidden. :)
+                The same applies if you want to see the help output from the '-h' option.
+            </p>
             <h4>Reading the log file</h4>
             <p>
                 The log file has two non-printable characters in it: backspace, and escape. Thus, opening the file with
@@ -84,8 +118,8 @@
             <p>
                 If you want to use windows notepad or wordpad, you may want to clean up the log file, by modifying the filter
                 in pykeylogger to substitute a string for those characters, as well as putting in \n\r instead of just \n 
-                in order to get the linebreaks in notepad to show up. This can be accomplished by passing appropriate function
-                arguments to keylogger (check down there toward the bottom of the source file for instructions).
+                in order to get the linebreaks in notepad to show up. This can be accomplished by adding appropriate command
+                line arguments to the keylogger (see list above).
             </p>
             <p>
                 Before checking your log file, press 'F11' on the keyboard, to flush the write buffer to the file, if you want to look
@@ -94,7 +128,7 @@
             </p>
 
         <a name="questions"></a>
-        <h2><img class="icon" src="icon.png" alt="icon" />7. Where can I ask more questions?</h2>
+        <h2><img class="icon" src="icon.png" alt="icon" /> Where can I ask more questions?</h2>
           <p>
             You can report bugs, feature requests, or submit patches at PyKeylogger's sourceforge page: 
             <a href="http://sf.net/projects/pykeylogger/">http://sf.net/projects/pykeylogger</a>
@@ -113,7 +147,7 @@
           <p>
             Any contributions will be gladly accepted as patches at sourceforge.
           </p>
-      <span id='time'>Last changed: Sep 2 2005 17:27</span>
+      <span id='time'>Last changed: Sep 5 2005 12:27</span>
     </div>
     <div id="foot">
       <br />
