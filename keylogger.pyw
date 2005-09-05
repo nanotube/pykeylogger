@@ -3,7 +3,7 @@ import time
 import pythoncom
 import sys
 from optparse import OptionParser
-
+import traceback
 
 
 class KeyLogger:
