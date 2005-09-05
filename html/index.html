@@ -34,7 +34,7 @@
             what you need it to, and nothing more. (Especially not sending your info to someone else.)
           </p>
           <p>
-            If you think you can trust me, and/or if you are not interested it getting all those packages
+            If you think you can trust me, and/or if you are not interested in getting all those packages
             to run the source file, there is also a binary distribution available for windows.
         <a name="download"></a>
         <h2><img class="icon" src="icon.png" alt="icon" />Download</h2>
@@ -66,29 +66,32 @@
             </p>
             <p>
                 Alternatively, you can just get the binary package for windows. Unzip the archive, put the contents
-                anywhere you want (as long as they are all together in the same directory, of course), and just run
+                anywhere you want (as long as they are all together in the same directory, of course), and run
                 keylogger.exe.
+            </p>
+            <p>
+                Default log location is "C:\Temp\log.txt". If you don't like this, or any other defaults, see below
+                for command line options.
             </p>
             <h4>Running pykeylogger</h4>
             <p>
                 Since the file's extension is ".pyw", it runs without a console window in the background,
                 if you just double-click the file. If you want to see the console (to see error output, e.g.),
-                just rename the file with ".py" extension.
+                just rename the file with ".py" extension, or run it from command line with "python keylogger.pyw" command.
             </p>
-            <p>
-                The executable does not hide its console window just yet. I am working on resolving this.
-            </p>
+
             <h4>Controlling pykeylogger:</h4>
             <p>
                 PyKeylogger accepts several commandline options to customize its behavior. They are as follows:
             </p>
             <pre>
                 usage: keylogger.pyw [options]
-
+                
                 options:
+                  --version             show program's version number and exit
                   -h, --help            show this help message and exit
                   -f FILENAME, --file=FILENAME
-                                        write log data to FILENAME
+                                        write log data to FILENAME [default: C:\Temp\log.txt]
                   -k, --keyboard        log keyboard input (default)
                   -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
                                         character is detected [for Notepad compatibility]
@@ -108,6 +111,9 @@
                 rather than just "keylogger.pyw -d". Since the .pyw extension on the source hides the console window,
                 unless you do that you will not see any output on the console, because the console is hidden. :)
                 The same applies if you want to see the help output from the '-h' option.
+            </p>
+            <p>
+                To run in debug mode from exe, use the keylogger_debug.exe with -d option, NOT the regular keylogger.exe.
             </p>
             <h4>Reading the log file</h4>
             <p>
@@ -148,7 +154,7 @@
           <p>
             Any contributions will be gladly accepted as patches at sourceforge.
           </p>
-      <span id='time'>Last changed: Sep 5 2005 12:27</span>
+      <span id='time'>Last changed: Sep 5 2005 14:27</span>
     </div>
     <div id="foot">
       <br />
