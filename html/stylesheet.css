@@ -34,15 +34,15 @@ body {
   padding-left: 3em;
   padding-top: 1em;
   padding-bottom: 1em;
-  padding-right: 20em;
+  padding-right: 25em;
 }
 
 #rightmenu {
   font-size: 120%;
   position: absolute;
-  top: 90px;
+  top: 50px;
   right: 0px;
-  width: 15em;
+  width: 20em;
   border-left: dashed 1px #6464ff;
   border-top: dashed 1px #6464ff;
   margin-top: 1em;
@@ -101,8 +101,8 @@ img.paragraph-image {
 }
 
 a, a:visited {
-  color: #808080;
-  text-decoration: none
+  color: blue;
+  text-decoration: underline
 }
 a:hover, a:visited:hover {
   color: #808080;
