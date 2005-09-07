@@ -99,14 +99,14 @@ class KeyLogger:
         #usage = "usage: %prog [options] arg"
         parser = OptionParser(version="%prog version 0.3")
         parser.add_option("-f", "--file", action="store", dest="filename", help="write log data to FILENAME [default: %default]")
-        parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input (default)")
-        parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected [for Notepad compatibility]")
-        parser.add_option("-b", "--parsebackspace", action="store_true", dest="parseBackspace", help="translate backspace chacarter into printable string")
-        parser.add_option("-e", "--parseescape", action="store_true", dest="parseEscape", help="translate escape chacarter into printable string")
+        parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input [default: %default]")
+        parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected (for Notepad compatibility) [default: %default]")
+        parser.add_option("-b", "--parsebackspace", action="store_true", dest="parseBackspace", help="translate backspace chacarter into printable string [default: %default]")
+        parser.add_option("-e", "--parseescape", action="store_true", dest="parseEscape", help="translate escape chacarter into printable string [default: %default]")
 
         parser.add_option("-x", "--exitkey", action="store", dest="exitKey", help="specify the key to press to exit keylogger [default: %default]")
         parser.add_option("-l", "--flushkey", action="store", dest="flushKey", help="specify the key to press to flush write buffer to file [default: %default]")
-        parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file)")
+        parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
                   
         parser.set_defaults(filename="C:\Temp\log.txt",
                             hookKeyboard=True,
