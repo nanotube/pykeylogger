@@ -18,6 +18,7 @@
           <li><a href="#instructions">Instructions</a></li>
           <li><a href="#future">Future Direction</a></li>
           <li><a href="#questions">Any questions?</a></li>
+          <li><a href="#helpwanted">Help wanted</a></li>
           <li>&nbsp;</li>
           <li><a href="http://sourceforge.net/projects/pykeylogger">SF Summary Page</a></li>
           <li><a href="http://sourceforge.net/project/showfiles.php?group_id=147501">SF Download Page</a></li>
@@ -97,26 +98,29 @@
                 PyKeylogger accepts several commandline options to customize its behavior. They are as follows:
             </p>
             <pre>
-                usage: keylogger.pyw [options]
-                
-                options:
-                  --version             show program's version number and exit
-                  -h, --help            show this help message and exit
-                  -f FILENAME, --file=FILENAME
-                                        write log data to FILENAME [default: C:\Temp\log.txt]
-                  -k, --keyboard        log keyboard input (default)
-                  -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
-                                        character is detected [for Notepad compatibility]
-                  -b, --parsebackspace  translate backspace chacarter into printable string
-                  -e, --parseescape     translate escape chacarter into printable string
-                  -x EXITKEY, --exitkey=EXITKEY
-                                        specify the key to press to exit keylogger [default:
-                                        F12]
-                  -l FLUSHKEY, --flushkey=FLUSHKEY
-                                        specify the key to press to flush write buffer to file
-                                        [default: F11]
-                  -d, --debug           debug mode (print output to console instead of the log
-                                        file)
+              usage: keylogger.pyw [options]
+              
+              options:
+                --version             show program's version number and exit
+                -h, --help            show this help message and exit
+                -f FILENAME, --file=FILENAME
+                                      write log data to FILENAME [default: C:\Temp\log.txt]
+                -k, --keyboard        log keyboard input [default: True]
+                -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
+                                      character is detected (for Notepad compatibility)
+                                      [default: False]
+                -b, --parsebackspace  translate backspace chacarter into printable string
+                                      [default: False]
+                -e, --parseescape     translate escape chacarter into printable string
+                                      [default: False]
+                -x EXITKEY, --exitkey=EXITKEY
+                                      specify the key to press to exit keylogger 
+                                      [default: F12]
+                -l FLUSHKEY, --flushkey=FLUSHKEY
+                                      specify the key to press to flush write buffer to file
+                                      [default: F11]
+                -d, --debug           debug mode (print output to console instead of the log
+                                      file) [default: False]
             </pre>
             <p>
                 To run in debug mode from source, make sure to use the commandline "python keylogger.pyw -d" 
@@ -176,14 +180,21 @@
           <p>
             You can also e-mail me directly at <a href="mailto:nanotube@users.sourceforge.n0spam.net">this address (remove nospam)</a>
           </p>
-        <h4>How can I help out?</h4>
+        <a name="helpwanted"></a>
+        <h2><img class="icon" src="icon.png" alt="icon" />How can I help out?</h2>
           <p>
             If you're a programmer, please feel free to hack around in PyKeylogger code,
             to add features, or anything else you would like. Get the latest src package, or just pull 
             the latest release (or, if you are feeling daring, HEAD) from CVS.
           </p>
           <p>
-            If you're not a programmer, you could file bug reports or feature requests.
+            In particular, it would be nice if you could port the code to linux. Currently, PyKeylogger uses the pyHook
+            module, which is windows only, since it is a wrapper of the set of Windows APIs. I have no access to a linux box
+            at the moment, nor do I have much of a clue on how to hook keyboard input at the system level in linux.
+          </p>
+          <p>
+            If you're not a programmer, you could file bug reports or feature requests on 
+            <a href="http://sourceforge.net/projects/pykeylogger">PyKeylogger SourceForge page.</a>
           </p>
           <p>
             Any contributions will be gladly accepted as patches at sourceforge.
@@ -195,7 +206,7 @@
     </div>
     <div id="foot">
       <br />
-      This page shamelessly ripped off from http://gnome-sudoku.sourceforge.net/ :) <br/>
+      The page layout shamelessly ripped off from http://gnome-sudoku.sourceforge.net/ :) <br/>
       <IMG SRC="http://counter.digits.com/wc/-d/4/pykeylogger" ALIGN="middle" WIDTH=60 HEIGHT=20 BORDER=0 HSPACE=4 VSPACE=2><br />
       Counter provided by <a href="http://www.digits.com/">digits.com</a>
     </div>
