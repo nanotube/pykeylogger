@@ -40,7 +40,7 @@
             type, so you can recover your text of anything you type in any application.
           </p>
           <p>
-            Since PyKeylogger is available as a simple python source file, there are no trust issues
+            Since PyKeylogger is available as a simple python source file (well, two source files now), there are no trust issues
             with using it - you can just look at the source yourself and make sure that it does exactly
             what you need it to, and nothing more. (Especially not sending your info to someone else.)
           </p>
@@ -59,8 +59,9 @@
         <h2><img class="icon" src="icon.png" alt="icon" />Instructions</h2>
 
             <p>
-                How pykeylogger works is pretty evident if you just look at the source. 
-                But here is a brief manual for the lazy ones among us. :)
+                How pykeylogger works is pretty evident if you just look at the source. Although as it evolves, 
+                it is starting to become a little less evident.
+                Here is a brief manual for people who like to know what the program is supposed to do without looking at the source. :)
             </p>
             <h4>Installing pykeylogger</h4>
             <p>
@@ -82,8 +83,8 @@
                 keylogger.exe.
             </p>
             <p>
-                Default log location is "C:\Temp\log.txt". If you don't like this, or any other defaults, see below
-                for command line options.
+                Default log location is the directory "C:\Temp\logdir". If you don't like this, or any other defaults, see below
+                for command line options. But in general I try to keep the defaults pretty sane, so you can just run without any options if you want to.
             </p>
             <h4>Running pykeylogger</h4>
             <p>
@@ -98,32 +99,32 @@
                 PyKeylogger accepts several commandline options to customize its behavior. They are as follows:
             </p>
             <pre>
-              usage: keylogger.pyw [options]
-              
-              options:
-                --version             show program's version number and exit
-                -h, --help            show this help message and exit
-                -f FILENAME, --file=FILENAME
-                                      write log data to FILENAME [default: C:\Temp\log.txt]
-                -k, --keyboard        log keyboard input [default: True]
-                -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
-                                      character is detected (for Notepad compatibility)
-                                      [default: False]
-                -b, --parsebackspace  translate backspace chacarter into printable string
-                                      [default: False]
-                -e, --parseescape     translate escape chacarter into printable string
-                                      [default: False]
-                -x EXITKEY, --exitkey=EXITKEY
-                                      specify the key to press to exit keylogger 
-                                      [default: F12]
-                -l FLUSHKEY, --flushkey=FLUSHKEY
-                                      specify the key to press to flush write buffer to file
-                                      [default: F11]
-                -d, --debug           debug mode (print output to console instead of the log
-                                      file) [default: False]
+            usage: keylogger.pyw [options]
+            
+            options:
+              --version             show program's version number and exit
+              -h, --help            show this help message and exit
+              -f DIRNAME, --file=DIRNAME
+                                    write log data to DIRNAME [default: C:\Temp\logdir]
+              -k, --keyboard        log keyboard input [default: True]
+              -a, --addlinefeed     add linefeed [\n] character when carriage return [\r]
+                                    character is detected (for Notepad compatibility)
+                                    [default: False]
+              -b, --parsebackspace  translate backspace chacarter into printable string
+                                    [default: False]
+              -e, --parseescape     translate escape chacarter into printable string
+                                    [default: False]
+              -x EXITKEY, --exitkey=EXITKEY
+                                    specify the key to press to exit keylogger [default:
+                                    F12]
+              -l FLUSHKEY, --flushkey=FLUSHKEY
+                                    specify the key to press to flush write buffer to file
+                                    [default: F11]
+              -d, --debug           debug mode (print output to console instead of the log
+                                    file) [default: False]
             </pre>
             <p>
-                To run in debug mode from source, make sure to use the commandline "python keylogger.pyw -d" 
+                To run in debug mode from source, make sure to use the commandline <pre class="code">python keylogger.pyw -d</pre> 
                 rather than just "keylogger.pyw -d". Since the .pyw extension on the source hides the console window,
                 unless you do that you will not see any output on the console, because the console is hidden. :)
                 The same applies if you want to see the help output from the '-h' option.
@@ -131,7 +132,12 @@
             <p>
                 To run in debug mode from exe, use the keylogger_debug.exe with -d option, NOT the regular keylogger.exe.
             </p>
-            <h4>Reading the log file</h4>
+            <h4>Reading the log files</h4>
+            <p>
+                The log files are organized in directories, where each directory is named after the application name whose window you 
+                were typing into. Inside those directories, there are multiple text files, each file named by date, unique window handle,
+                and window title. Thus, if you want to find what you typed in notepad, first go to the notepad directory, then find the 
+                log file by date and window title.
             <p>
                 The log file has two non-printable characters in it: backspace, and escape. Thus, opening the file with
                 Notepad or Wordpad, you will see a lot of "junk", if you press a lot of backspace (which I do).
@@ -168,6 +174,7 @@
             the final output, rather than have a bunch of [Backspace] and [LeftArrow] text in the log. Of course, if you want that
             to be particularly useful, you have to try to refrain from using the mouse to reposition your cursor :).
           <p>
+            Of the above ideas, the enhanced log capability has already been implemented. Progress! :)
             Any other ideas, or contributions to the code, are highly welcomed.
           </p>
 
