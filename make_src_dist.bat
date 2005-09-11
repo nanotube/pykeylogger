@@ -1,7 +1,7 @@
 rem *** Used to create a Python exe  
 
 setlocal
-set VERSION=0.4
+set VERSION=0.4.1
 
 "C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "*.txt" "*.bat" "html"
 

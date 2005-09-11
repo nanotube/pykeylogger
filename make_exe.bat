@@ -1,7 +1,7 @@
 rem *** Used to create a Python exe  
 
 setlocal
-set VERSION=0.4
+set VERSION=0.4.1
 
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
