@@ -1,7 +1,7 @@
 rem *** Used to create a Python exe  
 
 setlocal
-set VERSION=0.4.1
+set VERSION=0.4.2
 
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
@@ -24,13 +24,11 @@ mv "./pykeylogger%VERSION%_win32.zip" "../pykeylogger%VERSION%_win32.zip"
 
 rd /S /Q pykeylogger
 
-pause "done, now lets create the scr dist"
+pause "done, now lets create the src dist"
 
 "C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "*.txt" "*.bat" "html"
 
 mv "./pykeylogger%VERSION%_src.zip" "../pykeylogger%VERSION%_src.zip"
-
-rd /S /Q pykeylogger
 
 pause "now lets create the md5 sums"
 
