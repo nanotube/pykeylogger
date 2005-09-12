@@ -20,8 +20,6 @@ pause "..."
 
 "C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_win32.zip" "pykeylogger"
 
-pause "lets inspect the filename"
-
 mv "./pykeylogger%VERSION%_win32.zip" "../pykeylogger%VERSION%_win32.zip"
 
 rd /S /Q pykeylogger

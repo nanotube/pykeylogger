@@ -1,4 +1,4 @@
-rem *** Used to create a Python exe  
+rem *** Used to create dist packages 
 
 setlocal
 set VERSION=0.4.2

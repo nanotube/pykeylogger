@@ -1,4 +1,4 @@
-rem *** Used to create a Python exe  
+rem *** create md5 sums for the dist files.
 
 setlocal
 set VERSION=0.4.1
