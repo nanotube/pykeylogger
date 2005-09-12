@@ -21,36 +21,7 @@ class LogWriter:
                 print "OSError:", detail
         
         self.writeTarget = ""
-
-    def OpenLogFile(self, event):
-        
-        subDirName = self.GetProcessNameFromHwnd(event.Window)
-        subDirName = re.sub(r':?\\',r'__',subDirName)
-        
-        WindowName = re.sub(r':?\\',r'__',str(event.WindowName))
-        
-        try:
-            os.makedirs(os.path.join(self.rootLogDir, subDirName), 0777)
-        except OSError, detail:
-            if(detail.errno==17):  #if directory already exists, swallow the error
-                pass
-            else:
-                print "OSError:", detail
-    
-        filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
-
-        #we do this writetarget thing to make sure we dont keep opening and closing the log file when all inputs are going
-        #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
-        #already-opened file.
-        if self.writeTarget != os.path.join(self.rootLogDir, subDirName, filename): 
-            if self.writeTarget != "":
-                if self.debug: print "flushing and closing old log"
-                self.log.flush()
-                self.log.close()
-            self.writeTarget = os.path.join(self.rootLogDir, subDirName, filename)
-            if self.debug: print "writeTarget:",self.writeTarget
-
-            self.log = open(self.writeTarget, 'a')
+        self.systemlog = open(r"C:\Temp\logdir\systemlog.txt", 'a')
 
     def WriteToLogFile(self, event, options):
         self.OpenLogFile(event)
@@ -83,11 +54,50 @@ class LogWriter:
 
         if event.Key == options.flushKey:
             self.log.flush()
+            self.systemlog.flush()
+
+    def OpenLogFile(self, event):
+        
+        filter=r"[\\\/\:\*\?\"\<\>\|]+"     #regexp filter for the non-allowed characters in windows filenames.
+        
+        subDirName = self.GetProcessNameFromHwnd(event.Window)
+        #subDirName = re.sub(r':?\\',r'__',subDirName)
+        subDirName = re.sub(filter,r'__',subDirName)
+        
+        WindowName = re.sub(filter,r'__',str(event.WindowName))
+        
+        try:
+            os.makedirs(os.path.join(self.rootLogDir, subDirName), 0777)
+        except OSError, detail:
+            if(detail.errno==17):  #if directory already exists, swallow the error
+                pass
+            else:
+                print "OSError:", detail
+    
+        filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
+
+        #we do this writetarget thing to make sure we dont keep opening and closing the log file when all inputs are going
+        #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
+        #already-opened file.
+        if self.writeTarget != os.path.join(self.rootLogDir, subDirName, filename): 
+            if self.writeTarget != "":
+                if self.debug: 
+                    print "flushing and closing old log"
+                self.systemlog.write("flushing and closing old log\n")
+                self.log.flush()
+                self.log.close()
+            self.writeTarget = os.path.join(self.rootLogDir, subDirName, filename)
+            if self.debug: 
+                print "writeTarget:",self.writeTarget
+            self.systemlog.write("writeTarget: " + self.writeTarget + "\n")
+
+            self.log = open(self.writeTarget, 'a')
 
 
     def PrintStuff(self, stuff):
         if self.debug == False:
             self.log.write(stuff)
+            self.systemlog.write(stuff)
         else:
             sys.stdout.write(stuff)
 

@@ -56,7 +56,7 @@ class KeyLogger:
     
     def ParseOptions(self):
         #usage = "usage: %prog [options] arg"
-        parser = OptionParser(version="%prog version 0.4.1")
+        parser = OptionParser(version="%prog version 0.4.2")
         parser.add_option("-f", "--file", action="store", dest="dirname", help="write log data to DIRNAME [default: %default]")
         parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input [default: %default]")
         parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected (for Notepad compatibility) [default: %default]")
