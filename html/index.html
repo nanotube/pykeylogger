@@ -30,16 +30,24 @@
           <p>
             PyKeylogger is a simple keylogger written in the python programming language.
             I threw it together one day after not being able to find a simple and trustworthy
-            (as in, source available) keylogger for windows. It is primarily designed for personal
+            (as in, source code available) keylogger for windows. It is primarily designed for personal
             backup purposes, rather than stealth keylogging. Thus, it does not make explicit attempts
             to hide its presence from the operating system or the user. 
+          <p>
+            That said, the only way it is visible
+            is that the process name shows up in the task list - and since the .exe can be renamed to 
+            whatever, and when it is run from source it shows up as "pythonw.exe", it is not <i>immediately</i>
+            apparent that there is a keylogger on the system - so it <i>could</i> be used for stealth logging. 
+            However, since it also makes periodic writes to disk, and since
+            it openly hooks well-known windows APIs (SetWindowHookEx), any keylogger detector worth its salt will be able to sniff it out.
+            So basically, it doesn't exactly advertise itself, but doesn't hide itself either.
           </p>
           <p>
-            My goal is to create a universal backup solution for everything you type. We have all
+            My main goal is to create a "universal backup solution" for everything you type. We have all
             at one time or another accidentally closed that word or notepad file without saving. We have
             all lost form data on the web after it failed to submit properly. Not even mentioning the
             everpresent threat of computer crash. PyKeylogger logs everything you 
-            type, so you can recover your text of anything you type in any application.
+            type, so you can recover the text of anything you type in any application. Simple and elegant, don't you think? :)
           </p>
           <p>
             Since PyKeylogger is available as a simple python source file (well, two source files now), there are no trust issues
@@ -50,12 +58,17 @@
             If you think you can trust me, and/or if you are not interested in getting all those packages
             to run the source file, there is also a binary distribution available for windows.
           </p>
+          <p>
+            Although linux may be more in need of such backup, since the autosave feature of many linux programs
+            is not as established as that of say, MS Office, unfortunately PyKeylogger is not available for linux yet. If you think
+            that you can contribute a linux port of the keylogging function, feel free to jump in.
+          </p>
         <a name="download"></a>
         <h2><img class="icon" src="icon.png" alt="icon" />Download</h2>
           <p>
             You can download PyKeylogger from <a
             href="http://sourceforge.net/project/showfiles.php?group_id=147501">the
-            SourceForge download page</a>. 
+            SourceForge download page</a>. If you feel adventurous, you could also pull the latest from CVS on sourceforge.
           </p>
         <a name="instructions"></a>
         <h2><img class="icon" src="icon.png" alt="icon" />Instructions</h2>
@@ -142,7 +155,7 @@
                 log file by date and window title.
             <p>
                 The log file has two non-printable characters in it: backspace, and escape. Thus, opening the file with
-                Notepad or Wordpad, you will see a lot of "junk", if you press a lot of backspace (which I do).
+                Notepad or Wordpad, you will see a lot of "junk" characters, if you press a lot of backspace (which I do).
                 To read the file properly (where backspace and escape are marked as such), use the excellent editor
                 called <a href="http://www.scintilla.org/SciTE.html">SciTE</a>. 
             </p>
@@ -161,23 +174,30 @@
         <a name="future"></a>
         <h2><img class="icon" src="icon.png" alt="icon" /> Future direction [Features planned]</h2>
           <p>
-            <strike>Currently, the log file just has everything dumped into it as keyboard input is received.
-            This means that when you type something in say, notepad, then alt-tab into word, then write an email,
-            then come back to notepad, the log file has all that input mixed in, so while it is not lost, it is hard
-            to retrieve in "original condition". </strike>
-          </p>
-          <p>
-            I plan to enhance the logging capability so that it splits the keyboard input by window, and then create 
-            a log viewer, where you can search by date, application name, and window title. So that you can, for example,
-            say "show me what I typed in all notepad windows yesterday", or "show me what I typed in word document titled 'some stuff'".
-          </p>
-          <p>
-            Another feature I plan for the log viewer is to have an option to parse the backspaces and arrow keys to recreate 
-            the final output, rather than have a bunch of [Backspace] and [LeftArrow] text in the log. Of course, if you want that
-            to be particularly useful, you have to try to refrain from using the mouse to reposition your cursor :).
-          <p>
-            Of the above ideas, the enhanced log capability has already been implemented. Progress! :)
-            Any other ideas, or contributions to the code, are highly welcomed.
+            <ul>
+              <li>
+                Enhance the logging capability so that it splits the keyboard input by window, for ease of finding it later
+                (as opposed to the old method of dumping everything into one large log file). <font color="green">DONE!</font>
+              </li>
+              <li>
+                Create a log viewer, where you can search by date, application name, and window title (and of course, text strings). 
+                Aiming for something like the Gaim log viewer.
+              </li>
+              <li>
+                Add command line option to not log input of certain applications. (For example, Gaim - since it already logs its chats
+                if you want to, having PyKeylogger running at the same time would be logging everything twice.)
+              </li>
+              <li>
+                Another feature I plan for the log viewer is to have an option to parse the backspaces and arrow keys to recreate 
+                the final output, rather than have a bunch of [Backspace] and [LeftArrow] text in the log. Of course, if you want that
+                to be particularly useful, you have to try to refrain from using the mouse to reposition your cursor :). I wonder if
+                this is really going to be helpful...
+              </li>
+              <li>
+                Anything else you want to suggest? Feel free to do so by submitting feature requests on the 
+                <a href="http://sourceforge.net/projects/pykeylogger">SF Project Page</a>
+              </li>
+            </ul>
           </p>
 
         <a name="questions"></a>
