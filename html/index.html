@@ -80,7 +80,7 @@
             </p>
             <h4>Installing pykeylogger</h4>
             <p>
-                pykeylogger requires the following dependencies:
+                If you want to run PyKeylogger from source, it requires the following dependencies:
                 <ul>
                     <li> <a href="http://python.org/">python</a> (only 2.3 and up, due to my using the optparse module)
                     <li> <a href="http://sourceforge.net/projects/uncassist">pyHook</a>
@@ -93,9 +93,11 @@
                 and it will run in the background, logging your keys. 
             </p>
             <p>
-                Alternatively, you can just get the binary package for windows. Unzip the archive, put the contents
+                Alternatively, if you want to use the binary distribution, you dont need any of those packages.
+                You can just get the binary package for windows. Unzip the archive, put the contents
                 anywhere you want (as long as they are all together in the same directory, of course), and run
-                keylogger.exe.
+                keylogger.exe. You can rename the exe to anything you want before running it, if you don't want "keylogger.exe"
+                showing up in your task list.
             </p>
             <p>
                 Default log location is the directory "C:\Temp\logdir". If you don't like this, or any other defaults, see below
@@ -106,8 +108,9 @@
                 Since the file's extension is ".pyw", it runs without a console window in the background,
                 if you just double-click the file. If you want to see the console (to see error output, e.g.),
                 just rename the file with ".py" extension, or run it from command line with 
-                <pre class="code">python keylogger.pyw</pre> 
-            </p>
+                <pre class="code">python keylogger.pyw</pre> Running from binary, just run "keylogger_debug.exe" to see the console, 
+                instead of the regular "keylogger.exe".
+            </p><p></p>
 
             <h4>Controlling pykeylogger:</h4>
             <p>
@@ -231,7 +234,7 @@
         
 
           
-      <span id='time'>Last changed: Sep 5 2005 14:27</span>
+      <span id='time'>Last changed: Sep 14 2005 11:27</span>
     </div>
     <div id="foot">
       <br />
