@@ -1,7 +1,7 @@
 rem *** Used to create dist packages 
 
 setlocal
-set VERSION=0.4.2
+set VERSION=0.5.0
 
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
