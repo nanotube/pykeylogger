@@ -10,10 +10,11 @@ class LogWriter:
     def __init__(self, rootLogDir=r"C:\Temp\logdir", debug=False):
         
         self.debug = debug
+        
         self.rootLogDir = os.path.normpath(rootLogDir)
         
         try:
-            os.mkdir(self.rootLogDir, 0777)
+            os.makedirs(self.rootLogDir, 0777) #TODO: change this to makedirs???
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
@@ -24,7 +25,13 @@ class LogWriter:
         self.systemlog = open(r"C:\Temp\logdir\systemlog.txt", 'a')
 
     def WriteToLogFile(self, event, options):
-        self.OpenLogFile(event)
+        loggable = self.OpenLogFile(event, options.noLog)
+        
+        if not loggable:                        # if the program is in the no-log list, we return without writing to log.
+            if self.debug: print "not loggable, we are outta here"
+            return
+        
+        if self.debug: print "loggable, lets log it"
         
         asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
         asciiSubset.extend(range(32,128))      #all normal printable chars
@@ -56,11 +63,20 @@ class LogWriter:
             self.log.flush()
             self.systemlog.flush()
 
-    def OpenLogFile(self, event):
+    def OpenLogFile(self, event, noLog):
         
         filter=r"[\\\/\:\*\?\"\<\>\|]+"     #regexp filter for the non-allowed characters in windows filenames.
         
-        subDirName = self.GetProcessNameFromHwnd(event.Window)
+        subDirName = self.GetProcessNameFromHwnd(event.Window)  #our subdirname is the full path of the process owning the hwnd.
+        
+        for path in noLog:                  #check our options to make sure that we dont log specified apps.
+            if os.stat(path) == os.stat(subDirName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
+                if self.debug: 
+                    print "we dont log this"
+                return False
+        if self.debug:
+            print "we log this"
+
         #subDirName = re.sub(r':?\\',r'__',subDirName)
         subDirName = re.sub(filter,r'__',subDirName)
         
@@ -92,7 +108,8 @@ class LogWriter:
             self.systemlog.write("writeTarget: " + self.writeTarget + "\n")
 
             self.log = open(self.writeTarget, 'a')
-
+        
+        return True
 
     def PrintStuff(self, stuff):
         if self.debug == False:

