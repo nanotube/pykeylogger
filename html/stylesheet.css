@@ -25,7 +25,7 @@ body {
 }
 
 #main {
-  font-size: 8pt;
+  font-size: 11pt;
   border-left: solid 4px #6464ff;
   border-right: solid 4px #6464ff;
 }
@@ -62,7 +62,7 @@ body {
 }
 #rightmenu a {
   font-weight: bold;
-  font-size: 9pt;
+  font-size: 10pt;
   color: #000000;
 }
 
@@ -75,13 +75,13 @@ body {
   font-weight: bold;
   margin-top: 0px;
   padding-top: 0em;
-  font-size: 7pt;
+  font-size: 8pt;
   color: #808080;
 }
 h2 {
   clear: both;
   font-weight: bold;
-  font-size: 10pt;
+  font-size: 12pt;
   margin-bottom: 0px;
   margin-top: 1.5em;
   padding: 0px;
@@ -89,7 +89,8 @@ h2 {
 }
 h4 {
   margin-top: 0px;
-  font-size: 8pt;
+  padding-left: 10px;
+  font-size: 11pt;
   width: 100%;
 }
 img.icon {
