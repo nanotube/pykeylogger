@@ -140,6 +140,10 @@
                                     [default: F11]
               -d, --debug           debug mode (print output to console instead of the log
                                     file) [default: False]
+              -n NOLOG, --nolog=NOLOG
+                                    specify an application by full path name whose input
+                                    will not be logged. repeat option for multiple
+                                    applications. [default: none]
             </pre>
             <p>
                 To run in debug mode from source, make sure to use the commandline <pre class="code">python keylogger.pyw -d</pre> 
@@ -180,7 +184,7 @@
             <ul>
               <li>
                 Enhance the logging capability so that it splits the keyboard input by window, for ease of finding it later
-                (as opposed to the old method of dumping everything into one large log file). <font color="green">DONE!</font>
+                (as opposed to the old method of dumping everything into one large log file). <font color="green"><b>*** DONE! ***</b></font>
               </li>
               <li>
                 Create a log viewer, where you can search by date, application name, and window title (and of course, text strings). 
@@ -188,7 +192,8 @@
               </li>
               <li>
                 Add command line option to not log input of certain applications. (For example, Gaim - since it already logs its chats
-                if you want to, having PyKeylogger running at the same time would be logging everything twice.)
+                if you want to, having PyKeylogger running at the same time would be logging everything twice.) 
+                <font color="green"><b>*** DONE! ***</b></font>
               </li>
               <li>
                 Another feature I plan for the log viewer is to have an option to parse the backspaces and arrow keys to recreate 
@@ -234,7 +239,7 @@
         
 
           
-      <span id='time'>Last changed: Sep 14 2005 11:27</span>
+      <span id='time'>Last changed: Sep 15 2005 01:27</span>
     </div>
     <div id="foot">
       <br />
