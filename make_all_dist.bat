@@ -18,6 +18,8 @@ rename "dist" "pykeylogger"
 echo %VERSION%
 pause "You didnt forget to edit the version, did you?..."
 
+copy ".\*.txt" ".\pykeylogger\"
+
 "C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_win32.zip" "pykeylogger"
 
 mv "./pykeylogger%VERSION%_win32.zip" "../pykeylogger%VERSION%_win32.zip"
