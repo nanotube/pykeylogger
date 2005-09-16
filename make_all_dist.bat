@@ -23,6 +23,7 @@ pause "You didnt forget to edit the version, did you?..."
 mv "./pykeylogger%VERSION%_win32.zip" "../pykeylogger%VERSION%_win32.zip"
 
 rd /S /Q pykeylogger
+rd /S /Q build
 
 pause "done, now lets create the src dist"
 
