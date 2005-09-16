@@ -69,11 +69,12 @@ class LogWriter:
         
         subDirName = self.GetProcessNameFromHwnd(event.Window)  #our subdirname is the full path of the process owning the hwnd.
         
-        for path in noLog:                  #check our options to make sure that we dont log specified apps.
-            if os.stat(path) == os.stat(subDirName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
-                if self.debug: 
-                    print "we dont log this"
-                return False
+        if noLog != None:
+            for path in noLog:                  #check our options to make sure that we dont log specified apps.
+                if os.stat(path) == os.stat(subDirName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
+                    if self.debug: 
+                        print "we dont log this"
+                    return False
         if self.debug:
             print "we log this"
 
