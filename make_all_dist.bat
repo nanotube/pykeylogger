@@ -1,13 +1,13 @@
 rem *** Used to create dist packages 
 
 setlocal
-set VERSION=0.5.1
+set VERSION=0.6.0
 
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
  
 rem ***** create the exe 
-c:\Python24\python setup.py py2exe 
+c:\Python24\python setup.py py2exe -b1
  
 rem **** pause so we can see the exit codes 
 pause "done, press key to continue"
@@ -16,7 +16,7 @@ rem **** rename dist directory to 'pykeylogger'
 rename "dist" "pykeylogger"
 
 echo %VERSION%
-pause "You didnt forget to edit the version, did you?..."
+pause "You didnt forget to edit the version, did you? in source file too!..."
 
 copy ".\*.txt" ".\pykeylogger\"
 
