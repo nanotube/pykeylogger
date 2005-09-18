@@ -118,7 +118,7 @@
             </p>
             <pre>
             usage: keylogger.pyw [options]
-            
+
             options:
               --version             show program's version number and exit
               -h, --help            show this help message and exit
@@ -144,6 +144,10 @@
                                     specify an application by full path name whose input
                                     will not be logged. repeat option for multiple
                                     applications. [default: none]
+              -o ONEFILE, --onefile=ONEFILE
+                                    log all output to one file ONEFILE, (inside DIRNAME,
+                                    as specified with -f option), rather than to multiple
+                                    files. [default: none]
             </pre>
             <p>
                 To run in debug mode from source, make sure to use the commandline <pre class="code">python keylogger.pyw -d</pre> 
@@ -159,7 +163,8 @@
                 The log files are organized in directories, where each directory is named after the application name whose window you 
                 were typing into. Inside those directories, there are multiple text files, each file named by date, unique window handle,
                 and window title. Thus, if you want to find what you typed in notepad, first go to the notepad directory, then find the 
-                log file by date and window title.
+                log file by date and window title. If you are running with the --onefile option, however, everything just goes into one file. 
+            </p>
             <p>
                 The log file has two non-printable characters in it: backspace, and escape. Thus, opening the file with
                 Notepad or Wordpad, you will see a lot of "junk" characters, if you press a lot of backspace (which I do).
@@ -195,6 +200,11 @@
                 if you want to, having PyKeylogger running at the same time would be logging everything twice.) 
                 <font color="green"><b>*** DONE! ***</b></font>
               </li>
+              <li>
+                Add command line option to log to just one file, instead of the default logging to multiple files. 
+                <font color="green"><b>*** DONE! ***</b></font>
+              </li>
+
               <li>
                 Another feature I plan for the log viewer is to have an option to parse the backspaces and arrow keys to recreate 
                 the final output, rather than have a bunch of [Backspace] and [LeftArrow] text in the log. Of course, if you want that
