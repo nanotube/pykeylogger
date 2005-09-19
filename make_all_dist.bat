@@ -3,6 +3,9 @@ rem *** Used to create dist packages
 setlocal
 set VERSION=0.6.0
 
+
+echo %VERSION%
+pause "You didnt forget to edit the version, did you? in source file, and in setup.py too!..."
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
  
@@ -14,9 +17,6 @@ pause "done, press key to continue"
 
 rem **** rename dist directory to 'pykeylogger'
 rename "dist" "pykeylogger"
-
-echo %VERSION%
-pause "You didnt forget to edit the version, did you? in source file too!..."
 
 copy ".\*.txt" ".\pykeylogger\"
 
