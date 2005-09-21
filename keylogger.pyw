@@ -5,6 +5,7 @@ import sys
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
+import version
 
 class KeyLogger:
     ''' Captures all keystrokes, calls LogWriter class to log them to disk
@@ -40,7 +41,7 @@ class KeyLogger:
         '''Read command line options
         '''
                 
-        parser = OptionParser(version="%prog version 0.6.0")
+        parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
         parser.add_option("-f", "--file", action="store", dest="dirName", help="write log data to DIRNAME [default: %default]")
         parser.add_option("-k", "--keyboard", action="store_true", dest="hookKeyboard", help="log keyboard input [default: %default]")
         parser.add_option("-a", "--addlinefeed", action="store_true", dest="addLineFeed", help="add linefeed [\\n] character when carriage return [\\r] character is detected (for Notepad compatibility) [default: %default]")

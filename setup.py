@@ -4,19 +4,22 @@
 # 'python setup.py py2exe' in a console prompt.
 #
 # If everything works well, you should find a subdirectory named 'dist'
-# containing some files, among them hello.exe and test_wx.exe.
+# containing some files, among them keylogger.exe and keylogger_debug.exe.
 
 
 from distutils.core import setup
 import py2exe
+import version
 
 setup(
     # The first three parameters are not required, if at least a
     # 'version' is given, then a versioninfo resource is built from
     # them and added to the executables.
-    version = "0.2.1",
-    description = "simple python keylogger",
-    name = "python keylogger",
+    name = version.name,
+    version = version.version,
+    description = version.description,
+    url = version.url,
+    license = version.license,
 
     # targets to build
     console = [
@@ -26,7 +29,6 @@ setup(
         }
     ],
     
-    #windows = ["keylogger.pyw"],
     windows = [
        {
            "script": "keylogger.pyw",

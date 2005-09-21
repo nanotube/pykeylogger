@@ -5,7 +5,7 @@ set VERSION=0.6.0
 
 
 echo %VERSION%
-pause "You didnt forget to edit the version, did you? in source file, and in setup.py too!..."
+pause "You didnt forget to edit the version, did you? in version.py too!..."
 rem ***** get rid of all the old files in the build folder 
 rd /S /Q build 
  
