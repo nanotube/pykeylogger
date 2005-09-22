@@ -54,7 +54,9 @@ class KeyLogger:
         
         parser.add_option("-n", "--nolog", action="append", dest="noLog", help="specify an application by full path name whose input will not be logged. repeat option for multiple applications. [default: %default]")
         parser.add_option("-o", "--onefile", action="store", dest="oneFile", help="log all output to one file ONEFILE, (inside DIRNAME, as specified with -f option), rather than to multiple files. [default: %default]")
-        
+
+        parser.add_option("-s", "--systemlog", action="store", dest="systemLog", help="log all output, plus some debug output, to a SYSTEMLOG file (inside DIRNAME, as specified with -f option). [default: %default]")
+
         parser.set_defaults(dirName=r"C:\Temp\logdir",
                             hookKeyboard=True,
                             addLineFeed=False,
@@ -64,7 +66,8 @@ class KeyLogger:
                             flushKey='F11',
                             debug=False,
                             noLog=None,
-                            oneFile=None)
+                            oneFile=None,
+                            systemLog=None)
 
         (self.options, args) = parser.parse_args()
                     

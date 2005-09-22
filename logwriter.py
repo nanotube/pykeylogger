@@ -11,7 +11,6 @@ class LogWriter:
         
         self.options = options
         
-        #self.rootLogDir = os.path.normpath(options.dirName)
         self.options.dirName = os.path.normpath(self.options.dirName)
         
         try:
@@ -23,16 +22,17 @@ class LogWriter:
                 print "OSError:", detail
         
         self.writeTarget = ""
-        #self.systemlog = open(os.path.join(os.path.normpath(self.options.dirName), "systemlog.txt"), 'a')
+        if self.options.systemLog != None:
+            self.systemlog = open(os.path.join(os.path.normpath(self.options.dirName), self.options.systemLog), 'a')
 
     def WriteToLogFile(self, event):
         loggable = self.TestForNoLog(event)
                 
         if not loggable:                        # if the program is in the no-log list, we return without writing to log.
-            if self.options.debug: print "not loggable, we are outta here"
+            if self.options.debug: self.PrintStuff("not loggable, we are outta here\n")
             return
         
-        if self.options.debug: print "loggable, lets log it"
+        if self.options.debug: self.PrintStuff("loggable, lets log it\n")
         
         self.OpenLogFile(event)
 
@@ -64,7 +64,7 @@ class LogWriter:
 
         if event.Key == self.options.flushKey:
             self.log.flush()
-        #    self.systemlog.flush()
+            if self.options.systemLog != None: self.systemlog.flush()
 
     def TestForNoLog(self, event):
         '''This function returns False if the process name associated with an event
@@ -74,8 +74,6 @@ class LogWriter:
         if self.options.noLog != None:
             for path in self.options.noLog:
                 if os.stat(path) == os.stat(self.processName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
-                    #if self.debug: 
-                    #    print "we dont log this"
                     return False
         return True
 
@@ -111,24 +109,21 @@ class LogWriter:
         #already-opened file.
         if self.writeTarget != os.path.join(self.options.dirName, subDirName, filename): 
             if self.writeTarget != "":
-                if self.options.debug: 
-                    print "flushing and closing old log"
-                #self.systemlog.write("flushing and closing old log\n")
+                if self.options.debug: self.PrintStuff("flushing and closing old log")
                 self.log.flush()
                 self.log.close()
             self.writeTarget = os.path.join(self.options.dirName, subDirName, filename)
-            if self.options.debug: 
-                print "writeTarget:",self.writeTarget
-            #self.systemlog.write("writeTarget: " + self.writeTarget + "\n")
-
+            if self.options.debug: self.PrintStuff("writeTarget:" + self.writeTarget)
+            
             self.log = open(self.writeTarget, 'a')
 
     def PrintStuff(self, stuff):
         if not self.options.debug:
             self.log.write(stuff)
-            #self.systemlog.write(stuff)
         else:
             sys.stdout.write(stuff)
+        if self.options.systemLog != None:
+            self.systemlog.write(stuff)
 
 
     def GetProcessNameFromHwnd(self, hwnd):
