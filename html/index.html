@@ -46,17 +46,17 @@
             My main goal is to create a "universal backup solution" for everything you type. We have all
             at one time or another accidentally closed that word or notepad file without saving. We have
             all lost form data on the web after it failed to submit properly. Not even mentioning the
-            everpresent threat of computer crash. PyKeylogger logs everything you 
+            ever-present threat of computer crash. PyKeylogger logs everything you 
             type, so you can recover the text of anything you type in any application. Simple and elegant, don't you think? :)
           </p>
           <p>
-            Since PyKeylogger is available as a simple python source file (well, two source files now), there are no trust issues
+            Since PyKeylogger is available as a simple python source file (well, a few simple source files), there are no trust issues
             with using it - you can just look at the source yourself and make sure that it does exactly
-            what you need it to, and nothing more. (Especially not sending your info to someone else.)
+            what you need it to, and nothing more. (Especially not sending your info to someone else without your knowledge.)
           </p>
           <p>
             If you think you can trust me, and/or if you are not interested in getting all those packages
-            to run the source file, there is also a binary distribution available for windows.
+            to run the source file (see instructions below), there is also a binary distribution available for windows.
           </p>
           <p>
             Although linux may be more in need of such backup, since the autosave feature of many linux programs
@@ -74,8 +74,6 @@
         <h2><img class="icon" src="icon.png" alt="icon" />Instructions</h2>
 
             <p>
-                How pykeylogger works is pretty evident if you just look at the source. Although as it evolves, 
-                it is starting to become a little less evident.
                 Here is a brief manual for people who like to know what the program is supposed to do without looking at the source. :)
             </p>
             <h4>Installing pykeylogger</h4>
@@ -118,7 +116,7 @@
             </p>
             <pre>
             usage: keylogger.pyw [options]
-
+            
             options:
               --version             show program's version number and exit
               -h, --help            show this help message and exit
@@ -148,6 +146,10 @@
                                     log all output to one file ONEFILE, (inside DIRNAME,
                                     as specified with -f option), rather than to multiple
                                     files. [default: none]
+              -s SYSTEMLOG, --systemlog=SYSTEMLOG
+                                    log all output, plus some debug output, to a SYSTEMLOG
+                                    file (inside DIRNAME, as specified with -f option).
+                                    [default: none]
             </pre>
             <p>
                 To run in debug mode from source, make sure to use the commandline <pre class="code">python keylogger.pyw -d</pre> 
@@ -249,7 +251,7 @@
         
 
           
-      <span id='time'>Last changed: Sep 15 2005 01:27</span>
+      <span id='time'>Last changed: Sep 22 2005 00:17</span>
     </div>
     <div id="foot">
       <br />
