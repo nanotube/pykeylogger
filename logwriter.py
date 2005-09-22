@@ -29,10 +29,10 @@ class LogWriter:
         loggable = self.TestForNoLog(event)
                 
         if not loggable:                        # if the program is in the no-log list, we return without writing to log.
-            if self.options.debug: self.PrintStuff("not loggable, we are outta here\n")
+            if self.options.debug: self.PrintDebug("not loggable, we are outta here\n")
             return
         
-        if self.options.debug: self.PrintStuff("loggable, lets log it\n")
+        if self.options.debug: self.PrintDebug("loggable, lets log it\n")
         
         self.OpenLogFile(event)
 
@@ -83,7 +83,7 @@ class LogWriter:
             if self.writeTarget == "":
                 self.writeTarget = os.path.join(os.path.normpath(self.options.dirName), os.path.normpath(self.options.oneFile))
                 self.log = open(self.writeTarget, 'a')
-            if self.options.debug: print "writing to:", self.writeTarget
+                self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return
 
         
@@ -109,11 +109,11 @@ class LogWriter:
         #already-opened file.
         if self.writeTarget != os.path.join(self.options.dirName, subDirName, filename): 
             if self.writeTarget != "":
-                if self.options.debug: self.PrintStuff("flushing and closing old log")
+                self.PrintDebug("flushing and closing old log\n")
                 self.log.flush()
                 self.log.close()
             self.writeTarget = os.path.join(self.options.dirName, subDirName, filename)
-            if self.options.debug: self.PrintStuff("writeTarget:" + self.writeTarget)
+            self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
             
             self.log = open(self.writeTarget, 'a')
 
@@ -125,6 +125,11 @@ class LogWriter:
         if self.options.systemLog != None:
             self.systemlog.write(stuff)
 
+    def PrintDebug(self, stuff):
+        if self.options.debug:
+            sys.stdout.write(stuff)
+        if self.options.systemLog != None:
+            self.systemlog.write(stuff)
 
     def GetProcessNameFromHwnd(self, hwnd):
     
@@ -140,6 +145,7 @@ class LogWriter:
 if __name__ == '__main__':
     #some testing code
     #put a real existing hwnd into event.Window to run test
+    #this testing code is now outdated.
     lw = LogWriter()
     class Blank:
         pass
