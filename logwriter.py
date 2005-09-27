@@ -21,6 +21,8 @@ class LogWriter:
             else:
                 print "OSError:", detail
         
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")      #regexp filter for the non-allowed characters in windows filenames.
+        
         self.writeTarget = ""
         if self.options.systemLog != None:
             self.systemlog = open(os.path.join(os.path.normpath(self.options.dirName), self.options.systemLog), 'a')
@@ -86,12 +88,9 @@ class LogWriter:
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return
 
+        subDirName = self.filter.sub(r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
         
-        filter=r"[\\\/\:\*\?\"\<\>\|]+"     #regexp filter for the non-allowed characters in windows filenames.
-        
-        subDirName = re.sub(filter,r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
-        
-        WindowName = re.sub(filter,r'__',str(event.WindowName))
+        WindowName = self.filter.sub(r'__',str(event.WindowName))
         
         try:
             os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
