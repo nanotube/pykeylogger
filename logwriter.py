@@ -125,17 +125,17 @@ class LogWriter:
         
         try:
             os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
-            except OSError, detail:
-                if(detail.errno==17):  #if directory already exists, swallow the error
-                    pass
-                else:
-                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-                    return False
-            except:
-                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+        except OSError, detail:
+            if(detail.errno==17):  #if directory already exists, swallow the error
+                pass
+            else:
+                self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
                 return False
+        except:
+            self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+            return False
     
-        filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName
+        filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
         
         #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
         #filename = filename[0:200] + ".txt"     
@@ -160,15 +160,15 @@ class LogWriter:
             
             try:
                 self.log = open(self.writeTarget, 'a')
-                except OSError, detail:
-                    if(detail.errno==17):  #if file already exists, swallow the error
-                        pass
-                    else:
-                        self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-                        return False
-                except:
-                    self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+            except OSError, detail:
+                if(detail.errno==17):  #if file already exists, swallow the error
+                    pass
+                else:
+                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
                     return False
+            except:
+                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                return False
         
         return True
 
