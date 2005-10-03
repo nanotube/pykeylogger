@@ -19,13 +19,30 @@ class LogWriter:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
-                print "OSError:", detail
+                self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+        except:
+            self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
         
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")      #regexp filter for the non-allowed characters in windows filenames.
         
         self.writeTarget = ""
         if self.options.systemLog != None:
-            self.systemlog = open(os.path.join(os.path.normpath(self.options.dirName), self.options.systemLog), 'a')
+            try:
+                self.systemlog = open(os.path.join(self.options.dirName, self.options.systemLog), 'a')
+            except OSError, detail:
+                if(detail.errno==17):  #if file already exists, swallow the error
+                    pass
+                else:
+                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+            except:
+                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+
+        
+        #~ if not self.options.debug:      #if we are not running debug and thus can see console, let's redirect stderr to errorlog.
+            #~ self.errorlog = open(os.path.join(self.options.dirName, "errorlog.txt"), 'a')
+            #~ self.savestderr = sys.stderr    #save stderr just in case we want to restore it later
+            #~ sys.stderr = self.errorlog
+            
 
     def WriteToLogFile(self, event):
         loggable = self.TestForNoLog(event)
@@ -36,7 +53,10 @@ class LogWriter:
         
         if self.options.debug: self.PrintDebug("loggable, lets log it\n")
         
-        self.OpenLogFile(event)
+        loggable = self.OpenLogFile(event)
+        if not loggable:
+            self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
+            return
 
         asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
         asciiSubset.extend(range(32,128))      #all normal printable chars
@@ -84,7 +104,18 @@ class LogWriter:
         if self.options.oneFile != None:
             if self.writeTarget == "":
                 self.writeTarget = os.path.join(os.path.normpath(self.options.dirName), os.path.normpath(self.options.oneFile))
-                self.log = open(self.writeTarget, 'a')
+                try:
+                    self.log = open(self.writeTarget, 'a')
+                except OSError, detail:
+                    if(detail.errno==17):  #if file already exists, swallow the error
+                        pass
+                    else:
+                        self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                        return False
+                except:
+                    self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    return False
+
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return
 
@@ -94,14 +125,27 @@ class LogWriter:
         
         try:
             os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
-        except OSError, detail:
-            if(detail.errno==17):  #if directory already exists, swallow the error
-                pass
-            else:
-                print "OSError:", detail
+            except OSError, detail:
+                if(detail.errno==17):  #if directory already exists, swallow the error
+                    pass
+                else:
+                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    return False
+            except:
+                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                return False
     
         filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName
-        filename = filename[0:200] + ".txt"     #make sure our filename is not longer than 255 characters, as per filesystem limit.
+        
+        #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
+        #filename = filename[0:200] + ".txt"     
+        if len(os.path.join(self.options.dirName, subDirName, filename)) > 255:
+            if len(os.path.join(self.options.dirName, subDirName)) > 250:
+                self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
+                return False
+            else:
+                filename = filename[0:255-len(os.path.join(self.options.dirName, subDirName))-4] + ".txt"  
+        
 
         #we do this writetarget thing to make sure we dont keep opening and closing the log file when all inputs are going
         #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
@@ -114,7 +158,19 @@ class LogWriter:
             self.writeTarget = os.path.join(self.options.dirName, subDirName, filename)
             self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
             
-            self.log = open(self.writeTarget, 'a')
+            try:
+                self.log = open(self.writeTarget, 'a')
+                except OSError, detail:
+                    if(detail.errno==17):  #if file already exists, swallow the error
+                        pass
+                    else:
+                        self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                        return False
+                except:
+                    self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    return False
+        
+        return True
 
     def PrintStuff(self, stuff):
         if not self.options.debug:
