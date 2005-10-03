@@ -6,6 +6,7 @@ Version 0.6.4 (2005-10-03)
 
 *) Really fixed the long filename bug now (it turns out the fix from 0.6.0 didn't really work...)
 *) Fix up handling of various exceptions that could be thrown as a result of various filesystem operations. Should make pykeylogger play nicer.
+*) Include cumulative changelog (this file) in release packages.
 
 -----
 Version 0.6.3 (2005-09-30)
