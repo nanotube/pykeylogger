@@ -7,6 +7,7 @@ Version 0.6.4 (2005-10-03)
 *) Really fixed the long filename bug now (it turns out the fix from 0.6.0 didn't really work...)
 *) Fix up handling of various exceptions that could be thrown as a result of various filesystem operations. Should make pykeylogger play nicer.
 *) Include cumulative changelog (this file) in release packages.
+*) I just realized that since I started freezing the binary package with py2exe -b1 option, the binary keylogger did not work at all. Since I myself run from source, didn't catch it. Switched back to regular, less compact, freezing. Does nobody report problems with this thing? Have all the people who downloaded the binary just saw that it didn't work, and shrugged, and went away?
 
 -----
 Version 0.6.3 (2005-09-30)

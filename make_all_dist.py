@@ -12,8 +12,8 @@ print r'rd /S /Q build'
 os.system(r'rd /S /Q build')
 
 # create the exe 
-print r'c:\Python24\python setup.py py2exe -b1'
-os.system(r'c:\Python24\python setup.py py2exe -b1')
+print r'c:\Python24\python setup.py py2exe'
+os.system(r'c:\Python24\python setup.py py2exe')
 
 #pause to see output
 #os.system('pause "done, press key to continue"')
