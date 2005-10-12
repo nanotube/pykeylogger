@@ -117,7 +117,7 @@ class LogWriter:
                     return False
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
-            return
+            return True
 
         subDirName = self.filter.sub(r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
         
