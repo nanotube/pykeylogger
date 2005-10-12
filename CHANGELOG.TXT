@@ -2,6 +2,11 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.6.5 (2002-10-12)
+
+*) Fixed bug 1323518, where program would not log properly to one file with option '-o'. It's great when a bugfix involves changing just one line of code. :)
+
+-----
 Version 0.6.4 (2005-10-03)
 
 *) Really fixed the long filename bug now (it turns out the fix from 0.6.0 didn't really work...)
