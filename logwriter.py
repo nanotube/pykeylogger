@@ -3,7 +3,8 @@ import os, os.path
 import time
 import re
 import sys
-
+#from threading import Timer
+import mytimer
 
 class LogWriter:
 
@@ -99,6 +100,10 @@ class LogWriter:
                     return False
         return True
 
+    def TimerAction(self):
+        self.PrintDebug("flushing onefile buffer due to timer\n")
+        self.log.flush()
+
     def OpenLogFile(self, event):
         
         if self.options.oneFile != None:
@@ -117,24 +122,14 @@ class LogWriter:
                     return False
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
+                self.timer = mytimer.MyTimer(60.0, 0, self.TimerAction)
+                self.timer.start()
             return True
 
         subDirName = self.filter.sub(r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
         
         WindowName = self.filter.sub(r'__',str(event.WindowName))
         
-        try:
-            os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
-        except OSError, detail:
-            if(detail.errno==17):  #if directory already exists, swallow the error
-                pass
-            else:
-                self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-                return False
-        except:
-            self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-            return False
-    
         filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
         
         #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
@@ -159,6 +154,18 @@ class LogWriter:
             self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
             
             try:
+                os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
+            except OSError, detail:
+                if(detail.errno==17):  #if directory already exists, swallow the error
+                    pass
+                else:
+                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    return False
+            except:
+                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                return False
+
+            try:
                 self.log = open(self.writeTarget, 'a')
             except OSError, detail:
                 if(detail.errno==17):  #if file already exists, swallow the error
@@ -176,9 +183,7 @@ class LogWriter:
         if not self.options.debug:
             self.log.write(stuff)
         else:
-            sys.stdout.write(stuff)
-        if self.options.systemLog != None:
-            self.systemlog.write(stuff)
+            self.PrintDebug(stuff)
 
     def PrintDebug(self, stuff):
         if self.options.debug:
@@ -200,7 +205,7 @@ class LogWriter:
 if __name__ == '__main__':
     #some testing code
     #put a real existing hwnd into event.Window to run test
-    #this testing code is now outdated.
+    #this testing code is now really outdated.
     lw = LogWriter()
     class Blank:
         pass
@@ -211,6 +216,6 @@ if __name__ == '__main__':
     event.Key = 'A'
     options = Blank()
     options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
-    options.flushKey = 'F12'
+    options.flushKey = 'F11'
     lw.WriteToLogFile(event, options)
     
