@@ -19,6 +19,7 @@ rem **** rename dist directory to 'pykeylogger'
 rename "dist" "pykeylogger"
 
 copy ".\*.txt" ".\pykeylogger\"
+copy ".\run_exe_pykeylogger_with_cmdoptions.bat" ".\pykeylogger\"
 
 "C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_win32.zip" "pykeylogger"
 
@@ -29,7 +30,7 @@ rd /S /Q build
 
 pause "done, now lets create the src dist"
 
-"C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "*.txt" "*.bat" "html"
+"C:\Program Files\WinRAR\WinRAR.exe" a -r "pykeylogger%VERSION%_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "mytimer.py" "*.txt" "*.bat" "html"
 
 mv "./pykeylogger%VERSION%_src.zip" "../pykeylogger%VERSION%_src.zip"
 
