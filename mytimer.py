@@ -5,7 +5,8 @@ class MyTimer(Thread):
     """Call a function after a specified number of seconds. Repeat a specified number of times:
 
     Set repetitions to 0 to do this forever (until cancel is called).
-    t = Timer(30.0, 5, f, args=[], kwargs={})
+    Usage:
+    t = MyTimer(interval, repetitions, function, args=[], kwargs={})
     t.start()
     t.cancel() # stop the timer's action if it's still waiting
     """
