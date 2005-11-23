@@ -41,8 +41,8 @@ print r'rd /S /Q build'
 os.system(r'rd /S /Q build')
 
 #os.system('pause "done, now lets create the src dist"')
-print r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "version.py" "make_all_dist.py" "*.txt" "*.bat" "html""'
-os.system(r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "version.py" "make_all_dist.py" "*.txt" "run_exe_pykeylogger_with_cmdoptions.bat" "run_pykeylogger_with_cmdoptions.bat" "html""')
+print r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "mytimer.py" "version.py" "make_all_dist.py" "*.txt" "*.bat" "html""'
+os.system(r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "mytimer.py" "version.py" "make_all_dist.py" "*.txt" "run_exe_pykeylogger_with_cmdoptions.bat" "run_pykeylogger_with_cmdoptions.bat" "html""')
 
 print r'mv "./pykeylogger' + version.version + '_src.zip" "../pykeylogger' + version.version + '_src.zip"'
 os.system(r'mv "./pykeylogger' + version.version + '_src.zip" "../pykeylogger' + version.version + '_src.zip"')
