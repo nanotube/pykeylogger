@@ -38,6 +38,9 @@ class LogWriter:
             except:
                 self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
 
+        # we only want to initalize the timer once, and then only AFTER we have some file opened to self.log
+        # so this will be our "one time use" flag
+        self.flushTimerInitialized = False 
         
         #~ if not self.options.debug:      #if we are not running debug and thus can see console, let's redirect stderr to errorlog.
             #~ self.errorlog = open(os.path.join(self.options.dirName, "errorlog.txt"), 'a')
@@ -46,15 +49,22 @@ class LogWriter:
             
 
     def WriteToLogFile(self, event):
-        loggable = self.TestForNoLog(event)
+        loggable = self.TestForNoLog(event)     # see if the program is in the no-log list.
                 
-        if not loggable:                        # if the program is in the no-log list, we return without writing to log.
+        if not loggable:
             if self.options.debug: self.PrintDebug("not loggable, we are outta here\n")
             return
         
         if self.options.debug: self.PrintDebug("loggable, lets log it\n")
         
-        loggable = self.OpenLogFile(event)
+        loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
+        
+        #start our autoflush timer, since a log file has been opened at this point, for the first time
+        if loggable and self.flushTimerInitialized == False:
+            self.flushTimerInitialized = True
+            self.timer = mytimer.MyTimer(self.options.interval, 0, self.TimerAction)
+            self.timer.start()
+        
         if not loggable:
             self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
             return
@@ -101,7 +111,7 @@ class LogWriter:
         return True
 
     def TimerAction(self):
-        self.PrintDebug("flushing onefile buffer due to timer\n")
+        self.PrintDebug("flushing file write buffer due to timer\n")
         self.log.flush()
 
     def OpenLogFile(self, event):
@@ -122,8 +132,6 @@ class LogWriter:
                     return False
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
-                self.timer = mytimer.MyTimer(60.0, 0, self.TimerAction)
-                self.timer.start()
             return True
 
         subDirName = self.filter.sub(r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
@@ -142,7 +150,7 @@ class LogWriter:
                 filename = filename[0:255-len(os.path.join(self.options.dirName, subDirName))-4] + ".txt"  
         
 
-        #we do this writetarget thing to make sure we dont keep opening and closing the log file when all inputs are going
+        #we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
         #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
         #already-opened file.
         if self.writeTarget != os.path.join(self.options.dirName, subDirName, filename): 

