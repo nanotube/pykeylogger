@@ -70,7 +70,7 @@ class LogWriter:
             return
 
         asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
-        asciiSubset.extend(range(32,128))      #all normal printable chars
+        asciiSubset.extend(range(32,255))      #all normal printable chars
         
         if self.options.parseBackspace == True:
             asciiSubset.remove(8)              #remove backspace from allowed chars if needed
