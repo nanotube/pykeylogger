@@ -150,6 +150,9 @@
                                     log all output, plus some debug output, to a SYSTEMLOG
                                     file (inside DIRNAME, as specified with -f option).
                                     [default: none]
+              -i INTERVAL, --interval=INTERVAL
+                                    specify the time interval between buffer autoflush
+                                    events, in seconds. [default: 120.0]
             </pre>
             <p>
                 To run in debug mode from source, make sure to use the commandline <pre class="code">python keylogger.pyw -d</pre> 
@@ -184,35 +187,50 @@
                 at the most recent input. If you use Wordpad, you will notice that Wordpad refuses to open a file that is being used, 
                 so you will have to make a copy of the logfile and open the copy with wordpad, rather than open the logfile directly.
             </p>
+            <p>
+                As of version 0.6.6, pykeylogger automatically flushes the file write buffer periodically (interval set with
+                -i option), so that even in the event of a system crash, you are less likely to lose the recent input. 
+                [Thanks to anonymous forum poster for this suggestion.]
+            </p>
 
         <a name="future"></a>
         <h2><img class="icon" src="icon.png" alt="icon" /> Future direction [Features planned]</h2>
           <p>
             <ul>
-              <li>
+              <li> 
+                <font color="green"><b>*** DONE! ***</b>
                 Enhance the logging capability so that it splits the keyboard input by window, for ease of finding it later
-                (as opposed to the old method of dumping everything into one large log file). <font color="green"><b>*** DONE! ***</b></font>
+                (as opposed to the old method of dumping everything into one large log file). 
+                </font>
+              </li>
+              <li> 
+                <font color="green"><b>*** DONE! ***</b>
+                Add command line option to not log input of certain applications. (For example, Gaim - since it already logs its chats
+                if you want to, having PyKeylogger running at the same time would be logging everything twice.) 
+                </font>
+              </li>
+              <li> 
+                <font color="green"><b>*** DONE! ***</b>
+                Add command line option to log to just one file, instead of the default logging to multiple files. 
+                </font>
               </li>
               <li>
                 Create a log viewer, where you can search by date, application name, and window title (and of course, text strings). 
                 Aiming for something like the Gaim log viewer.
               </li>
               <li>
-                Add command line option to not log input of certain applications. (For example, Gaim - since it already logs its chats
-                if you want to, having PyKeylogger running at the same time would be logging everything twice.) 
-                <font color="green"><b>*** DONE! ***</b></font>
-              </li>
-              <li>
-                Add command line option to log to just one file, instead of the default logging to multiple files. 
-                <font color="green"><b>*** DONE! ***</b></font>
-              </li>
-
+                Improve behavior when logging international keyboard layouts. Right now I am not exactly sure how to properly log
+                things like accented and umlaut-ed vowels, etc, so our international users have to put up with less than perfect
+                logging.
               <li>
                 Another feature I plan for the log viewer is to have an option to parse the backspaces and arrow keys to recreate 
                 the final output, rather than have a bunch of [Backspace] and [LeftArrow] text in the log. Of course, if you want that
                 to be particularly useful, you have to try to refrain from using the mouse to reposition your cursor :). I wonder if
                 this is really going to be helpful...
               </li>
+              <li>
+                As per a suggestion I received through feature requests on sf, I want to log all kb/mouse (though maybe to start with, just kb)
+                events, and have them be re-playable as if they are being typed. Goal is to support gui testing.
               <li>
                 Anything else you want to suggest? Feel free to do so by submitting feature requests on the 
                 <a href="http://sourceforge.net/projects/pykeylogger">SF Project Page</a>
