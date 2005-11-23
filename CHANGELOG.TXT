@@ -1,8 +1,15 @@
 PyKeylogger Changelog
 ---------------------
 
+
 -----
-Version 0.6.5 (2002-10-12)
+Version 0.6.6 (2005-11-23)
+
+*) As per user suggestion, implemented an automatic write buffer flush at user-definable interval. 
+*) Changed range of loggable characters to include extended ASCII. Hopefully that will help international users. Please report your feedback.
+
+-----
+Version 0.6.5 (2005-10-12)
 
 *) Fixed bug 1323518, where program would not log properly to one file with option '-o'. It's great when a bugfix involves changing just one line of code. :)
 
