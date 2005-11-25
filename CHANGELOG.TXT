@@ -1,6 +1,11 @@
 PyKeylogger Changelog
 ---------------------
 
+-----
+Version 0.6.7 (2005-11-25)
+
+*) Fixed bug where keylogger would not properly exit due to the running timer thread. 
+*) Fixed bug in timer module where timer would not terminate even after its task is completed.
 
 -----
 Version 0.6.6 (2005-11-23)

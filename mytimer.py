@@ -36,7 +36,7 @@ class MyTimer(Thread):
                 self.finished.wait(self.interval)
                 if not self.finished.isSet():
                     self.function(*self.args, **self.kwargs)
-
+        self.finished.set()
 
 if __name__ == '__main__':
     #some test code here. 

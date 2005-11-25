@@ -35,9 +35,13 @@ class KeyLogger:
         self.lw.WriteToLogFile(event)
         
         if event.Key == self.options.exitKey:
-            sys.exit()
+            self.stop()
             
         return True
+    
+    def stop(self):
+        self.lw.timer.cancel()
+        sys.exit()
     
     def ParseOptions(self):
         '''Read command line options
