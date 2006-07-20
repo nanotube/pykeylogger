@@ -40,15 +40,15 @@ class MyTimer(Thread):
 
 if __name__ == '__main__':
     #some test code here. 
-    def hello():
-        print "hello dude"
+    def hello(name="bla"):
+        print "hello, ", name
 
-    myt = MyTimer(1.0, 5, hello)
+    myt = MyTimer(1.0, 5, hello, ["bob"])
     myt.start()
     time.sleep(4)
     myt.cancel()
     print "next timer"
-    myt = MyTimer(1.0, 0, hello)
+    myt = MyTimer(1.0, 0, hello, ["bob"])
     myt.start()
     time.sleep(6)
     myt.cancel()
