@@ -82,7 +82,10 @@ if __name__ == '__main__':
     os.system(r'move "./pykeylogger' + version.version + '_src.zip" "../pykeylogger' + version.version + '_src.zip"')
 
     #os.system('pause "now lets create the md5 sums"')
-    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_src.zip" "../pykeylogger' + version.version + '_win32.zip" > "../pykeylogger' + version.version + '_md5sums.txt""'
-    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_src.zip" "../pykeylogger' + version.version + '_win32.zip" > "../pykeylogger' + version.version + '_md5sums.txt""')
+    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_src.zip" > "../pykeylogger' + version.version + '_src_md5sum.txt""'
+    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_src.zip" > "../pykeylogger' + version.version + '_src_md5sum.txt""')
+    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_win32.zip" > "../pykeylogger' + version.version + '_win32_md5sum.txt""'
+    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "../pykeylogger' + version.version + '_win32.zip" > "../pykeylogger' + version.version + '_win32_md5sum.txt""')
+
 
     os.system(r'pause "done, press to key to exit""')
