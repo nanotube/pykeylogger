@@ -67,6 +67,7 @@ class KeyLogger:
         self.settings = dict(self.config.items('general'))
         self.settings.update(dict(self.config.items('email')))
         self.settings.update(dict(self.config.items('logmaintenance')))
+        self.settings.update(dict(self.config.items('timestamp')))
         self.settings.update(self.options.__dict__)
                     
 if __name__ == '__main__':

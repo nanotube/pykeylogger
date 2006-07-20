@@ -65,13 +65,17 @@ class LogWriter:
 
         # initialize the automatic zip and email timer, if enabled in .ini
         if self.settings['smtpsendemail'] == 'True':
-            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60, 0, self.ZipAndEmailTimerAction)
+            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60*60, 0, self.ZipAndEmailTimerAction)
             self.emailtimer.start()
         
         # initialize automatic old log deletion timer
         if self.settings['deleteoldlogs'] == 'True':
             self.oldlogtimer = mytimer.MyTimer(float(self.settings['agecheckinterval'])*60*60, 0, self.DeleteOldLogs)
             self.oldlogtimer.start()
+        
+        if self.settings['timestampenable'] == 'True':
+            self.timestamptimer = mytimer.MyTimer(float(self.settings['timestampinterval'])*60, 0, self.WriteTimestamp)
+            self.timestamptimer.start()
         
         # initialize the automatic log flushing timer
         self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
@@ -208,6 +212,9 @@ class LogWriter:
                 except:
                     self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
                     return False
+                
+                #write the timestamp upon opening the logfile
+                if self.settings['timestampenable'] == 'True': self.WriteTimestamp()
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return True
@@ -264,15 +271,18 @@ class LogWriter:
             except:
                 self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
                 return False
+            
+            #write the timestamp upon opening a new logfile
+            if self.settings['timestampenable'] == 'True': self.WriteTimestamp()
         
         return True
 
     def PrintStuff(self, stuff):
         '''Write stuff to log, or to debug outputs.
         '''
-        if not self.settings['debug']:
+        if not self.settings['debug'] and self.log != None:
             self.log.write(stuff)
-        else:
+        if self.settings['debug']:
             self.PrintDebug(stuff)
 
     def PrintDebug(self, stuff):
@@ -282,6 +292,9 @@ class LogWriter:
             sys.stdout.write(stuff)
         if self.settings['systemlog'] != 'None':
             self.systemlog.write(stuff)
+
+    def WriteTimestamp(self):
+        self.PrintStuff("\n[" + time.asctime() + "]\n")
 
     def DeleteOldLogs(self):
         '''Walk the log directory tree and remove any logfiles older than maxlogage (as set in .ini).
@@ -319,6 +332,8 @@ class LogWriter:
             self.emailtimer.cancel()
         if self.settings['deleteoldlogs'] == 'True':
             self.oldlogtimer.cancel()
+        if self.settings['timestampenable'] == 'True':
+            self.timestamptimer.cancel()
 
 if __name__ == '__main__':
     #some testing code

@@ -7,9 +7,10 @@ Version 0.7.0 (2006-07-19)
 *) Fixed bug where error output was not properly translated to string (cf. http://sourceforge.net/forum/forum.php?thread_id=1418377&forum_id=493189)
 *) Refactored code so that the set of loggable characters only gets set up once.
 *) Make autoflush also flush the systemlog if it exists.
-*) New feature: Make pykeylogger read the configuration from a .ini file, rather than from commandline options. This really simplifies running pykeylogger, especially where starting it with the system boot is desired. This also makes pykeylogger more easily expandable with new features.
-*) New feature: automatically zip up the logfiles and send the zip by email periodically (configurable through the .ini file)
+*) New Feature: Make pykeylogger read the configuration from a .ini file, rather than from commandline options. This really simplifies running pykeylogger, especially where starting it with the system boot is desired. This also makes pykeylogger more easily expandable with new features.
+*) New Feature: automatically zip up the logfiles and send the zip by email periodically (configurable through the .ini file)
 *) New Feature: automatically delete logfiles older than X days (configurable through the .ini file)
+*) New Feature: automatically place a timestamp into the file at preset interval, and every time when starting to write to a logfile (configurable through the .ini file)
 
 -----
 Version 0.6.7 (2005-11-25)
