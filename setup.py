@@ -22,6 +22,7 @@ setup(
     license = version.license,
     author = version.author,
     author_email = version.author_email,
+    platforms = [version.platform],
 
     data_files = [("",["pykeylogger.ini",
                         "pykeylogger.val",
