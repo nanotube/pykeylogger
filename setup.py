@@ -20,7 +20,15 @@ setup(
     description = version.description,
     url = version.url,
     license = version.license,
+    author = version.author,
+    author_email = version.author_email,
 
+    data_files = [("",["pykeylogger.ini",
+                        "pykeylogger.val",
+                        "CHANGELOG.TXT",
+                        "LICENSE.txt",
+                        "README.txt",
+                        "TODO.txt"])],
     # targets to build
     console = [
         {

