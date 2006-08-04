@@ -4,16 +4,16 @@ PyKeylogger Changelog
 -----
 Version 0.8.0 (2006-08-04)
 
-*) Fixed setup.py so that it automatically adds data files to the distribution when making the executable with "setup.py py2exe".
+*) Fixed setup.py so that it automatically adds data files to the distribution when making the executable with "setup.py py2exe" (Fix for bug 1531923).
 *) Added MANIFEST.in so that "setup.py sdist" makes the source dist correctly, including all necessary files.
 *) Added graphical control panel that allows changing all configuration items, as well as taking various actions manually.
 *) All items in the settings of the control panel have detailed tooltip help on the meaning of each config option.
 *) Using the more powerful ConfigObj module to read configuration file, instead of ConfigParser. This allows preservation of the .ini file order and comments when changing things through the GUI, as well as validation of option values.
-*) Added the highly informative "welcome screen".
+*) Added the highly informative "welcome screen" :).
 *) The passwords are now not stored in cleartext in the .ini file, to provide some security against casual snooping.
 *) Add capability to zip logfiles to zip and delete the .txts, to save disk space, separately from the send email option.
 *) Removed the "flush key" feature since it is now twice obsoleted - there is the automatic flush, and there is the capability to flush through the control panel.
-*) Protected access to the conntrol panel with a "master password". Default password is left blank; you can change it in the control panel.
+*) Protected access to the control panel with a "master password". Default password is left blank; you can change it in the control panel.
 *) What used to be the "exitkey" is now used to bring up the control panel.
 *) Configuration options now have more descriptive names in the .ini file.
 
