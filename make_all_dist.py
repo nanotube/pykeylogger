@@ -66,9 +66,6 @@ if __name__ == '__main__':
     #print r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_win32.zip" "pykeylogger""'
     #os.system(r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_win32.zip" "pykeylogger""')
 
-    print r'move ".\pykeylogger-' + version.version + r'_win32.zip" "..\pykeylogger-' + version.version + '_win32.zip"'
-    os.system(r'move ".\pykeylogger-' + version.version + r'_win32.zip" "..\pykeylogger-' + version.version + '_win32.zip"')
-
     print r'rd /S /Q pykeylogger-' + version.version
     os.system(r'rd /S /Q pykeylogger-' + version.version)
     print r'rd /S /Q build'
@@ -84,16 +81,23 @@ if __name__ == '__main__':
     print "creating sdist"
     os.system(r'c:\Python24\python setup.py sdist')
 
-    print r'move ".\dist\pykeylogger-' + version.version + r'.zip" "..\pykeylogger-' + version.version + '_src.zip"'
-    os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" "..\pykeylogger-' + version.version + '_src.zip"')
+    print r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + '_src.zip"'
+    os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + '_src.zip"')
 
     print r'rd /S /Q dist'
     os.system(r'rd /S /Q dist')
 
     #os.system('pause "now lets create the md5 sums"')
-    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "..\pykeylogger-' + version.version + r'_src.zip" > "..\pykeylogger-' + version.version + '_src_md5sum.txt""'
-    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "..\pykeylogger-' + version.version + r'_src.zip" > "..\pykeylogger-' + version.version + '_src_md5sum.txt""')
-    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "..\pykeylogger-' + version.version + r'_win32.zip" > "..\pykeylogger-' + version.version + '_win32_md5sum.txt""'
-    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "..\pykeylogger-' + version.version + r'_win32.zip" > "..\pykeylogger-' + version.version + '_win32_md5sum.txt""')
+    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + r'_src.zip" > "..\pykeylogger-' + version.version + '_src_md5sum.txt""'
+    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + r'_src.zip" > "..\pykeylogger-' + version.version + '_src_md5sum.txt""')
+    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + r'_win32.zip" > "..\pykeylogger-' + version.version + '_win32_md5sum.txt""'
+    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + r'_win32.zip" > "..\pykeylogger-' + version.version + '_win32_md5sum.txt""')
+
+    print r'move ".\pykeylogger-' + version.version + r'_win32.zip" "..\pykeylogger-' + version.version + '_win32.zip"'
+    os.system(r'move ".\pykeylogger-' + version.version + r'_win32.zip" "..\pykeylogger-' + version.version + '_win32.zip"')
+
+    print r'move ".\pykeylogger-' + version.version + r'_src.zip" "..\pykeylogger-' + version.version + '_src.zip"'
+    os.system(r'move ".\pykeylogger-' + version.version + r'_src.zip" "..\pykeylogger-' + version.version + '_src.zip"')
+
 
     os.system(r'pause "done, press to key to exit""')
