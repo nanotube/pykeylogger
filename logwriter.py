@@ -13,11 +13,28 @@ import zlib
 
 # the following are needed for automatic emailing
 import smtplib
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEBase import MIMEBase
-from email.MIMEText import MIMEText
-from email.Utils import COMMASPACE, formatdate
-from email import Encoders
+
+# needed for de-obfuscating passwords
+import base64
+
+from email.mime.multipart import MIMEMultipart 
+from email.mime.base import MIMEBase 
+from email.mime.text import MIMEText 
+from email.utils import COMMASPACE, formatdate 
+import email.encoders
+
+#need these to workaround py2exe
+import email.generator
+import email.iterators
+import email.utils
+import email.base64mime 
+
+# these are for python 2.4 - they don't play nice with python 2.5 + py2exe.
+#~ from email.MIMEMultipart import MIMEMultipart
+#~ from email.MIMEBase import MIMEBase
+#~ from email.MIMEText import MIMEText
+#~ from email.Utils import COMMASPACE, formatdate
+#~ from email import Encoders
 
 class LogWriter:
     '''Manages the writing of log files and logfile maintenance activities.
@@ -282,21 +299,39 @@ class LogWriter:
             for file in zipFileList:
                 part = MIMEBase('application', "octet-stream")
                 part.set_payload( open(os.path.join(self.settings['General']['Log Directory'], file),"rb").read() )
-                Encoders.encode_base64(part)
+                email.encoders.encode_base64(part)
                 part.add_header('Content-Disposition', 'attachment; filename="%s"'
                                % os.path.basename(file))
                 msg.attach(part)
 
         # set up the server and send the message
-        mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'])
+        mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'], self.settings['E-mail']['SMTP Port'])
         
         if self.cmdoptions.debug: 
             mysmtp.set_debuglevel(1)
+        if self.settings['E-mail']['SMTP Use TLS'] == True:
+            # we find that we need to use two ehlos (one before and one after starttls)
+            # otherwise we get "SMTPException: SMTP AUTH extension not supported by server"
+            # thanks for this solution go to http://forums.belution.com/en/python/000/009/17.shtml
+            mysmtp.ehlo()
+            mysmtp.starttls()
+            mysmtp.ehlo()
         if self.settings['E-mail']['SMTP Needs Login'] == True:
-            mysmtp.login(self.settings['E-mail']['SMTP Username'],zlib.decompress(self.settings['E-mail']['SMTP Password']))
+            mysmtp.login(self.settings['E-mail']['SMTP Username'], base64.b64decode(self.settings['E-mail']['SMTP Password']))
         sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
         self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
-        mysmtp.quit()
+        
+        # need to put the quit in a try, since TLS connections may error out due to bad implementation with
+        # socket.sslerror: (8, 'EOF occurred in violation of protocol')
+        # Most SSL servers and clients (primarily HTTP, but some SMTP as well) are broken in this regard: 
+        # they do not properly negotiate TLS connection shutdown. This error is otherwise harmless.
+        # reference URLs:
+        # http://groups.google.de/group/comp.lang.python/msg/252b421a7d9ff037
+        # http://mail.python.org/pipermail/python-list/2005-August/338280.html
+        try:
+            mysmtp.quit()
+        except:
+            pass
         
         # write the latest emailed zip to log for the future
         if len(zipFileList) > 0:
