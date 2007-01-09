@@ -5,7 +5,8 @@ import tkMessageBox
 from configobj import ConfigObj
 from validate import Validator
 from tooltip import ToolTip
-import zlib
+#import zlib 
+import base64
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
@@ -65,7 +66,7 @@ class PyKeyloggerControlPanel:
         #passroot=Tk()
         #passroot.title("Enter Password")
         mypassword = mytkSimpleDialog.askstring("Enter Password", "Password:", show="*", rootx_offset=-20, rooty_offset=-35)
-        if mypassword != zlib.decompress(self.panelsettings['General']['Master Password']):
+        if mypassword != base64.b64decode(self.panelsettings['General']['Master Password']):
             if mypassword != None:
                 tkMessageBox.showerror("Incorrect Password", "Incorrect Password")
             return 1
@@ -108,7 +109,7 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
                 if key.find("Password") == -1:
                     self.entrydict[key].insert(END, self.settings[self.section][key])
                 else:
-                    self.entrydict[key].insert(END, zlib.decompress(self.settings[self.section][key]))
+                    self.entrydict[key].insert(END, base64.b64decode(self.settings[self.section][key]))
                 self.entrydict[key].grid(row=index, column=1)
                 self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
                 index += 1
@@ -119,7 +120,7 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
             if key.find("Password") == -1:
                 self.settings[self.section][key] = self.entrydict[key].get()
             else:
-                self.settings[self.section][key] = zlib.compress(self.entrydict[key].get())
+                self.settings[self.section][key] = base64.b64encode(self.entrydict[key].get())
         
         errortext="Some of your input contains errors. Detailed error output below.\n\n"
         
