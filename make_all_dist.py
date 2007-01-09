@@ -43,8 +43,8 @@ if __name__ == '__main__':
     os.system(r'rd /S /Q dist')
 
     # create the exe 
-    print r'c:\Python24\python setup.py py2exe'
-    os.system(r'c:\Python24\python setup.py py2exe')
+    print r'c:\Python25\python setup.py py2exe'
+    os.system(r'c:\Python25\python setup.py py2exe')
 
     #pause to see output
     #os.system('pause "done, press key to continue"')
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     #print "zipping sources"
     #ZipFiles(["keylogger.pyw","logwriter.py","setup.py","mytimer.py","version.py","make_all_dist.py","pykeylogger.ini","LICENSE.txt","CHANGELOG.TXT","TODO.txt","README.txt"], "pykeylogger" + version.version + "_src.zip")
     print "creating sdist"
-    os.system(r'c:\Python24\python setup.py sdist')
+    os.system(r'c:\Python25\python setup.py sdist')
 
     print r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + '_src.zip"'
     os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + '_src.zip"')
