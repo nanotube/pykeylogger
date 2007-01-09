@@ -64,9 +64,17 @@ SMTP Username = string(default="yourusername")
 SMTP Password Tooltip = string()
 SMTP Password = string(default="")
 
-# default: your.smtp.server
+# default: smtp.gmail.com
 SMTP Server Tooltip = string()
-SMTP Server = string(default="your.smtp.server")
+SMTP Server = string(default="smtp.gmail.com")
+
+# default: 587
+SMTP Port Tooltip = string()
+SMTP Port = integer(min=1, max=65534, default=587)
+
+# default: True
+SMTP Use TLS Tooltip = string()
+SMTP Use TLS = boolean(default=True)
 
 # default: yourfromaddress@host.com
 SMTP From Tooltip = string()
