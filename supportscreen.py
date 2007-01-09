@@ -18,7 +18,8 @@ class SupportScreen(mytkSimpleDialog.Dialog):
 PyKeylogger is Free Open Source Software, licensed under the Gnu General Public License. \
 As such, the python source code for this software is freely available for download at ")
         self.t.insert(END, "http://sourceforge.net/projects/pykeylogger", "href")
-        self.t.insert(END, "\n\nYou are strongly encouraged to donate to this open source project. \
+        self.t.insert(END, "\n\nSince I am but a poor grad student, \
+you are strongly encouraged to donate to this open source project. \
 So strongly, in fact, that you are being presented with this nag screen :). There are three ways \
 to get rid of this startup screen: \n\n 1. Donate to PyKeylogger by following the instructions at ")
         self.t.insert(END, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Download_Instructions", "href")
