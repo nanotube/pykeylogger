@@ -110,7 +110,10 @@ if __name__ == '__main__':
                 hasattr(sys, "importers") or # old py2exe
                 imp.is_frozen("__main__")) # tools/freeze
     
-    if main_is_frozen(): #comment out this if statement block to remove support request
+    # Set this to False to get rid of the splash. 
+    show_splash = True
+    
+    if main_is_frozen() and show_splash == True: #comment out this if statement block to remove support request
         root=Tkinter.Tk()
         root.geometry("100x100+200+200")
         warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
