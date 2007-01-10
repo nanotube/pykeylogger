@@ -6,6 +6,8 @@ from configobj import ConfigObj
 from validate import Validator
 from tooltip import ToolTip
 import myutils
+import webbrowser
+from supportscreen import SupportScreen
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
@@ -61,6 +63,11 @@ class PyKeyloggerControlPanel:
         for section in self.panelsettings.sections:
             optionsmenu.add_command(label=section + " Settings", command=Command(self.CreateConfigPanel, section))
 
+        helpmenu = Menu(menu)
+        menu.add_cascade(label="Help", menu=helpmenu)
+        helpmenu.add_command(label="Help [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Usage_Instructions"))
+        helpmenu.add_command(label="About", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+
     def PasswordDialog(self):
         #passroot=Tk()
         #passroot.title("Enter Password")
@@ -102,16 +109,17 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
         self.entrydict=dict()
         self.tooltipdict=dict()
         for key in self.settings[self.section].keys():
-            if key.find("Tooltip") == -1:
-                Label(master, text=key).grid(row=index, sticky=W)
-                self.entrydict[key]=Entry(master)
-                if key.find("Password") == -1:
-                    self.entrydict[key].insert(END, self.settings[self.section][key])
-                else:
-                    self.entrydict[key].insert(END, myutils.password_recover(self.settings[self.section][key]))
-                self.entrydict[key].grid(row=index, column=1)
-                self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
-                index += 1
+            if key.find("NoDisplay") == -1: #don't want to display settings that shouldn't be changed
+                if key.find("Tooltip") == -1:
+                    Label(master, text=key).grid(row=index, sticky=W)
+                    self.entrydict[key]=Entry(master)
+                    if key.find("Password") == -1:
+                        self.entrydict[key].insert(END, self.settings[self.section][key])
+                    else:
+                        self.entrydict[key].insert(END, myutils.password_recover(self.settings[self.section][key]))
+                    self.entrydict[key].grid(row=index, column=1)
+                    self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
+                    index += 1
     
     def validate(self):
         
