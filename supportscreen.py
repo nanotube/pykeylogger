@@ -20,15 +20,15 @@ As such, the python source code for this software is freely available for downlo
         self.t.insert(END, "http://sourceforge.net/projects/pykeylogger", "href")
         self.t.insert(END, "\n\nSince I am but a poor grad student, \
 you are strongly encouraged to donate to this open source project. \
-So strongly, in fact, that you are being presented with this nag screen :). There are three ways \
-to get rid of this startup screen: \n\n 1. Donate to PyKeylogger by following the instructions at ")
+So strongly, in fact, that you are being presented with this nag screen :). There are two ways \
+to get rid of this startup screen: \n\n 1. Donate to PyKeylogger by following the simple instructions at ")
         self.t.insert(END, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Download_Instructions", "href")
         self.t.insert(END, " and you will get a binary build of PyKeylogger without the nag screen, \
-by E-mail, HTTP, FTP, or even a CD mailed by USPS (in the USA only).")
-        self.t.insert(END, "\n\n 2. Get the source code and run PyKeylogger from source, by following the instructions at ")
+by E-mail, HTTP, or FTP.")
+        self.t.insert(END, "\n\n 2. Get the source code and run PyKeylogger from source, or even comment out the nag screen \
+and build your own executable, by following the instructions at ")
         self.t.insert(END, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Installation_Instructions", "href")
-        self.t.insert(END, "\n\n 3. Get the source code, as above, comment out the nag screen, and make your own \
-binary build of PyKeylogger. The executable compilation code is included in the source distribution, and is easy to use.")
+        self.t.insert(END, "\n\nFinally, I encourage you to use this software responsibly, keeping to the law and to your own moral code. :)")
         self.t.config(state=DISABLED)
 
     def show_hand_cursor(self, event):
