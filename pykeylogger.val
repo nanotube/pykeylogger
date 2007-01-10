@@ -46,6 +46,9 @@ Flush Interval = float(min=10, default=120.0)
 System Log Tooltip = string()
 System Log = string(default=None)
 
+Usage Time Flag NoDisplay Tooltip = string()
+Usage Time Flag NoDisplay = string()
+
 [E-mail]
 
 # default: False
