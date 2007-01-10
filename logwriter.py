@@ -4,37 +4,40 @@ import time
 import re
 import sys
 
+# some utility functions
+import myutils
+
 # needed for automatic timed recurring events
 import mytimer
 
 # the following are needed for zipping the logfiles
 import zipfile
-import zlib
 
 # the following are needed for automatic emailing
 import smtplib
 
-# needed for de-obfuscating passwords
-import base64
-
-from email.mime.multipart import MIMEMultipart 
-from email.mime.base import MIMEBase 
-from email.mime.text import MIMEText 
-from email.utils import COMMASPACE, formatdate 
-import email.encoders
-
-#need these to workaround py2exe
-import email.generator
-import email.iterators
-import email.utils
-import email.base64mime 
-
-# these are for python 2.4 - they don't play nice with python 2.5 + py2exe.
-#~ from email.MIMEMultipart import MIMEMultipart
-#~ from email.MIMEBase import MIMEBase
-#~ from email.MIMEText import MIMEText
-#~ from email.Utils import COMMASPACE, formatdate
-#~ from email import Encoders
+# python 2.5 does some email things differently from python 2.4 and py2exe doesn't like it. 
+# hence, the version check.
+if sys.version_info[0] == 2 and sys.version_info[1] >= 5:
+    from email.mime.multipart import MIMEMultipart 
+    from email.mime.base import MIMEBase 
+    from email.mime.text import MIMEText 
+    from email.utils import COMMASPACE, formatdate 
+    import email.encoders as Encoders
+    
+    #need these to work around py2exe
+    import email.generator
+    import email.iterators
+    import email.utils
+    import email.base64mime 
+    
+if sys.version_info[0] == 2 and sys.version_info[1] < 5:
+    # these are for python 2.4 - they don't play nice with python 2.5 + py2exe.
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email.Utils import COMMASPACE, formatdate
+    from email import Encoders
 
 class LogWriter:
     '''Manages the writing of log files and logfile maintenance activities.
@@ -299,7 +302,7 @@ class LogWriter:
             for file in zipFileList:
                 part = MIMEBase('application', "octet-stream")
                 part.set_payload( open(os.path.join(self.settings['General']['Log Directory'], file),"rb").read() )
-                email.encoders.encode_base64(part)
+                Encoders.encode_base64(part)
                 part.add_header('Content-Disposition', 'attachment; filename="%s"'
                                % os.path.basename(file))
                 msg.attach(part)
@@ -317,7 +320,7 @@ class LogWriter:
             mysmtp.starttls()
             mysmtp.ehlo()
         if self.settings['E-mail']['SMTP Needs Login'] == True:
-            mysmtp.login(self.settings['E-mail']['SMTP Username'], base64.b64decode(self.settings['E-mail']['SMTP Password']))
+            mysmtp.login(self.settings['E-mail']['SMTP Username'], myutils.password_recover(self.settings['E-mail']['SMTP Password']))
         sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
         self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
         
