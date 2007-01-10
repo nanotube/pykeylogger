@@ -2,6 +2,17 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.8.1 (2007-01-10)
+
+*) Improved password obfuscation in the .ini file so that it doesn't cause hiccups for the config file reader.
+*) Updated the source so that it works correctly with python 2.5 as well as python 2.4.
+*) Added TLS SMTP functionality - it now works properly with the gmail SMTP server.
+*) Fixed bug where program would forget to change directory back after zipping logfiles, and thus subsequently fail to open the config panel.
+*) Added "Help" menu to the control panel to improve access to documentation.
+*) Added software expiration after 4 days, to encourage donations (or running from python source)
+*) Added nice and easy flag for splash/expiry, so that it is all easily bypassed by editing just one line of code, even by someone who doesn't know python.
+
+-----
 Version 0.8.0 (2006-08-04)
 
 *) Fixed setup.py so that it automatically adds data files to the distribution when making the executable with "setup.py py2exe" (Fix for bug 1531923).
