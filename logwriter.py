@@ -181,7 +181,9 @@ class LogWriter:
         zipFileTime = time.strftime("%Y%m%d_%H%M%S")
         zipFileRawTime = time.time()
         zipFileName = re.sub(r"\[date\]", zipFileTime, zipFilePattern)
-
+        
+        # have to change to the dir so we dont get extra dir hierarchy in the zipfile
+        originalDir = os.getcwd()
         os.chdir(self.settings['General']['Log Directory'])
         myzip = zipfile.ZipFile(zipFileName, "w", zipfile.ZIP_DEFLATED)
         
@@ -203,6 +205,9 @@ class LogWriter:
         ziplog=open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'w')
         ziplog.write(zipFileName)
         ziplog.close()
+        
+        # chdir back
+        os.chdir(originalDir)
         
         #now we can delete all the logs that have not been modified since we made the zip. 
         self.DeleteOldLogs(zipFileRawTime)
