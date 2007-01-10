@@ -1,6 +1,5 @@
 CHANGELOG.TXT
 LICENSE.txt
-MANIFEST
 MANIFEST.in
 README.txt
 TODO.txt
@@ -10,6 +9,7 @@ logwriter.py
 make_all_dist.py
 mytimer.py
 mytkSimpleDialog.py
+myutils.py
 pykeylogger.ini
 pykeylogger.val
 setup.py
