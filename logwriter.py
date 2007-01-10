@@ -177,6 +177,7 @@ class LogWriter:
         '''
         self.FlushLogWriteBuffers("Flushing write buffers prior to zipping the logs\n")
         
+        # just in case we decide change the zip filename structure later, let's be flexible
         zipFilePattern = "log_[date].zip"
         zipFileTime = time.strftime("%Y%m%d_%H%M%S")
         zipFileRawTime = time.time()
