@@ -45,7 +45,7 @@ class LogWriter:
 	'''
 	def __init__(self, settings, cmdoptions, q):
 		
-		self.sepKey = '|' # should move this off into the ini file. just temporarily here.
+		#self.sepKey = '|' # should move this off into the ini file. just temporarily here.
 		self.q = q
 		self.settings = settings
 		self.cmdoptions = cmdoptions
@@ -63,7 +63,8 @@ class LogWriter:
 		
 		self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")	  #regexp filter for the non-allowed characters in windows filenames.
 		
-		self.writeTarget = ""
+		##don't need to initialize this with the delimited log format
+		#self.writeTarget = "" 
 		if self.settings['General']['System Log'] != 'None':
 			try:
 				self.systemlog = open(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['System Log']), 'a')
@@ -75,7 +76,7 @@ class LogWriter:
 			except:
 				self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 		
-		# initialize self.log to None, so that we dont attempt to flush it until it exists
+		# initialize self.log to None, so that we dont attempt to flush it until it exists, and so we know to open it when it's closed.
 		self.log = None
 		
 		# Set up the subset of keys that we are going to log
@@ -99,10 +100,11 @@ class LogWriter:
 			self.oldlogtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Age Check Interval'])*60*60, 0, self.DeleteOldLogs)
 			self.oldlogtimer.start()
 		
+		## don't need anymore with the delimited log format
 		# initialize the automatic timestamp timer
-		if self.settings['Timestamp']['Timestamp Enable'] == True:
-			self.timestamptimer = mytimer.MyTimer(float(self.settings['Timestamp']['Timestamp Interval'])*60, 0, self.WriteTimestamp)
-			self.timestamptimer.start()
+		#~ if self.settings['Timestamp']['Timestamp Enable'] == True:
+			#~ self.timestamptimer = mytimer.MyTimer(float(self.settings['Timestamp']['Timestamp Interval'])*60, 0, self.WriteTimestamp)
+			#~ self.timestamptimer.start()
 		
 		# initialize the automatic log flushing timer
 		self.flushtimer = mytimer.MyTimer(float(self.settings['General']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
@@ -117,10 +119,13 @@ class LogWriter:
 		if self.settings['Zip']['Zip Enable'] == True:
 			self.ziptimer = mytimer.MyTimer(float(self.settings['Zip']['Zip Interval'])*60*60, 0, self.ZipLogFiles)
 			self.ziptimer.start()
+			
+		# initialize the log rotation job
+		self.logrotatetimer = mytimer.MyTimer(float(self.settings['General']['Log Rotation Interval'])*60*60, 0, self.RotateLogs)
+		self.logrotatetimer.start()
+
 
 	def start(self):
-		self.stopflag=False
-		self.eventlist = range(7) #initialize our eventlist to something.
 		## line format:
 		## date; time (1 minute resolution); fullapppath; hwnd; username; window title; eventdata
 		##
@@ -135,6 +140,9 @@ class LogWriter:
 		
 		## put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata.
 		## on flush or on exit, make sure to write the latest dataline
+		
+		self.stopflag=False
+		self.eventlist = range(7) #initialize our eventlist to something.
 		
 		while self.stopflag == False:
 			try:
@@ -170,7 +178,7 @@ class LogWriter:
 		'''Pass the event ascii value through the requisite filters.
 		Returns the result as a string.
 		'''
-		if chr(event.Ascii) == self.sepKey:
+		if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
 			return('[sep_key]')
 		
 		if event.Ascii in self.asciiSubset:
@@ -232,8 +240,8 @@ class LogWriter:
 		if self.eventlist != range(7):
 			line = ""
 			for item in self.eventlist:
-				line = line + str(item) + self.sepKey
-			line = line.rstrip(self.sepKey) + '\n'
+				line = line + str(item) + self.settings['General']['Log File Field Separator']
+			line = line.rstrip(self.settings['General']['Log File Field Separator']) + '\n'
 			
 			self.PrintStuff(line)
 		
@@ -435,99 +443,125 @@ class LogWriter:
 			emaillog.write(zipFileList.pop())
 			emaillog.close()
 
-	def ZipAndEmailTimerAction(self):
-		'''This is a timer action function that zips the logs and sends them by email.
+	#~ def ZipAndEmailTimerAction(self):
+		#~ '''This is a timer action function that zips the logs and sends them by email.
 		
-		deprecated - should delete this.
-		'''
-		self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
-		self.ZipLogFiles()
-		self.SendZipByEmail()
+		#~ deprecated - should delete this.
+		#~ '''
+		#~ self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
+		#~ self.ZipLogFiles()
+		#~ self.SendZipByEmail()
 	
 	def OpenLogFile(self, event):
 		'''Open the appropriate log file, depending on event properties and settings in .ini file.
+		Now, we only need to open the one file logfile
 		'''
 		# if the "onefile" option is set, we don't that much to do:
-		if self.settings['General']['One File'] != 'None':
-			if self.writeTarget == "":
-				self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['One File']))
-				try:
-					self.log = open(self.writeTarget, 'a')
-				except OSError, detail:
-					if(detail.errno==17):  #if file already exists, swallow the error
-						pass
-					else:
-						self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-						return False
-				except:
-					self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-					return False
-				
-				#write the timestamp upon opening the logfile
-				if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
-
-				self.PrintDebug("writing to: " + self.writeTarget + "\n")
-			return True
-
-		# if "onefile" is not set, we start playing with the logfilenames:
-		subDirName = self.filter.sub(r'__',self.processName)	  #our subdirname is the full path of the process owning the hwnd, filtered.
-		subDirName = subDirName.decode(sys.getfilesystemencoding())
+		#subDirName = self.filter.sub(r'__',self.processName)
+		# Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
+		#self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
 		
-		WindowName = self.filter.sub(r'__',str(event.WindowName))
-		
-		filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
-		filename = filename.decode(sys.getfilesystemencoding())
-		
-		#make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
-		#filename = filename[0:200] + ".txt"	 
-		if len(os.path.join(self.settings['General']['Log Directory'], subDirName, filename)) > 255:
-			if len(os.path.join(self.settings['General']['Log Directory'], subDirName)) > 250:
-				self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
-				return False
-			else:
-				filename = filename[0:255-len(os.path.join(self.settings['General']['Log Directory'], subDirName))-4] + ".txt"  
-		
-
-		#we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
-		#into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
-		#already-opened file.
-		if self.writeTarget != os.path.join(self.settings['General']['Log Directory'], subDirName, filename): 
-			if self.writeTarget != "":
-				self.FlushLogWriteBuffers("flushing and closing old log\n")
-				#~ self.PrintDebug("flushing and closing old log\n")
-				#~ self.log.flush()
-				self.log.close()
-			self.writeTarget = os.path.join(self.settings['General']['Log Directory'], subDirName, filename)
-			self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
-			
-			try:
-				os.makedirs(os.path.join(self.settings['General']['Log Directory'], subDirName), 0777)
-			except OSError, detail:
-				if(detail.errno==17):  #if directory already exists, swallow the error
-					pass
-				else:
-					self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-					return False
-			except:
-				self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-				return False
-
+		# do stuff only if file is closed. if it is open, we don't have to do anything at all, just return true.
+		if self.log == None: 
+			# Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
+			self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
+			self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['Log File']))
 			try:
 				self.log = open(self.writeTarget, 'a')
+				self.PrintDebug("writing to: " + self.writeTarget + "\n")
+				return True
 			except OSError, detail:
 				if(detail.errno==17):  #if file already exists, swallow the error
 					pass
 				else:
-					self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+					self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 					return False
 			except:
-				self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+				self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 				return False
-			
-			#write the timestamp upon opening a new logfile
-			if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
+		else:
+			return True
+
+		#~ if self.settings['General']['One File'] != 'None':
+			#~ if self.writeTarget == "":
+				#~ self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['One File']))
+				#~ try:
+					#~ self.log = open(self.writeTarget, 'a')
+				#~ except OSError, detail:
+					#~ if(detail.errno==17):  #if file already exists, swallow the error
+						#~ pass
+					#~ else:
+						#~ self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+						#~ return False
+				#~ except:
+					#~ self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+					#~ return False
+				
+				#~ #write the timestamp upon opening the logfile
+				#~ if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
+
+				#~ self.PrintDebug("writing to: " + self.writeTarget + "\n")
+			#~ return True
+
+		#~ # if "onefile" is not set, we start playing with the logfilenames:
+		#~ subDirName = self.filter.sub(r'__',self.processName)	  #our subdirname is the full path of the process owning the hwnd, filtered.
+		#~ subDirName = subDirName.decode(sys.getfilesystemencoding())
 		
-		return True
+		#~ WindowName = self.filter.sub(r'__',str(event.WindowName))
+		
+		#~ filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
+		#~ filename = filename.decode(sys.getfilesystemencoding())
+		
+		#~ #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
+		#~ #filename = filename[0:200] + ".txt"	 
+		#~ if len(os.path.join(self.settings['General']['Log Directory'], subDirName, filename)) > 255:
+			#~ if len(os.path.join(self.settings['General']['Log Directory'], subDirName)) > 250:
+				#~ self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
+				#~ return False
+			#~ else:
+				#~ filename = filename[0:255-len(os.path.join(self.settings['General']['Log Directory'], subDirName))-4] + ".txt"  
+		
+
+		#~ #we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
+		#~ #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
+		#~ #already-opened file.
+		#~ if self.writeTarget != os.path.join(self.settings['General']['Log Directory'], subDirName, filename): 
+			#~ if self.writeTarget != "":
+				#~ self.FlushLogWriteBuffers("flushing and closing old log\n")
+				## self.PrintDebug("flushing and closing old log\n")
+				## self.log.flush()
+				#~ self.log.close()
+			#~ self.writeTarget = os.path.join(self.settings['General']['Log Directory'], subDirName, filename)
+			#~ self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
+			
+			#~ try:
+				#~ os.makedirs(os.path.join(self.settings['General']['Log Directory'], subDirName), 0777)
+			#~ except OSError, detail:
+				#~ if(detail.errno==17):  #if directory already exists, swallow the error
+					#~ pass
+				#~ else:
+					#~ self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+					#~ return False
+			#~ except:
+				#~ self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+				#~ return False
+
+			#~ try:
+				#~ self.log = open(self.writeTarget, 'a')
+			#~ except OSError, detail:
+				#~ if(detail.errno==17):  #if file already exists, swallow the error
+					#~ pass
+				#~ else:
+					#~ self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+					#~ return False
+			#~ except:
+				#~ self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
+				#~ return False
+			
+			#~ #write the timestamp upon opening a new logfile
+			#~ if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
+		
+		#~ return True
 
 	def PrintStuff(self, stuff):
 		'''Write stuff to log, or to debug outputs.
@@ -547,6 +581,20 @@ class LogWriter:
 
 	def WriteTimestamp(self):
 		self.PrintStuff("\n[" + time.asctime() + "]\n")
+
+	def RotateLogs(self):
+		'''This will close the log file, set self.log to None, move the file to a dated filename.
+		Then, openlogfile will take care of opening a fresh logfile by itself.'''
+		
+		if self.log != None:
+			rotatetarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+			self.log.close()
+			self.log = None
+			try:
+				os.rename(self.writetarget, rotatetarget)
+			except: 
+				self.PrintDebug("Error rotating logfile")
+		
 
 	def DeleteOldLogs(self, lastmodcutoff=None):
 		'''Walk the log directory tree and remove old logfiles.
@@ -599,17 +647,19 @@ class LogWriter:
 		self.stopflag = True
 		time.sleep(3)
 		self.queuetimer.cancel()
-		self.WriteToLogFile()
 		
+		self.WriteToLogFile()
 		self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
 		self.flushtimer.cancel()
-
+		
+		self.logrotatetimer.cancel()
+		
 		if self.settings['E-mail']['SMTP Send Email'] == True:
 			self.emailtimer.cancel()
 		if self.settings['Log Maintenance']['Delete Old Logs'] == True:
 			self.oldlogtimer.cancel()
-		if self.settings['Timestamp']['Timestamp Enable'] == True:
-			self.timestamptimer.cancel()
+		#~ if self.settings['Timestamp']['Timestamp Enable'] == True:
+			#~ self.timestamptimer.cancel()
 		if self.settings['Zip']['Zip Enable'] == True:
 			self.ziptimer.cancel()
 		
