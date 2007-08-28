@@ -44,7 +44,7 @@ Log File Field Separator = string(default="|")
 
 # default: 4.0
 Log Rotation Interval Tooltip = string()
-Log Rotation Interval = string(min=0.016, default=4.0)
+Log Rotation Interval = float(min=0.016, default=4.0)
 
 # default: 120
 Flush Interval Tooltip = string()
