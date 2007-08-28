@@ -35,8 +35,12 @@ Applications Not Logged Tooltip = string()
 Applications Not Logged = string(default=None)
 
 # default: None
-One File Tooltip = string()
-One File = string(default=None)
+Log File Tooltip = string()
+Log File = string(default="logfile.txt")
+
+# default: |
+Log File Field Separator Tooltip = string()
+Log File Field Separator = string(default="|")
 
 # default: 120
 Flush Interval Tooltip = string()
