@@ -181,16 +181,6 @@ class LogWriter:
 		if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
 			return('[sep_key]')
 		
-		if event.Ascii in self.asciiSubset:
-			return(chr(event.Ascii))
-		if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
-			return(chr(13) + chr(10))				 #add line feed after CR,if option is set
-			
-		#we translate all the special keys, such as arrows, backspace, into text strings for logging
-		#exclude shift keys, because they are already represented (as capital letters/symbols)
-		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
-			return('[KeyName:' + event.Key + ']')
-		
 		#translate backspace into text string, if option is set.
 		if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
 			return('[KeyName:' + event.Key + ']')
@@ -198,8 +188,24 @@ class LogWriter:
 		#translate escape into text string, if option is set.
 		if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
 			return('[KeyName:' + event.Key + ']')
+
+		# need to parse the returns, so as not to break up the delimited data lines
+		if event.Ascii == 13:
+			return('[KeyName:' + event.Key + ']')
 		
-		return '' #if nothing matches, just return an empty string, to avoid appearance of "None" in the output.
+		#we translate all the special keys, such as arrows, backspace, into text strings for logging
+		#exclude shift keys, because they are already represented (as capital letters/symbols)
+		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
+			return('[KeyName:' + event.Key + ']')
+		
+		#~ if event.Ascii in self.asciiSubset:
+			#~ return(chr(event.Ascii))
+		#~ if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
+			#~ return(chr(13) + chr(10))				 #add line feed after CR,if option is set
+		
+		return(chr(event.Ascii))
+		
+		#return '' #if nothing matches, just return an empty string, to avoid appearance of "None" in the output.
 		
 	#def WriteToLogFile(self, event):
 	def WriteToLogFile(self):
@@ -587,13 +593,14 @@ class LogWriter:
 		Then, openlogfile will take care of opening a fresh logfile by itself.'''
 		
 		if self.log != None:
-			rotatetarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+			rotateTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+			self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto" + rotateTarget + "\n")
 			self.log.close()
 			self.log = None
 			try:
-				os.rename(self.writetarget, rotatetarget)
+				os.rename(self.writeTarget, rotateTarget)
 			except: 
-				self.PrintDebug("Error rotating logfile")
+				self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 		
 
 	def DeleteOldLogs(self, lastmodcutoff=None):
