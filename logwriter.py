@@ -494,7 +494,7 @@ class LogWriter:
 		if self.log == None: 
 			# Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
 			self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
-			self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['Log File']))
+			self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File']))
 			try:
 				self.log = open(self.writeTarget, 'a')
 				self.PrintDebug("writing to: " + self.writeTarget + "\n")
@@ -616,7 +616,7 @@ class LogWriter:
 		Then, openlogfile will take care of opening a fresh logfile by itself.'''
 		
 		if self.log != None:
-			rotateTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+			rotateTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
 			self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto\n" + rotateTarget + "\n")
 			self.log.close()
 			self.log = None
