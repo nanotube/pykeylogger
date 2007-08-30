@@ -184,7 +184,7 @@ class LogWriter:
 				eventlisttmp = [time.strftime('%Y%m%d'), 
 								time.strftime('%H%M'), 
 								self.GetProcessNameFromHwnd(event.Window), 
-								event.Window, 
+								str(event.Window), 
 								os.getenv('USERNAME'), 
 								str(event.WindowName), 
 								self.ParseEventValue(event)]
@@ -267,11 +267,11 @@ class LogWriter:
 			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
 		
 		if self.eventlist != range(7):
-			line = ""
-			for item in self.eventlist:
-				line = line + str(item) + self.settings['General']['Log File Field Separator']
-			line = line.rstrip(self.settings['General']['Log File Field Separator']) + '\n'
-			
+			#~ line = ""
+			#~ for item in self.eventlist:
+				#~ line = line + str(item) + self.settings['General']['Log File Field Separator']
+			#~ line = line.rstrip(self.settings['General']['Log File Field Separator']) + '\n'
+			line = self.settings['General']['Log File Field Separator'].join(self.eventlist) + "\n"
 			self.PrintStuff(line)
 		
 
