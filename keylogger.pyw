@@ -66,6 +66,7 @@ class KeyLogger:
 	
 	def ParseControlKey(self):
 		self.controlKeyList = self.settings['General']['Control Key'].split(';')
+		self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
 		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
 		
 	def MaintainControlKeyHash(self, event, updown):
