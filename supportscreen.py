@@ -16,9 +16,9 @@ class SupportScreen(mytkSimpleDialog.Dialog):
         self.t.config(cursor="arrow", bg="SystemButtonFace", wrap=WORD)
         self.t.insert(END, "Welcome to PyKeylogger, a versatile backup and system monitoring solution. \n\n\
 PyKeylogger is Free Open Source Software, licensed under the Gnu General Public License. \
-As such, the python source code for this software is freely available for download at ")
+You can download the source code from ")
         self.t.insert(END, "http://sourceforge.net/projects/pykeylogger", "href")
-        self.t.insert(END, "\n\nHit 'F12' to bring up the Control Panel (default password is blank). More help is in the Help menu.\n\n\
+        self.t.insert(END, "\n\nHit 'Lcontrol-Rcontrol-F12' to bring up the Control Panel (default password is blank). More help is in the Help menu.\n\n\
 Since I am but a poor grad student, \
 you are strongly encouraged to donate to this open source project. \
 So strongly, in fact, that this program is limited to 4 days of use, and presents you with this nag \
