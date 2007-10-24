@@ -100,16 +100,6 @@ class LogWriter:
 		# initialize self.log to None, so that we dont attempt to flush it until it exists, and so we know to open it when it's closed.
 		self.log = None
 		
-		## don't even need this anymore?
-		# Set up the subset of keys that we are going to log
-		#~ self.asciiSubset = [8,9,10,13,27]		   #backspace, tab, line feed, carriage return, escape
-		#~ self.asciiSubset.extend(range(32,255))	  #all normal printable chars
-		
-		#~ if self.settings['General']['Parse Backspace'] == True:
-			#~ self.asciiSubset.remove(8)			  #remove backspace from allowed chars if needed
-		#~ if self.settings['General']['Parse Escape'] == True:
-			#~ self.asciiSubset.remove(27)			 #remove escape from allowed chars if needed
-
 		# todo: no need for float() typecasting, since that is now taken care by config validation
 
 		# initialize the automatic zip and email timer, if enabled in .ini
