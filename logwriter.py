@@ -121,15 +121,9 @@ class LogWriter:
 		if self.settings['Log Maintenance']['Delete Old Logs'] == True:
 			self.oldlogtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Age Check Interval'])*60*60, 0, self.DeleteOldLogs)
 			self.oldlogtimer.start()
-		
-		## don't need anymore with the delimited log format
-		# initialize the automatic timestamp timer
-		#~ if self.settings['Timestamp']['Timestamp Enable'] == True:
-			#~ self.timestamptimer = mytimer.MyTimer(float(self.settings['Timestamp']['Timestamp Interval'])*60, 0, self.WriteTimestamp)
-			#~ self.timestamptimer.start()
-		
+				
 		# initialize the automatic log flushing timer
-		self.flushtimer = mytimer.MyTimer(float(self.settings['General']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
+		self.flushtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
 		self.flushtimer.start()
 		
 		# start the event queue processing
@@ -143,7 +137,7 @@ class LogWriter:
 			self.ziptimer.start()
 			
 		# initialize the log rotation job
-		self.logrotatetimer = mytimer.MyTimer(float(self.settings['General']['Log Rotation Interval'])*60*60, 0, self.RotateLogs)
+		self.logrotatetimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Log Rotation Interval'])*60*60, 0, self.RotateLogs)
 		self.logrotatetimer.start()
 
 
