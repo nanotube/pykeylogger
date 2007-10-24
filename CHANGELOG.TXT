@@ -2,6 +2,15 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.9.0 (2007-10-24)
+
+*) Add feature to allow key combos to be used as the control key. Makes it easier to avoid accidental hits.
+*) Write output to a delimited file (customizable delimiter). This supercedes the previous separate features of "one file" logging and "multifile" logging. Now the logs can be easily seen, filtered, and manipulated after being imported into a spreadsheet or database software of your choice.
+*) Log also the current username
+*) Instead of parsing events directly in the hook function, add them to a processing queue. This should reduce the occurrence of lag, since the actual hooking operation becomes extremely fast.
+*) Add automatic log rotation feature
+
+-----
 Version 0.8.2 (2007-08-20)
 
 *) Fixed bug 1772375, which prevented the logging of keys to multiple files when window title contained non-ascii characters.
