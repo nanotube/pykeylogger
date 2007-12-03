@@ -34,7 +34,7 @@ if __name__ == '__main__':
     else:
         sys.exit()
         
-    fname_addendum = raw_input("Filename addendum? ")
+    fname_addendum = raw_input("Filename addendum (start with '_')? ")
 
     #delete old build dir.
     print r'rd /S /Q build'
