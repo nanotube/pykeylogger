@@ -26,6 +26,9 @@ import time
 import re
 import sys
 import Queue
+import traceback
+import threading
+import logging
 
 # some utility functions
 import myutils
@@ -62,40 +65,21 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 5:
 	from email.Utils import COMMASPACE, formatdate
 	from email import Encoders
 
-class LogWriter:
+class LogWriter(threading.Thread):
 	'''Manages the writing of log files and logfile maintenance activities.
 	'''
 	def __init__(self, settings, cmdoptions, q):
+		threading.Thread.__init__(self)
+		self.finished = threading.Event()
 		
 		self.q = q
 		self.settings = settings
 		self.cmdoptions = cmdoptions
-		#self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
-		
-		try:
-			os.makedirs(self.settings['General']['Log Directory'], 0777) 
-		except OSError, detail:
-			if(detail.errno==17):  #if directory already exists, swallow the error
-				pass
-			else:
-				self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-		except:
-			self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 		
 		self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")	  #regexp filter for the non-allowed characters in windows filenames.
 		
-		##don't need to initialize this with the delimited log format
-		#self.writeTarget = "" 
-		if self.settings['General']['System Log'] != 'None':
-			try:
-				self.systemlog = open(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['System Log']), 'a')
-			except OSError, detail:
-				if(detail.errno==17):  #if file already exists, swallow the error
-					pass
-				else:
-					self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
-			except:
-				self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+		self.createLogger()
+		#self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
 		
 		# initialize self.log to None, so that we dont attempt to flush it until it exists, and so we know to open it when it's closed.
 		self.log = None
@@ -113,12 +97,12 @@ class LogWriter:
 			self.oldlogtimer.start()
 				
 		# initialize the automatic log flushing timer
-		self.flushtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer\n"])
+		self.flushtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer"])
 		self.flushtimer.start()
 		
-		# start the event queue processing
-		self.queuetimer = mytimer.MyTimer(1, 1, self.start)
-		self.queuetimer.start()
+		#~ # start the event queue processing
+		#~ self.queuetimer = mytimer.MyTimer(1, 1, self.start)
+		#~ self.queuetimer.start()
 		
 		# initialize some automatic zip stuff
 		#self.settings['Zip']['ziparchivename'] = "log_[date].zip"
@@ -130,8 +114,53 @@ class LogWriter:
 		self.logrotatetimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Log Rotation Interval'])*60*60, 0, self.RotateLogs)
 		self.logrotatetimer.start()
 
+	def createLogger(self):
+		
+		self.logger = logging.getLogger('logwriter')
+		self.logger.setLevel(logging.DEBUG)
+		
+		# create the "debug" handler - output messages to the console, to stderr, if debug option is set
+		if self.cmdoptions.debug:
+			loglevel = logging.DEBUG
+		else:
+			loglevel = logging.WARN
+		
+		consolehandler = logging.StreamHandler()
+		consolehandler.setLevel(loglevel)
+		formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+		consolehandler.setFormatter(formatter)
+		self.logger.addHandler(consolehandler)
+		
+		#~ logging.basicConfig(level=loglevel,
+					#~ format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+		#~ self.logger = logging.getLogger('logwriter')
+		
+		# now let's try the systemlog file logging. 
+		# if systemlog option is set, always output the debug messages to systemlog
+		
+		#first, make sure we have the directory where we want to log
+		try:
+			os.makedirs(self.settings['General']['Log Directory'], 0777) 
+		except OSError, detail:
+			if(detail.errno==17):  #if directory already exists, swallow the error
+				pass
+			else:
+				#self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+				self.logger.error("error creating log directory", exc_info=sys.exc_info())
+		except:
+			#self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+			self.logger.error("error creating log directory", exc_info=sys.exc_info())
+		
+		if self.settings['General']['System Log'] != 'None':
+			systemlogpath = os.path.join(self.settings['General']['Log Directory'], self.filter.sub(r'__',self.settings['General']['System Log']))
+			systemloghandler = logging.FileHandler(systemlogpath)
+			systemloghandler.setLevel(logging.DEBUG)
+			systemloghandler.setFormatter(formatter)
+			self.logger.addHandler(systemloghandler)
+		
+		#~ self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.filter.sub(r'__',self.settings['General']['Log File'])))
 
-	def start(self):
+	def run(self):
 		'''This is the main workhorse function.
 		Keeps popping events off the queue, and processing them, until program quits
 		'''
@@ -149,19 +178,19 @@ class LogWriter:
 		# Logic: put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata. otherwise, write out the previous event list, and start a new one.
 		## on flush or on exit, make sure to write the latest dataline
 		
-		self.stopflag=False
+		#self.stopflag=False
 		self.eventlist = range(7) #initialize our eventlist to something.
 		
-		while self.stopflag == False:
+		while not self.finished.isSet():
 			try:
-				event = self.q.get(timeout=2)
+				event = self.q.get()
 				
 				loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
 				if not loggable:
 					if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
 					continue
-				if self.cmdoptions.debug: self.PrintDebug("\nloggable, lets log it\n")
-				loggable = self.OpenLogFile(event) #will return true if log file has been opened without problems
+				if self.cmdoptions.debug: self.PrintDebug("loggable, lets log it. key: " + self.ParseEventValue(event))
+				loggable = self.OpenLogFile() #will return true if log file has been opened without problems
 				if not loggable:
 					self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
 					continue
@@ -172,15 +201,21 @@ class LogWriter:
 								str(event.Window), 
 								os.getenv('USERNAME'), 
 								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), 
-								self.ParseEventValue(event)]
+								unicode(self.ParseEventValue(event), 'latin-1')]
 				if self.eventlist[:-1] == eventlisttmp[:-1]:
 					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1])
 				else:
 					self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
 					self.eventlist = eventlisttmp
+			## don't need this with infinite timeout?
 			except Queue.Empty:
 				self.PrintDebug("\nempty queue...\n")
-				pass
+				pass #let's keep iterating
+			except:
+				self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
+				pass #let's keep iterating
+		
+		self.finished.set()
 		
 	def ParseEventValue(self, event):
 		'''Pass the event ascii value through the requisite filters.
@@ -213,8 +248,13 @@ class LogWriter:
 		'''
 		
 		if self.eventlist != range(7):
-			line = self.settings['General']['Log File Field Separator'].join(self.eventlist) + "\n"
-			self.PrintStuff(line)
+			try:
+				line = unicode(self.settings['General']['Log File Field Separator'],'latin-1').join(self.eventlist) + "\n"
+				self.PrintStuff(line)
+			except:
+				self.PrintDebug(str(self.eventlist), sys.exc_info())
+				pass # let's keep going, even though this doesn't get logged...
+				
 
 	def TestForNoLog(self, event):
 		'''This function returns False if the process name associated with an event
@@ -232,7 +272,7 @@ class LogWriter:
 		'''
 		self.PrintDebug(logstring)
 		if self.log != None: self.log.flush()
-		if self.settings['General']['System Log'] != 'None': self.systemlog.flush()
+		#if self.settings['General']['System Log'] != 'None': self.systemlog.flush()
 
 	def ZipLogFiles(self):
 		'''Create a zip archive of all files in the log directory.
@@ -409,7 +449,7 @@ class LogWriter:
 			emaillog.write(zipFileList.pop())
 			emaillog.close()
 	
-	def OpenLogFile(self, event):
+	def OpenLogFile(self):
 		'''Open the appropriate log file, depending on event properties and settings in .ini file.
 		Now, we only need to open the one file delimited logfile
 		'''
@@ -421,7 +461,7 @@ class LogWriter:
 			self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File']))
 			try:
 				self.log = open(self.writeTarget, 'a')
-				self.PrintDebug("writing to: " + self.writeTarget + "\n")
+				self.PrintDebug("writing to: " + self.writeTarget)
 				return True
 			except OSError, detail:
 				if(detail.errno==17):  #if file already exists, swallow the error
@@ -443,15 +483,17 @@ class LogWriter:
 		if self.cmdoptions.debug:
 			self.PrintDebug(stuff)
 
-	def PrintDebug(self, stuff):
+	def PrintDebug(self, stuff, exc_info=False):
 		'''Write stuff to console and/or systemlog.
 		'''
-		if self.cmdoptions.debug:
-			sys.stdout.write(stuff)
-		if self.settings['General']['System Log'] != 'None':
-			self.systemlog.write(stuff)
+		#~ if self.cmdoptions.debug:
+			#~ sys.stdout.write(stuff)
+		#~ if self.settings['General']['System Log'] != 'None':
+			#~ self.systemlog.write(stuff)
+		self.logger.debug(stuff, exc_info=exc_info)
 
 	def WriteTimestamp(self):
+		'''deprecated'''
 		self.PrintStuff("\n[" + time.asctime() + "]\n")
 
 	def RotateLogs(self):
@@ -514,15 +556,17 @@ class LogWriter:
 		procname = win32process.GetModuleFileNameEx(mypyproc, 0)
 		return procname
 
-	def stop(self):
+	def cancel(self):
 		'''To exit cleanly, flush all write buffers, and stop all running timers.
 		'''
-		self.stopflag = True
-		time.sleep(2.5)
-		self.queuetimer.cancel()
+		#self.stopflag = True
+		#time.sleep(2.5)
+		#self.queuetimer.cancel()
+		self.finished.set()
 		
 		self.WriteToLogFile()
 		self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
+		logging.shutdown()
 		self.flushtimer.cancel()
 		
 		self.logrotatetimer.cancel()

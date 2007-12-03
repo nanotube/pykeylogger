@@ -2,6 +2,13 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.9.1 (2007-12-02)
+
+*) Fix bug where logging would stop if target program has terminated before input has been processed (e.g. if Alt-F4 was hit).
+*) Improve threading implementation of the main logwriter. Now exits cleanly and instantaneously when quitting.
+*) Use the 'logging' module to do the debug-level logging to console and to systemlog; improve debug message informativeness.
+
+-----
 Version 0.9.0 (2007-10-24)
 
 *) Add feature to allow key combos to be used as the control key. Makes it easier to avoid accidental hits.
