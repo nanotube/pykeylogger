@@ -7,6 +7,7 @@ Version 0.9.1 (2007-12-02)
 *) Fix bug where logging would stop if target program has terminated before input has been processed (e.g. if Alt-F4 was hit).
 *) Improve threading implementation of the main logwriter. Now exits cleanly and instantaneously when quitting.
 *) Use the 'logging' module to do the debug-level logging to console and to systemlog; improve debug message informativeness.
+*) (Hopefully) fix bug where a non-ASCII character in input would through a UnicodeDecodeError when trying to write to file.
 
 -----
 Version 0.9.0 (2007-10-24)
