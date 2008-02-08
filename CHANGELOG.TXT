@@ -2,6 +2,13 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.9.2 (2008-02-08)
+
+*) Add option to log number of keys pressed per log data line
+*) Add option to limit the length of the keylog data field per line (for MS Access compatibility, and other limited field-size database specifications)
+*) Make the non-printing character representation customizable through a config item.
+
+-----
 Version 0.9.1 (2007-12-02)
 
 *) Fix bug where logging would stop if target program has terminated before input has been processed (e.g. if Alt-F4 was hit).
