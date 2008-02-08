@@ -38,6 +38,18 @@ Log File = string(default="logfile.txt")
 Log File Field Separator Tooltip = string()
 Log File Field Separator = string(default="|")
 
+# default: False
+Log Key Count Tooltip = string()
+Log Key Count = boolean(default=False)
+
+# default: 0
+Limit Keylog Field Size Tooltip = string()
+Limit Keylog Field Size = integer(min=0, default=0)
+
+# default: [KeyName:%keyname%]
+Non-printing Character Representation Tooltip = string()
+Non-printing Character Representation = string(default="[KeyName:%keyname%]")
+
 # default: None
 System Log Tooltip = string()
 System Log = string(default=None)
