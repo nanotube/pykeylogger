@@ -8,7 +8,7 @@ Master Password = string(default="")
 
 # default: C:\Temp\logdir
 Log Directory Tooltip = string()
-Log Directory = string(max=64, default="C:\Temp\logdir")
+Log Directory = string(max=64, default="logs")
 
 # default: True
 Hook Keyboard Tooltip = string()
@@ -24,7 +24,7 @@ Parse Escape = boolean(default=False)
 
 # default: F12
 Control Key Tooltip = string()
-Control Key = string(default="Lcontrol;Rcontrol;F12")
+Control Key = string(default="F11;F12")
 
 # default: None
 Applications Not Logged Tooltip = string()
@@ -37,18 +37,6 @@ Log File = string(default="logfile.txt")
 # default: |
 Log File Field Separator Tooltip = string()
 Log File Field Separator = string(default="|")
-
-# default: False
-Log Key Count Tooltip = string()
-Log Key Count = boolean(default=False)
-
-# default: 0
-Limit Keylog Field Size Tooltip = string()
-Limit Keylog Field Size = integer(min=0, default=0)
-
-# default: [KeyName:%keyname%]
-Non-printing Character Representation Tooltip = string()
-Non-printing Character Representation = string(default="[KeyName:%keyname%]")
 
 # default: None
 System Log Tooltip = string()

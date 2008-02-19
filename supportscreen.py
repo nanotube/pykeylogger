@@ -13,12 +13,12 @@ class SupportScreen(mytkSimpleDialog.Dialog):
         self.t.tag_bind("href", "<Button-1>", self.openHREF)
         self.t.tag_bind("href", "<Enter>", self.show_hand_cursor)
         self.t.tag_bind("href", "<Leave>", self.show_arrow_cursor)
-        self.t.config(cursor="arrow", bg="SystemButtonFace", wrap=WORD)
+        self.t.config(cursor="arrow", bg="white", wrap=WORD)
         self.t.insert(END, "Welcome to PyKeylogger, a versatile backup and system monitoring solution. \n\n\
 PyKeylogger is Free Open Source Software, licensed under the Gnu General Public License. \
 You can download the source code from ")
         self.t.insert(END, "http://sourceforge.net/projects/pykeylogger", "href")
-        self.t.insert(END, "\n\nHit 'Lcontrol-Rcontrol-F12' to bring up the Control Panel (default password is blank). More help is in the Help menu.\n\n\
+        self.t.insert(END, "\n\nHit 'F11-F12' to bring up the Control Panel (default password is blank). More help is in the Help menu.\n\n\
 Since I am but a poor grad student, \
 you are strongly encouraged to donate to this open source project. \
 So strongly, in fact, that this program is limited to 4 days of use, and presents you with this nag \
@@ -76,7 +76,7 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         self.t.tag_bind("href", "<Button-1>", self.openHREF)
         self.t.tag_bind("href", "<Enter>", self.show_hand_cursor)
         self.t.tag_bind("href", "<Leave>", self.show_arrow_cursor)
-        self.t.config(cursor="arrow", bg="SystemButtonFace", wrap=WORD)
+        self.t.config(cursor="arrow", bg="white", wrap=WORD)
         self.t.insert(END, "Thank you for using PyKeylogger, a versatile backup and system monitoring solution.")
         self.t.insert(END, "\n\nAs you may remember from reading the \"welcome screen\", this binary expires \
 after 4 days of use, as a method of encouraging donations to this open source software project. This installation of \

