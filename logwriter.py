@@ -195,7 +195,7 @@ class LogWriter(threading.Thread):
 		while not self.finished.isSet():
 			try:
 				event = self.q.get()
-				print event
+				#print event
 				loggable = self.TestForNoLog(event)  # see if the program is in the no-log list.
 				if not loggable:
 					if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
@@ -227,11 +227,11 @@ class LogWriter(threading.Thread):
 					self.eventlist = eventlisttmp
 			## don't need this with infinite timeout?
 			except Queue.Empty:
-				print "queue empty"
+				#print "queue empty"
 				self.PrintDebug("\nempty queue...\n")
 				pass #let's keep iterating
 			except:
-				print "some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info()
+				#print "some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info()
 				self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
 				pass #let's keep iterating
 		
@@ -249,18 +249,18 @@ class LogWriter(threading.Thread):
 		if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
 			return(npchrstr)
 		
-		if os.name == 'nt':
-			#translate backspace into text string, if option is set.
-			if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
-				return(npchrstr)
-			
-			#translate escape into text string, if option is set.
-			if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
-				return(npchrstr)
+		#if os.name == 'nt':
+        #translate backspace into text string, if option is set.
+        if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
+            return(npchrstr)
+        
+        #translate escape into text string, if option is set.
+        if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
+            return(npchrstr)
 
-			# need to parse the returns, so as not to break up the delimited data lines
-			if event.Ascii == 13:
-				return(npchrstr)
+        # need to parse the returns, so as not to break up the delimited data lines
+        if event.Ascii == 13:
+            return(npchrstr)
 			
 		#we translate all the special keys, such as arrows, backspace, into text strings for logging
 		#exclude shift keys, because they are already represented (as capital letters/symbols)
@@ -323,10 +323,11 @@ class LogWriter(threading.Thread):
 			for fname in files:
 				#if fname != self.settings['ziparchivename']:
 				if not self.CheckIfZipFile(fname):
-					if os.name == 'nt':
-						myzip.write(os.path.join(root,fname).split("\\",1)[1])
-					elif os.name == 'posix':
-						myzip.write(os.path.join(root,fname).split("/",1)[1])
+					#~ if os.name == 'nt':
+						#~ myzip.write(os.path.join(root,fname).split("\\",1)[1])
+					#~ elif os.name == 'posix':
+						#~ myzip.write(os.path.join(root,fname).split("/",1)[1])
+                    myzip.write(os.path.join(root,fname).split(os.sep,1)[1])
 		
 		myzip.close()
 		myzip = zipfile.ZipFile(zipFileName, "r", zipfile.ZIP_DEFLATED)
