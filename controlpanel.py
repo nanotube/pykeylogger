@@ -29,10 +29,13 @@ from validate import Validator
 from tooltip import ToolTip
 import myutils
 import webbrowser
+import threading
 from supportscreen import SupportScreen
+import sys
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
+        
         self.cmdoptions=cmdoptions
         self.mainapp=mainapp
         self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
@@ -55,7 +58,7 @@ class PyKeyloggerControlPanel:
             self.root.mainloop()
         elif passcheck == 1:
             self.ClosePanel()
-        
+    
     def InitializeMainPanel(self):
         #create the main panel window
         #root = Tk()
@@ -79,7 +82,7 @@ class PyKeyloggerControlPanel:
         actionmenu.add_command(label="Rotate logfile", command=Command(self.mainapp.lw.RotateLogs))
         actionmenu.add_separator()
         actionmenu.add_command(label="Close Control Panel", command=self.ClosePanel)
-        actionmenu.add_command(label="Quit PyKeylogger", command=self.mainapp.stop)
+        actionmenu.add_command(label="Quit PyKeylogger", command=self.QuitKeylogger)
 
         optionsmenu = Menu(menu)
         menu.add_cascade(label="Configuration", menu=optionsmenu)
@@ -105,6 +108,10 @@ class PyKeyloggerControlPanel:
     def ClosePanel(self):
         self.mainapp.panel = False
         self.root.destroy()
+        
+    def QuitKeylogger(self):
+        self.ClosePanel()
+        self.mainapp.stop()
         
     def callback(self):
         tkMessageBox.showwarning(title="Not Implemented", message="This feature has not yet been implemented")
@@ -193,7 +200,7 @@ if __name__ == '__main__':
     settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"practicepykeylogger.ini"}
     class BlankKeylogger:
         def stop(self):
-            pass
+            sys.exit()
         def __init__(self):
             self.lw=BlankLogWriter()
             
@@ -206,6 +213,8 @@ if __name__ == '__main__':
             pass
         def DeleteOldLogs(self):
             pass
+        def RotateLogs(self):
+            pass
     
     class BlankOptions:
         def __init__(self):
@@ -215,3 +224,4 @@ if __name__ == '__main__':
     klobject=BlankKeylogger()
     cmdoptions=BlankOptions()
     myapp = PyKeyloggerControlPanel(cmdoptions, klobject)
+    #myapp.start()
