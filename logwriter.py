@@ -173,6 +173,8 @@ class LogWriter(threading.Thread):
 		## line format:
 		## date; time (1 minute resolution); fullapppath; hwnd; username; window title; eventdata
 		##
+		## if we are logging keystroke count, that field becomes the penultimate field. 
+		##
 		## event data: ascii if normal key, escaped if "special" key, escaped if csv separator
 		## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
 		## hwnd = event.Window
@@ -186,6 +188,9 @@ class LogWriter(threading.Thread):
 		
 		#self.stopflag=False
 		self.eventlist = range(7) #initialize our eventlist to something.
+		
+		if self.settings['General']['Log Key Count'] == True:
+			self.eventlist.append(7)
 		
 		while not self.finished.isSet():
 			try:
@@ -206,10 +211,17 @@ class LogWriter(threading.Thread):
 								self.GetProcessNameFromHwnd(event), 
 								str(event.Window), 
 								os.getenv('USERNAME'), 
-								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), 
-								unicode(self.ParseEventValue(event), 'latin-1')]
-				if self.eventlist[:-1] == eventlisttmp[:-1]:
-					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1])
+								str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')]
+								
+				if self.settings['General']['Log Key Count'] == True:
+					eventlisttmp = eventlisttmp + ['1',unicode(self.ParseEventValue(event), 'latin-1')]
+				else:
+					eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
+					
+				if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or len(self.eventlist[-1]) < self.settings['General']['Limit Keylog Field Size']):
+					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1]) #append char to log
+					if self.settings['General']['Log Key Count'] == True:
+						self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
 				else:
 					self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
 					self.eventlist = eventlisttmp
@@ -229,34 +241,40 @@ class LogWriter(threading.Thread):
 		'''Pass the event ascii value through the requisite filters.
 		Returns the result as a string.
 		'''
+		npchrstr = self.settings['General']['Non-printing Character Representation']
+		npchrstr = re.sub('%keyname%', str(event.Key), npchrstr)
+		npchrstr = re.sub('%scancode%', str(event.ScanCode), npchrstr)
+		npchrstr = re.sub('%vkcode%', str(event.KeyID), npchrstr)
+		
 		if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
-			return('[sep_key]')
+			return(npchrstr)
 		
 		if os.name == 'nt':
 			#translate backspace into text string, if option is set.
 			if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
-				return('[KeyName:' + event.Key + ']')
+				return(npchrstr)
 			
 			#translate escape into text string, if option is set.
 			if event.Ascii == 27 and self.settings['General']['Parse Escape'] == True:
-				return('[KeyName:' + event.Key + ']')
+				return(npchrstr)
 
 			# need to parse the returns, so as not to break up the delimited data lines
 			if event.Ascii == 13:
-				return('[KeyName:' + event.Key + ']')
+				return(npchrstr)
 			
 		#we translate all the special keys, such as arrows, backspace, into text strings for logging
 		#exclude shift keys, because they are already represented (as capital letters/symbols)
 		if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
-			return('[KeyName:' + event.Key + ']')
-			
+			#return('[KeyName:' + event.Key + ']')
+			return(npchrstr)
+		
 		return(chr(event.Ascii))
 		
 	def WriteToLogFile(self):
 		'''Write the latest eventlist to logfile in one delimited line
 		'''
 		
-		if self.eventlist != range(7):
+		if self.eventlist[:7] != range(7):
 			try:
 				line = unicode(self.settings['General']['Log File Field Separator'],'latin-1').join(self.eventlist) + "\n"
 				self.PrintStuff(line)
