@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# $Id: pyxhook.py,v 1.1.2.1 2008/02/19 05:59:51 nanotube Exp $
+# $Id: pyxhook.py,v 1.1.2.2 2008/02/24 18:53:02 nanotube Exp $
 #f
 # pyxhook -- an extension to emulate some of the PyHook library on linux.
 #
@@ -31,7 +31,11 @@
 #    at least python-xlib 1.4
 #    xwindows must have the "record" extension present, and active.
 
-import sys, os, re, time, threading
+import sys
+import os
+import re
+import time
+import threading
 import Image
 
 from Xlib import X, XK, display, error
@@ -55,6 +59,7 @@ class pyxhook(threading.Thread):
 
     def __init__(self, captureclicks = True, clickimagedimensions = {"width":150, "height":150}, logdir = ".", KeyDown = printevent, KeyUp = printevent):
         threading.Thread.__init__(self)
+        self.finished = threading.Event()
         
         # Give these some initial values
         self.rootx = 0
@@ -100,7 +105,7 @@ class pyxhook(threading.Thread):
         print "RECORD extension version %d.%d" % (r.major_version, r.minor_version)
 
         # Create a recording context; we only want key and mouse events
-        ctx = self.record_dpy.record_create_context(
+        self.ctx = self.record_dpy.record_create_context(
                 0,
                 [record.AllClients],
                 [{
@@ -109,7 +114,7 @@ class pyxhook(threading.Thread):
                         'ext_requests': (0, 0, 0, 0),
                         'ext_replies': (0, 0, 0, 0),
                         'delivered_events': (0, 0),
-                        'device_events': (X.KeyPress, X.MotionNotify),
+                        'device_events': (X.KeyPress, X.ButtonPress),
                         'errors': (0, 0),
                         'client_started': False,
                         'client_died': False,
@@ -117,11 +122,22 @@ class pyxhook(threading.Thread):
 
         # Enable the context; this only returns after a call to record_disable_context,
         # while calling the callback function in the meantime
-        self.record_dpy.record_enable_context(ctx, self.processevents)
-
+        self.record_dpy.record_enable_context(self.ctx, self.processevents)
+        print 'stuff6'
         # Finally free the context
-        self.record_dpy.record_free_context(ctx)
+        self.record_dpy.record_free_context(self.ctx)
+        print 'stuff7'
 
+    def cancel(self):
+        #if event.type == X.KeyPress and keysym == XK.XK_Escape:
+        self.finished.set()
+        self.local_dpy.record_disable_context(self.ctx)
+        self.local_dpy.flush()
+        #~ print 'stuff1'
+        #~ self.record_dpy.record_free_context(self.ctx)
+        #~ self.record_dpy.record_disable_context(self.ctx)
+        #~ self.record_dpy.flush()
+        print 'stuff2'
 
     def processevents(self, reply):
         if reply.category != record.FromServer:
@@ -150,6 +166,13 @@ class pyxhook(threading.Thread):
                     self.buttonreleaseevent(event)
                 elif event.type == X.MotionNotify:
                     self.mousemoveevent(event)
+        
+        #~ if self.finished.isSet():
+            #~ self.record_dpy.record_disable_context(self.ctx)
+            #~ self.record_dpy.flush()
+            #~ return
+        
+        print "processing events..."
 
     def keypressevent(self, event):
         matchto = self.lookup_keysym(self.local_dpy.keycode_to_keysym(event.detail, 0))
@@ -359,3 +382,5 @@ class pyxhookkeyevent:
 if __name__ == '__main__':
     hm = pyxhook()
     hm.start()
+    time.sleep(10)
+    hm.cancel()
