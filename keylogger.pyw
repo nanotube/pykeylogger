@@ -121,6 +121,7 @@ class KeyLogger:
                 self.lw.PrintDebug("starting panel")
                 self.panel = True
                 PyKeyloggerControlPanel(self.cmdoptions, self)
+                #mypanel.start()
 
         #~ if event.Key == self.settings['General']['Control Key']:
             #~ if not self.panel:
@@ -137,8 +138,14 @@ class KeyLogger:
     def stop(self):
         '''Exit cleanly.
         '''
+        
+        if os.name == 'posix':
+            self.hm.cancel()
+            print 'stuff3'
         self.lw.cancel()
+        print 'stuff4'
         sys.exit()
+        print 'stuff5'
     
     def ParseOptions(self):
         '''Read command line options
@@ -219,9 +226,9 @@ if __name__ == '__main__':
     kl.start()
     
     # what is this for, i wonder...?
-    while True:
-        time.sleep(240)
-        pass
+    #~ while True:
+        #~ time.sleep(240)
+        #~ pass
     
     #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
     
