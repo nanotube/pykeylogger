@@ -2,6 +2,12 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 0.9.4 (2008-03-04)
+
+*) Fix bug where log lines may go over the log field size limit, if the key event produced a multi-character log (i.e. the non-printing characters producing "[KeyName:bla]".
+*) Improve tooltips in the config panels: they are now wider, and appear faster.
+
+-----
 Version 0.9.3 (2008-03-01)
 
 *) Fix bug (reported by email) where control key hash would not be reset after a call to control panel, thus causing the panel to reappear subsequently on every key press. (Could have been a Windows-Vista-only problem, since I could not reproduce this locally.)
