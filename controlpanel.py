@@ -141,7 +141,7 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
 					else:
 						self.entrydict[key].insert(END, myutils.password_recover(self.settings[self.section][key]))
 					self.entrydict[key].grid(row=index, column=1)
-					self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
+					self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=100, text=self.settings[self.section][key + " Tooltip"])
 					index += 1
 	
 	def validate(self):
