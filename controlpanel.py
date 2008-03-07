@@ -29,7 +29,6 @@ from validate import Validator
 from tooltip import ToolTip
 import myutils
 import webbrowser
-import threading
 from supportscreen import SupportScreen
 import sys
 
@@ -149,7 +148,7 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
                     else:
                         self.entrydict[key].insert(END, myutils.password_recover(self.settings[self.section][key]))
                     self.entrydict[key].grid(row=index, column=1)
-                    self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=500, text=self.settings[self.section][key + " Tooltip"])
+                    self.tooltipdict[key] = ToolTip(self.entrydict[key], follow_mouse=1, delay=100, text=self.settings[self.section][key + " Tooltip"])
                     index += 1
     
     def validate(self):
@@ -199,11 +198,17 @@ class Command:
 if __name__ == '__main__':
     # some simple testing code
     settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"practicepykeylogger.ini"}
+    
+    class ControlKeyHash:
+        def __init__(self):
+            self.panel = False
+            
     class BlankKeylogger:
         def stop(self):
             sys.exit()
         def __init__(self):
             self.lw=BlankLogWriter()
+            self.hashchecker = ControlKeyHash()
             
     class BlankLogWriter:
         def FlushLogWriteBuffers(self, message):
