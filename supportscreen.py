@@ -1,13 +1,14 @@
 from Tkinter import *
 import webbrowser
 import mytkSimpleDialog
+import ScrolledText
 
 class SupportScreen(mytkSimpleDialog.Dialog):
     def __init__(self, parent, title = None, rootx_offset=50, rooty_offset=50):
         mytkSimpleDialog.Dialog.__init__(self, parent, title, rootx_offset, rooty_offset)
 
     def body(self, master):
-        self.t = Text(master)
+        self.t = ScrolledText.ScrolledText(master)
         self.t.pack()
         self.t.tag_configure("href", foreground='blue', underline=1)
         self.t.tag_bind("href", "<Button-1>", self.openHREF)
@@ -70,7 +71,7 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         mytkSimpleDialog.Dialog.__init__(self, parent, title, rootx_offset, rooty_offset)
 
     def body(self, master):
-        self.t = Text(master)
+        self.t = ScrolledText.ScrolledText(master)
         self.t.pack()
         self.t.tag_configure("href", foreground='blue', underline=1)
         self.t.tag_bind("href", "<Button-1>", self.openHREF)
@@ -125,6 +126,7 @@ if __name__ == '__main__':
     root.geometry("100x100+200+200")
     warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
     root.quit()
+    root.destroy()
     
     root=Tk()
     root.geometry("100x100+200+200")
