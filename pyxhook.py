@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# $Id: pyxhook.py,v 1.1.2.2 2008/02/24 18:53:02 nanotube Exp $
+# $Id: pyxhook.py,v 1.1.2.3 2008/03/07 04:38:22 nanotube Exp $
 #f
 # pyxhook -- an extension to emulate some of the PyHook library on linux.
 #
@@ -123,21 +123,13 @@ class pyxhook(threading.Thread):
         # Enable the context; this only returns after a call to record_disable_context,
         # while calling the callback function in the meantime
         self.record_dpy.record_enable_context(self.ctx, self.processevents)
-        print 'stuff6'
         # Finally free the context
         self.record_dpy.record_free_context(self.ctx)
-        print 'stuff7'
 
     def cancel(self):
-        #if event.type == X.KeyPress and keysym == XK.XK_Escape:
         self.finished.set()
         self.local_dpy.record_disable_context(self.ctx)
         self.local_dpy.flush()
-        #~ print 'stuff1'
-        #~ self.record_dpy.record_free_context(self.ctx)
-        #~ self.record_dpy.record_disable_context(self.ctx)
-        #~ self.record_dpy.flush()
-        print 'stuff2'
 
     def processevents(self, reply):
         if reply.category != record.FromServer:
@@ -164,8 +156,8 @@ class pyxhook(threading.Thread):
                     self.buttonpressevent(event)
                 elif event.type == X.ButtonRelease:
                     self.buttonreleaseevent(event)
-                elif event.type == X.MotionNotify:
-                    self.mousemoveevent(event)
+                #~ elif event.type == X.MotionNotify:
+                    #~ self.mousemoveevent(event)
         
         #~ if self.finished.isSet():
             #~ self.record_dpy.record_disable_context(self.ctx)
@@ -179,10 +171,10 @@ class pyxhook(threading.Thread):
         if self.shiftablechar.match(self.lookup_keysym(self.local_dpy.keycode_to_keysym(event.detail, 0))): ## This is a character that can be typed.
             if self.ison["shift"] == False:
                 keysym = self.local_dpy.keycode_to_keysym(event.detail, 0)
-                return self.makekeyhookevent(keysym, event.detail)
+                return self.makekeyhookevent(keysym, event)
             else:
                 keysym = self.local_dpy.keycode_to_keysym(event.detail, 1)
-                return self.makekeyhookevent(keysym, event.detail)
+                return self.makekeyhookevent(keysym, event)
         else: ## Not a typable character.
             keysym = self.local_dpy.keycode_to_keysym(event.detail, 0)
             if self.isshift.match(matchto):
@@ -197,12 +189,12 @@ class pyxhook(threading.Thread):
                     self.ison["caps"] = False
                 return -1
             elif self.logrelease.match(matchto):
-                return self.makekeyhookevent(keysym, event.detail)
+                return self.makekeyhookevent(keysym, event)
             else:
                 if self.isspace.match(matchto):
-                    return self.makekeyhookevent(keysym, event.detail)
+                    return self.makekeyhookevent(keysym, event)
                 else:
-                    return self.makekeyhookevent(keysym, event.detail)
+                    return self.makekeyhookevent(keysym, event)
     
     def keyreleaseevent(self, event):
         if self.shiftablechar.match(self.lookup_keysym(self.local_dpy.keycode_to_keysym(event.detail, 0))):
@@ -217,7 +209,7 @@ class pyxhook(threading.Thread):
             self.ison["shift"] = self.ison["shift"] - 1
             return -1
         elif self.logrelease.match(matchto):
-            return self.makekeyhookevent(keysym, event.detail)
+            return self.makekeyhookevent(keysym, event)
         else:
             return -1
 
@@ -253,9 +245,27 @@ class pyxhook(threading.Thread):
         else:
             return 0
     
-    def makekeyhookevent(self, keysym, eventdetail):
+    def makekeyhookevent(self, keysym, event):
         storewm = self.xwindowinfo()
-        return pyxhookkeyevent(storewm["name"], storewm["handle"], storewm["class"], self.lookup_keysym(keysym), self.asciivalue(keysym), False, eventdetail)
+        if event.type == X.KeyPress:
+            MessageName = "key down"
+        elif event.type == X.KeyRelease:
+            MessageName = "key up"
+        elif event.type == X.ButtonPress:
+            if event.detail == 1:
+                MessageName = "mouse left down"
+            elif event.detail == 2:
+                MessageName = "mouse right down"
+            elif event.detail == 3:
+                MessageName = "mouse middle down"
+        elif event.type == X.ButtonRelease:
+            if event.detail == 1:
+                MessageName = "mouse left up"
+            elif event.detail == 2:
+                MessageName = "mouse right up"
+            elif event.detail == 3:
+                MessageName = "mouse middle up"
+        return pyxhookkeyevent(storewm["name"], storewm["handle"], storewm["class"], self.lookup_keysym(keysym), self.asciivalue(keysym), False, event.detail, MessageName)
     
     def xwindowinfo(self):
         try:
@@ -360,9 +370,10 @@ class pyxhookkeyevent:
     Ascii = An ascii representation of the key. It returns 0 if the ascii value is not between 31 and 256.
     KeyID = This is just False for now. Dunno what I need here.
     ScanCode = Please don't use this. It differs for pretty much every type of keyboard. X11 abstracts this information anyway.
+    MessageName = "key down", "key up" for keyboard, "mouse left|right|middle down", "mouse left|right|middle up" for mouse.
     """
     
-    def __init__(self, Window, WindowName, WindowProcName, Key, Ascii, KeyID, ScanCode):
+    def __init__(self, Window, WindowName, WindowProcName, Key, Ascii, KeyID, ScanCode, MessageName):
         self.Window         = Window
         self.WindowName     = WindowName
         self.WindowProcName = WindowProcName
@@ -370,9 +381,10 @@ class pyxhookkeyevent:
         self.Ascii          = Ascii
         self.KeyID          = KeyID
         self.ScanCode       = ScanCode
+        self.MessageName = MessageName
     
     def __str__(self):
-        return "Window: " + str(self.Window) + "\nWindow Handle: " + str(self.WindowName) + "\nWindow's Process Name: " + str(self.WindowProcName) + "\nKey Pressed: " + str(self.Key) + "\nAscii Value: " + str(self.Ascii) + "\nKeyID: " + str(self.KeyID) + "\nScanCode: " + str(self.ScanCode) + "\n"
+        return "Window: " + str(self.Window) + "\nWindow Handle: " + str(self.WindowName) + "\nWindow's Process Name: " + str(self.WindowProcName) + "\nKey Pressed: " + str(self.Key) + "\nAscii Value: " + str(self.Ascii) + "\nKeyID: " + str(self.KeyID) + "\nScanCode: " + str(self.ScanCode) + "\nMessageName: " + str(self.MessageName) + "\n"
     
     
 #######################################################################

@@ -20,17 +20,18 @@
 ##
 ##############################################################################
 
-import os, os.path
+import os
+import os.path
+import sys
 if os.name == 'posix':
     pass
 elif os.name == 'nt':
     import win32api, win32con, win32process
 else:
     print "OS is not recognised as windows or linux"
-    exit()
+    sys.exit()
 import time
 import re
-import sys
 import Queue
 import traceback
 import threading
@@ -105,13 +106,8 @@ class LogWriter(threading.Thread):
         # initialize the automatic log flushing timer
         self.flushtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer"])
         self.flushtimer.start()
-        
-        #~ # start the event queue processing
-        #~ self.queuetimer = mytimer.MyTimer(1, 1, self.start)
-        #~ self.queuetimer.start()
-        
+                
         # initialize some automatic zip stuff
-        #self.settings['Zip']['ziparchivename'] = "log_[date].zip"
         if self.settings['Zip']['Zip Enable'] == True:
             self.ziptimer = mytimer.MyTimer(float(self.settings['Zip']['Zip Interval'])*60*60, 0, self.ZipLogFiles)
             self.ziptimer.start()
@@ -146,7 +142,7 @@ class LogWriter(threading.Thread):
         
         #first, make sure we have the directory where we want to log
         try:
-            os.makedirs(self.settings['General']['Log Directory'], 0777) 
+            os.makedirs(os.path.normpath(self.settings['General']['Log Directory']), 0777) 
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
@@ -158,7 +154,7 @@ class LogWriter(threading.Thread):
             self.logger.error("error creating log directory", exc_info=sys.exc_info())
         
         if self.settings['General']['System Log'] != 'None':
-            systemlogpath = os.path.join(self.settings['General']['Log Directory'], self.filter.sub(r'__',self.settings['General']['System Log']))
+            systemlogpath = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), self.filter.sub(r'__',self.settings['General']['System Log']))
             systemloghandler = logging.FileHandler(systemlogpath)
             systemloghandler.setLevel(logging.DEBUG)
             systemloghandler.setFormatter(formatter)
@@ -194,7 +190,7 @@ class LogWriter(threading.Thread):
         
         while not self.finished.isSet():
             try:
-                event = self.q.get()
+                event = self.q.get(timeout=0.5) #need the timeout so that thread terminates properly when exiting
                 #print event
                 loggable = self.TestForNoLog(event)  # see if the program is in the no-log list.
                 if not loggable:
@@ -228,14 +224,14 @@ class LogWriter(threading.Thread):
             ## don't need this with infinite timeout?
             except Queue.Empty:
                 #print "queue empty"
-                self.PrintDebug("\nempty queue...\n")
+                #self.PrintDebug("\nempty queue...\n")
                 pass #let's keep iterating
             except:
                 #print "some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info()
                 self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
                 pass #let's keep iterating
         
-        self.finished.set()
+        self.finished.set() #shouldn't ever need this, but just in case...
         
     def ParseEventValue(self, event):
         '''Pass the event ascii value through the requisite filters.
@@ -604,34 +600,51 @@ class LogWriter(threading.Thread):
         self.WriteToLogFile()
         self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
         logging.shutdown()
-        self.flushtimer.cancel()
         
+        self.flushtimer.cancel()
         self.logrotatetimer.cancel()
         
         if self.settings['E-mail']['SMTP Send Email'] == True:
             self.emailtimer.cancel()
         if self.settings['Log Maintenance']['Delete Old Logs'] == True:
             self.oldlogtimer.cancel()
-        #~ if self.settings['Timestamp']['Timestamp Enable'] == True:
-            #~ self.timestamptimer.cancel()
         if self.settings['Zip']['Zip Enable'] == True:
             self.ziptimer.cancel()
-        
-
+            
 if __name__ == '__main__':
     #some testing code
     #put a real existing hwnd into event.Window to run test
-    #this testing code is now really outdated and useless.
-    lw = LogWriter()
-    class Blank:
-        pass
-    event = Blank()
-    event.Window = 264854
-    event.WindowName = "Untitled - Notepad"
-    event.Ascii = 65
-    event.Key = 'A'
-    options = Blank()
-    options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
-    options.flushKey = 'F11'
-    lw.WriteToLogFile(event, options)
+    #this testing code is incomplete (no events)
+    
+    class CmdOptions:
+        def __init__(self, debug):
+            self.debug = debug
+    
+    settings={}
+    settings['E-mail'] = {'SMTP Send Email':False}
+    settings['Log Maintenance'] = {'Delete Old Logs':False,'Flush Interval':1000,'Log Rotation Interval':4,'Delete Old Logs':False}
+    settings['Zip'] = {'Zip Enable':False}
+    settings['General'] = {'Log Directory':'logs','System Log':'None','Log Key Count':True}
+    
+    print settings['General']
+    print settings['General']['Log Directory']
+    q = Queue.Queue()
+    
+    cmdoptions = CmdOptions(True)
+    
+    lw = LogWriter(settings, cmdoptions, q)
+    lw.start()
+    time.sleep(5)
+    lw.cancel()
+    #~ class Blank:
+        #~ pass
+    #~ event = Blank()
+    #~ event.Window = 264854
+    #~ event.WindowName = "Untitled - Notepad"
+    #~ event.Ascii = 65
+    #~ event.Key = 'A'
+    #~ options = Blank()
+    #~ options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
+    #~ options.flushKey = 'F11'
+    #~ lw.WriteToLogFile(event, options)
     

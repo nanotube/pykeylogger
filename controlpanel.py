@@ -39,7 +39,7 @@ class PyKeyloggerControlPanel:
         self.cmdoptions=cmdoptions
         self.mainapp=mainapp
         self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
-
+        
         self.root = Tk()
         self.root.config(height=20, width=20)
         self.root.geometry("+200+200")
@@ -49,6 +49,7 @@ class PyKeyloggerControlPanel:
         #    self.PasswordDialog()
         #print len(self.panelsettings['General']['Master Password'])
         #print zlib.decompress(self.panelsettings['General']['Master Password'])
+
         passcheck = self.PasswordDialog()
         
         # call the password authentication widget
@@ -106,7 +107,7 @@ class PyKeyloggerControlPanel:
             return 0
             
     def ClosePanel(self):
-        self.mainapp.panel = False
+        self.mainapp.hashchecker.panel = False
         self.root.destroy()
         
     def QuitKeylogger(self):

