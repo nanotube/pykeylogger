@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# $Id: pyxhook.py,v 1.1.2.5 2008/03/10 21:58:53 nanotube Exp $
+# $Id: pyxhook.py,v 1.1.2.6 2008/03/10 22:57:26 nanotube Exp $
 #f
 # pyxhook -- an extension to emulate some of the PyHook library on linux.
 #
@@ -53,15 +53,14 @@ class HookManager(threading.Thread):
     KeyDown = The function to execute when a key is pressed, if it returns anything. It hands the function an argument that is the pyxhookkeyevent class.
     KeyUp = The function to execute when a key is released, if it returns anything. It hands the function an argument that is the pyxhookkeyevent class.
     """
-
-    #def __init__(self, captureclicks = True, clickimagedimensions = {"width":150, "height":150}, logdir = ".", KeyDown = printevent, KeyUp = printevent):
+    
     def __init__(self):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
         
         # Give these some initial values
-        self.rootx = 0
-        self.rooty = 0
+        self.mouse_position_x = 0
+        self.mouse_position_y = 0
         self.ison = {"shift":False, "caps":False}
         
         # Compile our regex statements.
@@ -71,11 +70,11 @@ class HookManager(threading.Thread):
         self.logrelease = re.compile('.*')
         self.isspace = re.compile('^space$')
         
-        # Assign what we got from being passed in.
-        self.KeyDown = self.printevent
-        self.KeyUp = self.printevent
-        self.MouseAllButtonsDown = self.printevent
-        self.MouseAllButtonsUp = self.printevent
+        # Assign default function actions (do nothing).
+        self.KeyDown = lambda x: True
+        self.KeyUp = lambda x: True
+        self.MouseAllButtonsDown = lambda x: True
+        self.MouseAllButtonsUp = lambda x: True
         
         self.contextEventMask = [0,2]
         # todo: this relates to images
@@ -428,6 +427,10 @@ if __name__ == '__main__':
     hm = HookManager()
     hm.HookKeyboard()
     hm.HookMouse()
+    hm.KeyDown = hm.printevent
+    hm.KeyUp = hm.printevent
+    hm.MouseAllButtonsDown = hm.printevent
+    hm.MouseAllButtonsUp = hm.printevent
     hm.start()
     time.sleep(10)
     hm.cancel()
