@@ -106,16 +106,25 @@ class ImageWriter(threading.Thread):
             try:
                 event = self.q.get(timeout=0.05)
                 if event.MessageName.startswith("mouse left") or event.MessageName.startswith("mouse middle") or event.MessageName.startswith("mouse right"):
-                    self.capturebox(event)
-                    self.PrintDebug(event)
+                    self.capture_image(event)
+                    self.PrintDebug(print_event(event))
             except Queue.Empty:
                 pass 
-        
+    
+    def print_event(self, event):
+        '''prints event. need this because pyhook's event don't have a default __str__ method,
+        so we check for os type, and make it work on windows.
+        '''
+        if os.name == 'posix':
+            return str(event)
+        if os.name == 'nt':
+            return "Window: " + str(event.Window) + "\nWindow Handle: " + str(event.WindowName) + "\nWindow's Process Name: " + self.getProcessName(event) + "\nPosition: " + str(event.Position) + "\nMessageName: " + str(event.MessageName) + "\n"
+    
     def cancel(self):
         self.finished.set()
     
     #def capturewindow(self, Window = None, start_x = 0, start_y = 0, width = None, height = None, saveto = "image.png"):
-    def capturebox(self, event):
+    def capture_image(self, event):
         
         screensize = self.getScreenSize()
 
