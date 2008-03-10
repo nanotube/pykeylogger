@@ -571,13 +571,17 @@ class LogWriter(threading.Thread):
         '''
         if os.name == 'nt':
             hwnd = event.Window
-            threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
-            
-            # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
-            
-            mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
-            procname = win32process.GetModuleFileNameEx(mypyproc, 0)
-            return procname
+            try:
+                threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
+                
+                # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
+                
+                mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
+                procname = win32process.GetModuleFileNameEx(mypyproc, 0)
+                return procname
+            except:
+                self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
+                return "noprocname"
         elif os.name == 'posix':
             return str(event.WindowProcName)
 
