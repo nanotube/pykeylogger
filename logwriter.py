@@ -172,7 +172,7 @@ class LogWriter(threading.Thread):
         ## if we are logging keystroke count, that field becomes the penultimate field. 
         ##
         ## event data: ascii if normal key, escaped if "special" key, escaped if csv separator
-        ## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
+        ## self.processName = self.GetProcessName(event.Window) #fullapppath
         ## hwnd = event.Window
         ## username = os.environ['USERNAME']
         ## date = time.strftime('%Y%m%d') 
@@ -204,7 +204,7 @@ class LogWriter(threading.Thread):
                 
                 eventlisttmp = [time.strftime('%Y%m%d'), 
                                 time.strftime('%H%M'), 
-                                self.GetProcessNameFromHwnd(event), 
+                                self.GetProcessName(event), 
                                 str(event.Window), 
                                 os.getenv('USERNAME'), 
                                 str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')]
@@ -279,7 +279,7 @@ class LogWriter(threading.Thread):
         '''This function returns False if the process name associated with an event
         is listed in the noLog option, and True otherwise.'''
         
-        self.processName = self.GetProcessNameFromHwnd(event)
+        self.processName = self.GetProcessName(event)
         if self.settings['General']['Applications Not Logged'] != 'None':
             for path in self.settings['General']['Applications Not Logged'].split(';'):
                 if os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
@@ -566,7 +566,7 @@ class LogWriter(threading.Thread):
                     except:
                         self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 
-    def GetProcessNameFromHwnd(self, event):
+    def GetProcessName(self, event):
         '''Acquire the process name from the window handle for use in the log filename.
         '''
         if os.name == 'nt':
