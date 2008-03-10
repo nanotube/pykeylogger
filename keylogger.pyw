@@ -73,8 +73,8 @@ class KeyLogger:
         
         if self.settings['Image Capture']['Capture Clicks'] == True:
             self.hm.HookMouse()
-            self.hm.MouseAllButtonsUp = self.OnMouseUpEvent
-            self.hm.MouseAllButtonsDown = lambda x: True # do nothing
+            self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
+            #self.hm.MouseAllButtonsDown = lambda x: True # do nothing
             
         #~ elif os.name == 'posix':
             #~ self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
@@ -115,7 +115,7 @@ class KeyLogger:
         self.ControlKeyHash.update(event)
         return True
     
-    def OnMouseUpEvent(self,event):
+    def OnMouseDownEvent(self,event):
         self.q_imagewriter.put(event)
         return True
     
