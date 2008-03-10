@@ -107,7 +107,7 @@ class ImageWriter(threading.Thread):
                 event = self.q.get(timeout=0.05)
                 if event.MessageName.startswith("mouse left") or event.MessageName.startswith("mouse middle") or event.MessageName.startswith("mouse right"):
                     self.capture_image(event)
-                    self.PrintDebug(print_event(event))
+                    self.PrintDebug(self.print_event(event))
             except Queue.Empty:
                 pass 
     
