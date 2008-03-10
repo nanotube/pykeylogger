@@ -28,7 +28,9 @@ import os
 import os.path
 import traceback
 import re
+import logging
 import sys
+import copy
 
 if os.name == 'nt':
     import win32api, win32con, win32process
@@ -39,7 +41,7 @@ elif os.name == 'posix':
     from Xlib.protocol import rq
 
 class ImageWriter(threading.Thread):
-    def __init__(self, cmdoptions, settings, queue):
+    def __init__(self, settings, cmdoptions, queue):
         
         threading.Thread.__init__(self)
         self.finished = threading.Event()
@@ -47,6 +49,8 @@ class ImageWriter(threading.Thread):
         self.cmdoptions = cmdoptions
         self.settings = settings
         self.q = queue
+        
+        self.createLogger()
         
         self.imagedimensions = Point(self.settings['Image Capture']['Capture Clicks Width'], self.settings['Image Capture']['Capture Clicks Height'])
         
@@ -63,21 +67,47 @@ class ImageWriter(threading.Thread):
         try:
             os.makedirs(self.imagedir, 0777) 
         except OSError, detail:
-            if(detail.errno==17): pass
-            else: print "error creating click image directory"
-        except: print "error creating click image directory"
-        #~ os.chdir(originalDir)
+            if(detail.errno==17): 
+                pass
+            else: 
+                self.logger.error("error creating click image directory", sys.exc_info())
+        except: 
+            self.logger.error("error creating click image directory", sys.exc_info())
         
         #if (event.detail == 1) or (event.detail == 2) or (event.detail == 3):
             #self.captureclick()
         
         pass
     
+    def createLogger(self):
+        
+        self.logger = logging.getLogger('imagewriter')
+        self.logger.setLevel(logging.DEBUG)
+        
+        # create the "debug" handler - output messages to the console, to stderr, if debug option is set
+        if self.cmdoptions.debug:
+            loglevel = logging.DEBUG
+        else:
+            loglevel = logging.WARN
+        
+        consolehandler = logging.StreamHandler()
+        consolehandler.setLevel(loglevel)
+        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        consolehandler.setFormatter(formatter)
+        self.logger.addHandler(consolehandler)
+    
+    def PrintDebug(self, stuff, exc_info=False):
+        '''Write stuff to console.
+        '''
+        self.logger.debug(stuff, exc_info=exc_info)
+    
     def run(self):
         while not self.finished.isSet():
             try:
                 event = self.q.get(timeout=0.05)
-                self.capturebox(event)
+                if event.MessageName.startswith("mouse left") or event.MessageName.startswith("mouse middle") or event.MessageName.startswith("mouse right"):
+                    self.capturebox(event)
+                    self.PrintDebug(event)
             except Queue.Empty:
                 pass 
         
@@ -94,27 +124,10 @@ class ImageWriter(threading.Thread):
         cropbox = CropBox(topleft=Point(0,0), bottomright=self.imagedimensions, min=Point(0,0), max=screensize)
         cropbox.reposition(Point(event.Position[0], event.Position[1]))
         
+        self.PrintDebug(cropbox)
+        
         savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
         
-        # This is a work in progress.
-        #~ AllPlanes = ~0
-        #~ if Window == None:
-            #~ Window = self.local_dpy.get_input_focus().focus
-            
-            #~ if Window == 0:
-                #~ print "Could not get active window."
-                #~ return 1
-            
-            ## Handle the possiblity that this window is a sub-class of the above window, only used to log the time the last user event occured.
-            ## It's expected that, if needed, this will be handled outside the method if Window is not None coming into the method.
-            #~ if Window.get_wm_name() == None:
-                #~ Window = Window.query_tree().parent
-
-        
-        #~ if (width == None) and (height == None):
-            #~ geom = Window.get_geometry()
-            #~ height = geom.height
-            #~ width = geom.width
         if os.name == 'posix':
             
             AllPlanes = ~0
@@ -166,20 +179,20 @@ class ImageWriter(threading.Thread):
         elif os.name == 'posix':
             return str(event.WindowProcName)
     
-    def captureclick(self, event):
-        screensize = self.getScreenSize()
+    #~ def captureclick(self, event):
+        #~ screensize = self.getScreenSize()
 
-        # The cropbox will take care of making sure our image is within
-        # screen boundaries.
-        cropbox = CropBox(topleft=Point(0,0), bottomright=self.imagedimensions, min=Point(0,0), max=screensize)
-        cropbox.reposition(Point(event.Position[0], event.Position[1]))
+        #~ # The cropbox will take care of making sure our image is within
+        #~ # screen boundaries.
+        #~ cropbox = CropBox(topleft=Point(0,0), bottomright=self.imagedimensions, min=Point(0,0), max=screensize)
+        #~ cropbox.reposition(Point(event.Position[0], event.Position[1]))
         
-        self.savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y_%m_%d%_%H_%M_%S') + "_" + str(event.WindowProcName) + ".png")
+        #~ self.savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y_%m_%d%_%H_%M_%S') + "_" + str(event.WindowProcName) + ".png")
         
-        try:
-            self.capturewindow(self.rootwin, cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, self.savefilename)
-        except:
-            print "Encountered an error capturing the image for the window. Continuing anyway."
+        #~ try:
+            #~ self.capturewindow(self.rootwin, cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, self.savefilename)
+        #~ except:
+            #~ print "Encountered an error capturing the image for the window. Continuing anyway."
 
 class Point:
     def __init__(self, x=0, y=0):
@@ -199,10 +212,10 @@ class Point:
 class CropBox:
     def __init__(self, topleft=Point(0,0), bottomright=Point(100,100), min=Point(0,0), max=Point(1600,1200)):
         
-        self.topleft = topleft
-        self.bottomright = bottomright
-        self.min = min
-        self.max = max
+        self.topleft = copy.deepcopy(topleft)
+        self.bottomright = copy.deepcopy(bottomright)
+        self.min = copy.deepcopy(min)
+        self.max = copy.deepcopy(max)
         self.size = self.bottomright - self.topleft
         self.maxsize = self.max - self.min
         # make sure our box is not bigger than the whole image
@@ -225,7 +238,7 @@ class CropBox:
         self.topleft.move(xmove, ymove)
         self.bottomright.move(xmove, ymove)
         self.center = Point(self.size.x/2 + self.topleft.x, self.size.y/2 + self.topleft.y)
-        print self.center
+        #print self.center
     
     def reposition(self, newcenter = Point(500,500)):
         motion = newcenter - self.center
