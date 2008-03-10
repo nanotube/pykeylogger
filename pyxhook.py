@@ -1,6 +1,6 @@
 #!/usr/bin/python
 #
-# $Id: pyxhook.py,v 1.1.2.4 2008/03/10 05:11:57 nanotube Exp $
+# $Id: pyxhook.py,v 1.1.2.5 2008/03/10 21:58:53 nanotube Exp $
 #f
 # pyxhook -- an extension to emulate some of the PyHook library on linux.
 #
@@ -143,7 +143,8 @@ class HookManager(threading.Thread):
     
     def HookMouse(self):
         #self.contextEventMask.append(X.ButtonPress)
-        self.contextEventMask[1] = X.ButtonRelease
+        #self.contextEventMask[1] = X.ButtonRelease
+        self.contextEventMask[1] = X.MotionNotify
     
     def processevents(self, reply):
         if reply.category != record.FromServer:
@@ -159,30 +160,23 @@ class HookManager(threading.Thread):
             event, data = rq.EventField(None).parse_binary_value(data, self.record_dpy.display, None, None)
             if event.type == X.KeyPress:
                 hookevent = self.keypressevent(event)
-                if hookevent != -1:
-                    self.KeyDown(hookevent)
+                self.KeyDown(hookevent)
             elif event.type == X.KeyRelease:
                 hookevent = self.keyreleaseevent(event)
-                if hookevent != -1:
-                    self.KeyUp(hookevent)
-            #if self.captureclicks == True:
-            if event.type == X.ButtonPress:
+                self.KeyUp(hookevent)
+            elif event.type == X.ButtonPress:
                 hookevent = self.buttonpressevent(event)
-                if hookevent != -1:
-                    self.MouseAllButtonsDown(hookevent)
+                self.MouseAllButtonsDown(hookevent)
             elif event.type == X.ButtonRelease:
                 hookevent = self.buttonreleaseevent(event)
-                if hookevent != -1:
-                    self.MouseAllButtonsUp(hookevent)
-                #~ elif event.type == X.MotionNotify:
-                    #~ self.mousemoveevent(event)
+                self.MouseAllButtonsUp(hookevent)
+            elif event.type == X.MotionNotify:
+                # use mouse moves to record mouse position, since press and release events
+                # do not give mouse position info (event.root_x and event.root_y have 
+                # bogus info).
+                self.mousemoveevent(event)
         
-        #~ if self.finished.isSet():
-            #~ self.record_dpy.record_disable_context(self.ctx)
-            #~ self.record_dpy.flush()
-            #~ return
-        
-        print "processing events...", event.type
+        #print "processing events...", event.type
 
     def keypressevent(self, event):
         matchto = self.lookup_keysym(self.local_dpy.keycode_to_keysym(event.detail, 0))
@@ -197,7 +191,6 @@ class HookManager(threading.Thread):
             keysym = self.local_dpy.keycode_to_keysym(event.detail, 0)
             if self.isshift.match(matchto):
                 self.ison["shift"] = self.ison["shift"] + 1
-                #return -1
             elif self.iscaps.match(matchto):
                 if self.ison["caps"] == False:
                     self.ison["shift"] = self.ison["shift"] + 1
@@ -205,14 +198,6 @@ class HookManager(threading.Thread):
                 if self.ison["caps"] == True:
                     self.ison["shift"] = self.ison["shift"] - 1
                     self.ison["caps"] = False
-                #return -1
-            #elif self.logrelease.match(matchto):
-                #return self.makekeyhookevent(keysym, event)
-            #else:
-                #if self.isspace.match(matchto):
-                    #return self.makekeyhookevent(keysym, event)
-                #else:
-                    #return self.makekeyhookevent(keysym, event)
             return self.makekeyhookevent(keysym, event)
     
     def keyreleaseevent(self, event):
@@ -226,11 +211,6 @@ class HookManager(threading.Thread):
         matchto = self.lookup_keysym(keysym)
         if self.isshift.match(matchto):
             self.ison["shift"] = self.ison["shift"] - 1
-            #return -1
-        #elif self.logrelease.match(matchto):
-            #return self.makekeyhookevent(keysym, event)
-        #else:
-            #return -1
         return self.makekeyhookevent(keysym, event)
 
     def buttonpressevent(self, event):
@@ -253,13 +233,15 @@ class HookManager(threading.Thread):
         #sys.stdout.flush()
 
     def mousemoveevent(self, event):
-        self.rootx = event.root_x
-        self.rooty = event.root_y
+        self.mouse_position_x = event.root_x
+        self.mouse_position_y = event.root_y
 
+    # because XK.keysym_to_string() only does printable chars
+    # rather than being the correct inverse of XK.string_to_keysym()
     def lookup_keysym(self, keysym):
         for name in dir(XK):
-            if name[:3] == "XK_" and getattr(XK, name) == keysym:
-                return name[3:]
+            if name.startswith("XK_") and getattr(XK, name) == keysym:
+                return name.lstrip("XK_")
         return "[%d]" % keysym
 
     def asciivalue(self, keysym):
@@ -296,7 +278,7 @@ class HookManager(threading.Thread):
             MessageName = MessageName + "down"
         elif event.type == X.ButtonRelease:
             MessageName = MessageName + "up"
-        return pyxhookmouseevent(storewm["handle"], storewm["name"], storewm["class"], (event.root_x, event.root_y), MessageName)
+        return pyxhookmouseevent(storewm["handle"], storewm["name"], storewm["class"], (self.mouse_position_x, self.mouse_position_y), MessageName)
     
     def xwindowinfo(self):
         try:
