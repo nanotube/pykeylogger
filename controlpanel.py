@@ -30,6 +30,8 @@ from tooltip import ToolTip
 import myutils
 import webbrowser
 from supportscreen import SupportScreen
+from supportscreen import AboutDialog
+import sys
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
@@ -88,8 +90,9 @@ class PyKeyloggerControlPanel:
 
         helpmenu = Menu(menu)
         menu.add_cascade(label="Help", menu=helpmenu)
-        helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Usage_Instructions"))
-        helpmenu.add_command(label="About", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+        helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.wiki.sourceforge.net/Usage_Instructions"))
+        helpmenu.add_command(label="About", command=Command(AboutDialog, self.root, title="About PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+        helpmenu.add_command(label="Support PyKeylogger!", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
 
     def PasswordDialog(self):
         #passroot=Tk()
