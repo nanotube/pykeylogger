@@ -1,7 +1,5 @@
 #!/usr/bin/python
 #
-# $Id: pyxhook.py,v 1.1.2.6 2008/03/10 22:57:26 nanotube Exp $
-#f
 # pyxhook -- an extension to emulate some of the PyHook library on linux.
 #
 #    Copyright (C) 2008 Tim Alexander <dragonfyre13@gmail.com>
@@ -30,6 +28,10 @@
 #    This requires: 
 #    at least python-xlib 1.4
 #    xwindows must have the "record" extension present, and active.
+#    
+#    This file has now been somewhat extensively modified by 
+#    Daniel Folkinshteyn <nanotube@users.sf.net>
+#    So if there are any bugs, they are probably my fault. :)
 
 import sys
 import os
@@ -301,76 +303,7 @@ class HookManager(threading.Thread):
             return {"name":wmname, "class":wmclass, "handle":wmhandle}
         else:
             return {"name":wmname, "class":wmclass[0], "handle":wmhandle}
-    
-    def capturewindow(self, Window = None, start_x = 0, start_y = 0, width = None, height = None, saveto = "image.png"):
-        # This is a work in progress.
-        AllPlanes = ~0
-        if Window == None:
-            Window = self.local_dpy.get_input_focus().focus
-            
-            if Window == 0:
-                print "Could not get active window."
-                return 1
-            
-            ## Handle the possiblity that this window is a sub-class of the above window, only used to log the time the last user event occured.
-            ## It's expected that, if needed, this will be handled outside the method if Window is not None coming into the method.
-            if Window.get_wm_name() == None:
-                Window = Window.query_tree().parent
 
-        
-        if (width == None) and (height == None):
-            geom = Window.get_geometry()
-            height = geom.height
-            width = geom.width
-        
-        try:
-            raw = Window.get_image(start_x, start_y, width, height, X.ZPixmap, AllPlanes)
-            Image.fromstring("RGBX", (width, height), raw.data, "raw", "BGRX").convert("RGB").save(saveto)
-            return 0
-        except error.BadDrawable:
-            print "bad drawable when attempting to get an image!  Closed the window?"
-        except error.BadMatch:
-            print "bad match when attempting to get an image! probably specified an area outside the window (too big?)"
-        except error.BadValue:
-            print "getimage: bad value error - tell me about this one, I've not managed to make it happen yet"
-        except:
-            print "Undefined error. Sorry."
-     
-    def captureclick(self):
-        rootwin = self.local_dpy.get_input_focus().focus.query_tree().root
-        if rootwin == 0:
-            rootwin = self.local_dpy.get_input_focus()
-        maxx = rootwin.get_geometry().width
-        maxy = rootwin.get_geometry().height
-
-        ## See if the bounds to capture are off the screen. If they are, set them to the max on screen amount.
-        if self.rootx - (self.image["width"] / 2) < 0:
-            print "clipping xcoord bounds"
-            xcoord = 0
-        else: xcoord = self.rootx - (self.image["width"] / 2)
-        
-        if self.rooty - (self.image["height"] / 2) < 0:
-            print "clipping ycoord bounds"
-            ycoord = 0
-        else: ycoord = self.rooty - (self.image["height"] / 2)
-        
-        if xcoord + self.image["width"] > maxx:
-            print "clipping xrange bounds"
-            rangex = maxx - xcoord
-        else: rangex = self.image["width"]
-        
-        if ycoord + self.image["height"] > maxy:
-            print "clipping yrange bounds"
-            rangey = maxy - ycoord
-        else: rangey = self.image["height"]
-        
-        print os.path.join(self.imagedir, "click-" + str(time.time()) + "-" + str(self.xwindowinfo()["class"]) + ".png")
-        
-        try:
-            self.capturewindow(rootwin, xcoord, ycoord, rangex, rangey, os.path.join(self.imagedir, "click-" + str(time.time()) + "-" + str(self.xwindowinfo()["class"]) + ".png"))
-        except:
-            print "Encountered an error capturing the image for the window. Continuing anyway."
-         
 class pyxhookkeyevent:
     """This is the class that is returned with each key event.f
     It simply creates the variables below in the class.
