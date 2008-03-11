@@ -580,7 +580,9 @@ class LogWriter(threading.Thread):
                 procname = win32process.GetModuleFileNameEx(mypyproc, 0)
                 return procname
             except:
-                self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
+                #self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
+                # this happens frequently enough - when the last event caused the closure of the window or program
+                # so we just return a nice string and don't worry about it.
                 return "noprocname"
         elif os.name == 'posix':
             return str(event.WindowProcName)
