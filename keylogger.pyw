@@ -194,7 +194,7 @@ class KeyLogger:
         # and encourage you once more to support the PyKeylogger project by making a donation. 
         
         # Set this to False to get rid of all nagging.
-        NagMe = False
+        NagMe = True
         
         if NagMe == True:
             # first, show the support screen
