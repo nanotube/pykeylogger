@@ -30,15 +30,15 @@ from tooltip import ToolTip
 import myutils
 import webbrowser
 from supportscreen import SupportScreen
+from supportscreen import AboutDialog
 import sys
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
-        
         self.cmdoptions=cmdoptions
         self.mainapp=mainapp
         self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
-        
+
         self.root = Tk()
         self.root.config(height=20, width=20)
         self.root.geometry("+200+200")
@@ -48,7 +48,6 @@ class PyKeyloggerControlPanel:
         #    self.PasswordDialog()
         #print len(self.panelsettings['General']['Master Password'])
         #print zlib.decompress(self.panelsettings['General']['Master Password'])
-
         passcheck = self.PasswordDialog()
         
         # call the password authentication widget
@@ -58,7 +57,7 @@ class PyKeyloggerControlPanel:
             self.root.mainloop()
         elif passcheck == 1:
             self.ClosePanel()
-    
+        
     def InitializeMainPanel(self):
         #create the main panel window
         #root = Tk()
@@ -82,7 +81,7 @@ class PyKeyloggerControlPanel:
         actionmenu.add_command(label="Rotate logfile", command=Command(self.mainapp.lw.RotateLogs))
         actionmenu.add_separator()
         actionmenu.add_command(label="Close Control Panel", command=self.ClosePanel)
-        actionmenu.add_command(label="Quit PyKeylogger", command=self.QuitKeylogger)
+        actionmenu.add_command(label="Quit PyKeylogger", command=self.mainapp.stop)
 
         optionsmenu = Menu(menu)
         menu.add_cascade(label="Configuration", menu=optionsmenu)
@@ -91,8 +90,9 @@ class PyKeyloggerControlPanel:
 
         helpmenu = Menu(menu)
         menu.add_cascade(label="Help", menu=helpmenu)
-        helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.sourceforge.net/wiki/index.php/PyKeylogger:Usage_Instructions"))
-        helpmenu.add_command(label="About", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+        helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.wiki.sourceforge.net/Usage_Instructions"))
+        helpmenu.add_command(label="About", command=Command(AboutDialog, self.root, title="About PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+        helpmenu.add_command(label="Support PyKeylogger!", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
 
     def PasswordDialog(self):
         #passroot=Tk()
@@ -108,10 +108,6 @@ class PyKeyloggerControlPanel:
     def ClosePanel(self):
         self.mainapp.panel = False
         self.root.destroy()
-        
-    def QuitKeylogger(self):
-        self.ClosePanel()
-        self.mainapp.stop()
         
     def callback(self):
         tkMessageBox.showwarning(title="Not Implemented", message="This feature has not yet been implemented")
@@ -198,17 +194,11 @@ class Command:
 if __name__ == '__main__':
     # some simple testing code
     settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"practicepykeylogger.ini"}
-    
-    class ControlKeyHash:
-        def __init__(self):
-            self.panel = False
-            
     class BlankKeylogger:
         def stop(self):
-            sys.exit()
+            pass
         def __init__(self):
             self.lw=BlankLogWriter()
-            self.hashchecker = ControlKeyHash()
             
     class BlankLogWriter:
         def FlushLogWriteBuffers(self, message):
@@ -230,4 +220,3 @@ if __name__ == '__main__':
     klobject=BlankKeylogger()
     cmdoptions=BlankOptions()
     myapp = PyKeyloggerControlPanel(cmdoptions, klobject)
-    #myapp.start()
