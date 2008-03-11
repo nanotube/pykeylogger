@@ -106,7 +106,7 @@ class PyKeyloggerControlPanel:
             return 0
             
     def ClosePanel(self):
-        self.mainapp.hashchecker.panel = False
+        self.mainapp.panel = False
         self.root.destroy()
         
     def QuitKeylogger(self):

