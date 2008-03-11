@@ -2,6 +2,26 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 1.0.0 (2008-03-11)
+
+*) Big news: thanks to a generous contributor (Tim Alexander), PyKeylogger now works on linux, with complete feature parity between the windows and linux versions.
+*) New feature: PyKeylogger can now capture screenshots cropped around mouse clicks.
+*) A few minor improvements/bugfixes and some code refactoring happened in the process of making the code cross-platform
+
+-----
+Version 0.9.4 (2008-03-04)
+
+*) Fix bug where log lines may go over the log field size limit, if the key event produced a multi-character log (i.e. the non-printing characters producing "[KeyName:bla]".
+*) Improve tooltips in the config panels: they are now wider, and appear faster.
+
+-----
+Version 0.9.3 (2008-03-01)
+
+*) Fix bug (reported by email) where control key hash would not be reset after a call to control panel, thus causing the panel to reappear subsequently on every key press. (Could have been a Windows-Vista-only problem, since I could not reproduce this locally.)
+*) Point the links in the support screen to the newly-established wikispaces wiki (to migrate off the old mediawiki pages).
+*) Change support screen backgrounds to white for prettiness and portability.
+
+-----
 Version 0.9.2 (2008-02-08)
 
 *) Add option to log number of keys pressed per log data line
