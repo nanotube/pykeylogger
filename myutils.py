@@ -1,6 +1,7 @@
 import zlib
 import base64
 import sys
+import os.path
 import imp
 
 def password_obfuscate(password):
