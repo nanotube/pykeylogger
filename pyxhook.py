@@ -79,28 +79,11 @@ class HookManager(threading.Thread):
         self.MouseAllButtonsUp = lambda x: True
         
         self.contextEventMask = [0,2]
-        # todo: this relates to images
-        #self.captureclicks = captureclicks
-        #self.image = clickimagedimensions
-        #self.logdir = logdir
         
         # Hook to our display.
         self.local_dpy = display.Display()
         self.record_dpy = display.Display()
         
-        #Make sure the image directory is there. If not, create it.
-        # todo: this relates to images
-        #self.imagedir = os.path.join(self.logdir, "images")
-        #originalDir = os.getcwd()
-        #os.chdir(self.logdir)
-        #try:
-            #os.makedirs("images", 0777) 
-        #except OSError, detail:
-            #if(detail.errno==17): pass
-            #else: print "error creating click image directory"
-        #except: print "error creating click image directory"
-        #os.chdir(originalDir)
-
     def run(self):
         # Check if the extension is present
         if not self.record_dpy.has_extension("RECORD"):
@@ -143,8 +126,8 @@ class HookManager(threading.Thread):
         self.contextEventMask[0] = X.KeyPress
     
     def HookMouse(self):
-        #self.contextEventMask.append(X.ButtonPress)
-        #self.contextEventMask[1] = X.ButtonRelease
+        # need mouse motion to track pointer position, since ButtonPress events
+        # don't carry that info.
         self.contextEventMask[1] = X.MotionNotify
     
     def processevents(self, reply):
@@ -237,7 +220,7 @@ class HookManager(threading.Thread):
         self.mouse_position_x = event.root_x
         self.mouse_position_y = event.root_y
 
-    # because XK.keysym_to_string() only does printable chars
+    # need the following because XK.keysym_to_string() only does printable chars
     # rather than being the correct inverse of XK.string_to_keysym()
     def lookup_keysym(self, keysym):
         for name in dir(XK):
