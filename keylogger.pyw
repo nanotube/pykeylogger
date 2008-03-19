@@ -95,7 +95,14 @@ class KeyLogger:
             self.hm.start()
         
     def process_settings(self):
-        #self.processed_settings = {}
+        '''Process some settings values to correct for user input errors, 
+        and to detect proper full path of the log directory.
+        
+        We can change things in the settings configobj with impunity here,
+        since the control panel process get a fresh read of settings from file
+        before doing anything.
+        '''
+        
         if os.path.isabs(self.settings['General']['Log Directory']):
             self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
         else:
@@ -104,8 +111,8 @@ class KeyLogger:
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
         self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
         self.settings['General']['System Log'] = self.filter.sub(r'__',self.settings['General']['System Log'])
+        
         # todo: also want to run imagesdirectoryname (tbc) through self.filter 
-        # todo: get logwriter and imagewriter to use processed_settings
         
     def ParseControlKey(self):
         self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
