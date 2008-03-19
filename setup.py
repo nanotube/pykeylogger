@@ -24,8 +24,10 @@ setup(
     author_email = version.author_email,
     platforms = [version.platform],
     
-    options = {'py2exe': {'bundle_files': 1}},
-    zipfile = None,
+    # the following doesn't work - for some reason bundling everything into one exe 
+    # causes the program to crash out on start.
+    #~ options = {'py2exe': {'bundle_files': 1}},
+    #~ zipfile = None,
     
     data_files = [("",["pykeylogger.ini",
                         "pykeylogger.val",
@@ -48,4 +50,3 @@ setup(
        }
     ],
     )
-    
