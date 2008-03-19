@@ -2,6 +2,13 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 1.0.1 (2008-03-19)
+
+*) Bugfix: now we properly detect the location of the program, so that relative log directories and ini/val file locations work properly. Before we relied on current directory being right, which is not always true.
+*) Do some pre-processing on settings read from ini file, to make sure directories and filenames are 'legal'. 
+*) Prettify the about dialog
+
+-----
 Version 1.0.0 (2008-03-11)
 
 *) Big news: thanks to a generous contributor (Tim Alexander), PyKeylogger now works on linux, with complete feature parity between the windows and linux versions.
