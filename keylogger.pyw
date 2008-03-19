@@ -33,7 +33,8 @@ else:
     print "OS is not recognised as windows or linux."
     exit()
 
-import imp # don't need this anymore?
+#import imp # don't need this anymore?
+import re
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
