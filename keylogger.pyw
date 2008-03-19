@@ -349,11 +349,3 @@ if __name__ == '__main__':
     kl.start()
     
     #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
-    =======
-    
-    kl = KeyLogger()
-    kl.start()
-        
-    #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
-    
->>>>>>> 1.29.2.14
