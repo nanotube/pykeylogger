@@ -21,6 +21,7 @@
 ##############################################################################
 
 import os
+import os.path
 import time
 import sys
 if os.name == 'posix':
@@ -54,10 +55,11 @@ class KeyLogger:
     '''
     def __init__(self): 
         
-        self.ParseOptions()
-        self.ParseConfigFile()
+        self.ParseOptions() # stored in self.cmdoptions
+        self.ParseConfigFile() # stored in self.settings
         self.ParseControlKey()
         self.NagscreenLogic()
+        self.process_settings()
         self.q_logwriter = Queue.Queue(0)
         self.q_imagewriter = Queue.Queue(0)
         self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
@@ -90,6 +92,19 @@ class KeyLogger:
         if os.name == 'posix':
             self.hashchecker.start()
             self.hm.start()
+        
+    def process_settings(self):
+        #self.processed_settings = {}
+        if os.path.isabs(self.settings['General']['Log Directory']):
+            self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
+        else:
+            self.settings['General']['Log Directory'] = os.path.join(myutils.get_main_dir(), os.path.normpath(self.settings['General']['Log Directory']))
+        
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
+        self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
+        self.settings['General']['System Log'] = self.filter.sub(r'__',self.settings['General']['System Log'])
+        # todo: also want to run imagesdirectoryname (tbc) through self.filter 
+        # todo: get logwriter and imagewriter to use processed_settings
         
     def ParseControlKey(self):
         self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
@@ -166,7 +181,12 @@ class KeyLogger:
         
         Give detailed error box and exit if validation on the config file fails.
         '''
-
+        
+        if not os.path.isabs(self.cmdoptions.configfile):
+            self.cmdoptions.configfile = os.path.join(myutils.get_main_dir(), self.cmdoptions.configfile)
+        if not os.path.isabs(self.cmdoptions.configval):
+            self.cmdoptions.configval = os.path.join(myutils.get_main_dir(), self.cmdoptions.configval)
+            
         self.settings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
 
         # validate the config file

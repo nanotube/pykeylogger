@@ -142,7 +142,7 @@ class LogWriter(threading.Thread):
         
         #first, make sure we have the directory where we want to log
         try:
-            os.makedirs(os.path.normpath(self.settings['General']['Log Directory']), 0777) 
+            os.makedirs(self.settings['General']['Log Directory'], 0777) 
         except OSError, detail:
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
@@ -154,7 +154,7 @@ class LogWriter(threading.Thread):
             self.logger.error("error creating log directory", exc_info=sys.exc_info())
         
         if self.settings['General']['System Log'] != 'None':
-            systemlogpath = os.path.join(os.path.normpath(self.settings['General']['Log Directory']), self.filter.sub(r'__',self.settings['General']['System Log']))
+            systemlogpath = os.path.join(self.settings['General']['Log Directory'], self.settings['General']['System Log'])
             systemloghandler = logging.FileHandler(systemlogpath)
             systemloghandler.setLevel(logging.DEBUG)
             systemloghandler.setFormatter(formatter)
@@ -478,8 +478,8 @@ class LogWriter(threading.Thread):
         # do stuff only if file is closed. if it is open, we don't have to do anything at all, just return true.
         if self.log == None: 
             # Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
-            self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
-            self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File']))
+            #self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
+            self.writeTarget = os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File'])
             try:
                 self.log = open(self.writeTarget, 'a')
                 self.PrintDebug("writing to: " + self.writeTarget)
@@ -522,7 +522,7 @@ class LogWriter(threading.Thread):
         Then, openlogfile will take care of opening a fresh logfile by itself.'''
         
         if self.log != None:
-            rotateTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+            rotateTarget = os.path.join(self.settings['General']['Log Directory'], time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File'])
             self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto\n" + rotateTarget + "\n")
             self.log.close()
             self.log = None
