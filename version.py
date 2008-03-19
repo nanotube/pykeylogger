@@ -1,9 +1,9 @@
 
 name = "pykeylogger"
-version = "0.9.5"
-description = "Simple Python Keylogger for Windows"
+version = "1.0.1"
+description = "Simple Python Keylogger"
 url = "http://pykeylogger.sourceforge.net"
 license = "GPL"
-author = "Nanotube"
+author = "Daniel Folkinshteyn"
 author_email = "nanotube@users.sf.net"
-platform = "Windows NT/2000/XP"
+platform = "Windows NT/2000/XP/Vista, Linux"
