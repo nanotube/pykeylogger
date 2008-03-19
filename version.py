@@ -1,7 +1,7 @@
 
 name = "pykeylogger"
-version = "1.0.0"
-description = "Simple Python Keylogger for Windows"
+version = "1.0.1"
+description = "Simple Python Keylogger"
 url = "http://pykeylogger.sourceforge.net"
 license = "GPL"
 author = "Daniel Folkinshteyn"

@@ -23,7 +23,10 @@ setup(
     author = version.author,
     author_email = version.author_email,
     platforms = [version.platform],
-
+    
+    options = {'py2exe': {'bundle_files': 1}},
+    zipfile = None,
+    
     data_files = [("",["pykeylogger.ini",
                         "pykeylogger.val",
                         "CHANGELOG.TXT",
@@ -45,4 +48,4 @@ setup(
        }
     ],
     )
-
+    
