@@ -194,3 +194,11 @@ Capture Clicks Width = integer(min=1, max=65534, default=150)
 # default: 150
 Capture Clicks Height Tooltip = string()
 Capture Clicks Height = integer(min=1, max=65534, default=150)
+
+# default: png
+Capture Clicks Image Format Tooltip = string()
+Capture Clicks Image Format = string(min=3, max=3, default="png")
+
+# default: 75
+Capture Clicks Image Quality Tooltip = string()
+Capture Clicks Image Quality = integer(min=1, max=75, default=75)

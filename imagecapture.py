@@ -135,7 +135,8 @@ class ImageWriter(threading.Thread):
         
         self.PrintDebug(cropbox)
         
-        savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
+        #savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
+        savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
         
         if os.name == 'posix':
             
@@ -143,7 +144,7 @@ class ImageWriter(threading.Thread):
 
             try: #cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, self.savefilename
                 raw = self.rootwin.get_image(cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, X.ZPixmap, AllPlanes)
-                Image.fromstring("RGBX", (cropbox.size.x, cropbox.size.y), raw.data, "raw", "BGRX").convert("RGB").save(savefilename)
+                Image.fromstring("RGBX", (cropbox.size.x, cropbox.size.y), raw.data, "raw", "BGRX").convert("RGB").save(savefilename, quality=self.settings['Image Capture']['Capture Clicks Image Quality'])
                 return 0
             except error.BadDrawable:
                 print "bad drawable when attempting to get an image!  Closed the window?"
@@ -156,8 +157,7 @@ class ImageWriter(threading.Thread):
         
         if os.name == 'nt':
             img = ImageGrab.grab((cropbox.topleft.x, cropbox.topleft.y, cropbox.bottomright.x, cropbox.bottomright.y))
-            img.save(savefilename)
-        
+            img.save(savefilename, quality=self.settings['Image Capture']['Capture Clicks Image Quality'])
         
     def getScreenSize(self):
         if os.name == 'posix':
@@ -190,21 +190,6 @@ class ImageWriter(threading.Thread):
         elif os.name == 'posix':
             return str(event.WindowProcName)
     
-    #~ def captureclick(self, event):
-        #~ screensize = self.getScreenSize()
-
-        #~ # The cropbox will take care of making sure our image is within
-        #~ # screen boundaries.
-        #~ cropbox = CropBox(topleft=Point(0,0), bottomright=self.imagedimensions, min=Point(0,0), max=screensize)
-        #~ cropbox.reposition(Point(event.Position[0], event.Position[1]))
-        
-        #~ self.savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y_%m_%d%_%H_%M_%S') + "_" + str(event.WindowProcName) + ".png")
-        
-        #~ try:
-            #~ self.capturewindow(self.rootwin, cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, self.savefilename)
-        #~ except:
-            #~ print "Encountered an error capturing the image for the window. Continuing anyway."
-
 class Point:
     def __init__(self, x=0, y=0):
         self.x = x
