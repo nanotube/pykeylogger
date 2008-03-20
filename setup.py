@@ -39,14 +39,16 @@ setup(
     console = [
         {
             "script": "keylogger.pyw",
-            "dest_base": "keylogger_debug"
+            "dest_base": "keylogger_debug",
+            "icon_resources": [(0, "pykeyloggericon.ico")]
         }
     ],
     
     windows = [
        {
            "script": "keylogger.pyw",
-           "dest_base": "keylogger"
+           "dest_base": "keylogger",
+            "icon_resources": [(0, "pykeyloggericon.ico")]
        }
     ],
     )

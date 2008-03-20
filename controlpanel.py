@@ -32,6 +32,7 @@ import webbrowser
 from supportscreen import SupportScreen
 from supportscreen import AboutDialog
 import sys
+import version
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
@@ -93,7 +94,15 @@ class PyKeyloggerControlPanel:
         helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.wiki.sourceforge.net/Usage_Instructions"))
         helpmenu.add_command(label="About", command=Command(AboutDialog, self.root, title="About PyKeylogger", rootx_offset=-20, rooty_offset=-35))
         helpmenu.add_command(label="Support PyKeylogger!", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
-
+        
+        textlabel = Label(self.root, text="PyKeylogger " + str(version.version), font=("arial", 12))
+        textlabel.pack()
+        
+        photo = PhotoImage(file="pykeyloggericon_big.gif")
+        imagelabel = Label(self.root, image=photo, height=160, width=200)
+        imagelabel.photo = photo
+        imagelabel.pack()
+        
     def PasswordDialog(self):
         #passroot=Tk()
         #passroot.title("Enter Password")
