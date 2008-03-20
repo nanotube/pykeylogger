@@ -83,8 +83,6 @@ class LogWriter(threading.Thread):
         self.settings = settings
         self.cmdoptions = cmdoptions
         
-        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
-        
         self.createLogger()
         #self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
         
@@ -133,10 +131,6 @@ class LogWriter(threading.Thread):
         consolehandler.setFormatter(formatter)
         self.logger.addHandler(consolehandler)
         
-        #~ logging.basicConfig(level=loglevel,
-                    #~ format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-        #~ self.logger = logging.getLogger('logwriter')
-        
         # now let's try the systemlog file logging. 
         # if systemlog option is set, always output the debug messages to systemlog
         
@@ -147,10 +141,8 @@ class LogWriter(threading.Thread):
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
-                #self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
                 self.logger.error("error creating log directory", exc_info=sys.exc_info())
         except:
-            #self.PrintDebug("Unexpected error: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
             self.logger.error("error creating log directory", exc_info=sys.exc_info())
         
         if self.settings['General']['System Log'] != 'None':
@@ -160,8 +152,6 @@ class LogWriter(threading.Thread):
             systemloghandler.setFormatter(formatter)
             self.logger.addHandler(systemloghandler)
         
-        #~ self.writeTarget = os.path.normpath(os.path.join(self.settings['General']['Log Directory'], self.filter.sub(r'__',self.settings['General']['Log File'])))
-
     def run(self):
         '''This is the main workhorse function.
         Keeps popping events off the queue, and processing them, until program quits
@@ -182,7 +172,6 @@ class LogWriter(threading.Thread):
         # Logic: put the line into a list, check if all contents (except for eventdata) are equal, if so, just append eventdata to existing eventdata. otherwise, write out the previous event list, and start a new one.
         ## on flush or on exit, make sure to write the latest dataline
         
-        #self.stopflag=False
         self.eventlist = range(7) #initialize our eventlist to something.
         
         if self.settings['General']['Log Key Count'] == True:
@@ -191,7 +180,6 @@ class LogWriter(threading.Thread):
         while not self.finished.isSet():
             try:
                 event = self.q.get(timeout=0.5) #need the timeout so that thread terminates properly when exiting
-                #print event
                 loggable = self.TestForNoLog(event)  # see if the program is in the no-log list.
                 if not loggable:
                     if self.cmdoptions.debug: self.PrintDebug("not loggable, we are outta here\n")
@@ -221,7 +209,6 @@ class LogWriter(threading.Thread):
                 else:
                     self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
                     self.eventlist = eventlisttmp
-            ## don't need this with infinite timeout?
             except Queue.Empty:
                 pass #let's keep iterating
             except:
@@ -291,7 +278,6 @@ class LogWriter(threading.Thread):
         '''
         self.PrintDebug(logstring)
         if self.log != None: self.log.flush()
-        #if self.settings['General']['System Log'] != 'None': self.systemlog.flush()
 
     def ZipLogFiles(self):
         '''Create a zip archive of all files in the log directory.
@@ -313,7 +299,6 @@ class LogWriter(threading.Thread):
         
         for root, dirs, files in os.walk(os.curdir):
             for fname in files:
-                #if fname != self.settings['ziparchivename']:
                 if not self.CheckIfZipFile(fname):
                     myzip.write(os.path.join(root,fname).split(os.sep,1)[1])
         
@@ -381,10 +366,6 @@ class LogWriter(threading.Thread):
         except:
             self.PrintDebug("Unexpected error opening ziplog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
             return
-        
-        #~ if not self.CheckIfZipFile(latestZipFile):
-            #~ self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-            #~ return
         
         try:
             latestZipEmailed = "" #initialize to blank, just in case emaillog.txt doesn't get read
@@ -477,8 +458,6 @@ class LogWriter(threading.Thread):
         
         # do stuff only if file is closed. if it is open, we don't have to do anything at all, just return true.
         if self.log == None: 
-            # Filter out any characters that are not allowed as a windows filename, just in case the user put them into the config file
-            #self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
             self.writeTarget = os.path.join(self.settings['General']['Log Directory'], self.settings['General']['Log File'])
             try:
                 self.log = open(self.writeTarget, 'a')
@@ -507,16 +486,8 @@ class LogWriter(threading.Thread):
     def PrintDebug(self, stuff, exc_info=False):
         '''Write stuff to console and/or systemlog.
         '''
-        #~ if self.cmdoptions.debug:
-            #~ sys.stdout.write(stuff)
-        #~ if self.settings['General']['System Log'] != 'None':
-            #~ self.systemlog.write(stuff)
         self.logger.debug(stuff, exc_info=exc_info)
-
-    def WriteTimestamp(self):
-        '''deprecated'''
-        self.PrintStuff("\n[" + time.asctime() + "]\n")
-
+    
     def RotateLogs(self):
         '''This will close the log file, set self.log to None, move the file to a dated filename.
         Then, openlogfile will take care of opening a fresh logfile by itself.'''
@@ -580,7 +551,6 @@ class LogWriter(threading.Thread):
                 procname = win32process.GetModuleFileNameEx(mypyproc, 0)
                 return procname
             except:
-                #self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
                 # this happens frequently enough - when the last event caused the closure of the window or program
                 # so we just return a nice string and don't worry about it.
                 return "noprocname"
@@ -590,9 +560,6 @@ class LogWriter(threading.Thread):
     def cancel(self):
         '''To exit cleanly, flush all write buffers, and stop all running timers.
         '''
-        #self.stopflag = True
-        #time.sleep(2.5)
-        #self.queuetimer.cancel()
         self.finished.set()
         
         self.WriteToLogFile()
