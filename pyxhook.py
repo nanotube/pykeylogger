@@ -333,7 +333,7 @@ class pyxhookmouseevent:
         self.MessageName = MessageName
     
     def __str__(self):
-        return "Window: " + str(self.Window) + "\nWindow Handle: " + str(self.WindowName) + "\nWindow's Process Name: " + str(self.WindowProcName) + "\nPosition: " + str(self.Position) + "\nMessageName: " + str(self.MessageName) + "\n"
+        return "Window Handle: " + str(self.Window) + "\nWindow Name: " + str(self.WindowName) + "\nWindow's Process Name: " + str(self.WindowProcName) + "\nPosition: " + str(self.Position) + "\nMessageName: " + str(self.MessageName) + "\n"
 
 #######################################################################
 #########################END CLASS DEF#################################
