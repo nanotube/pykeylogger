@@ -190,12 +190,12 @@ class LogWriter(threading.Thread):
                     self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
                     continue
                 
-                eventlisttmp = [time.strftime('%Y%m%d'), 
-                                time.strftime('%H%M'), 
-                                self.GetProcessName(event), 
-                                str(event.Window), 
-                                os.getenv('USERNAME'), 
-                                str(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')]
+                eventlisttmp = [time.strftime('%Y%m%d'), # date
+                                time.strftime('%H%M'), # time
+                                self.GetProcessName(event).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # process name (full path on windows, just name on linux)
+                                str(event.Window), # window handle
+                                unicode(os.getenv('USERNAME'), 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
+                                unicode(event.WindowName, 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]')] # window title
                                 
                 if self.settings['General']['Log Key Count'] == True:
                     eventlisttmp = eventlisttmp + ['1',unicode(self.ParseEventValue(event), 'latin-1')]
@@ -203,7 +203,7 @@ class LogWriter(threading.Thread):
                     eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
                     
                 if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
-                    self.eventlist[-1] = str(self.eventlist[-1]) + str(eventlisttmp[-1]) #append char to log
+                    self.eventlist[-1] = self.eventlist[-1] + eventlisttmp[-1] #append char to log
                     if self.settings['General']['Log Key Count'] == True:
                         self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
                 else:
@@ -222,7 +222,7 @@ class LogWriter(threading.Thread):
         Returns the result as a string.
         '''
         npchrstr = self.settings['General']['Non-printing Character Representation']
-        npchrstr = re.sub('%keyname%', str(event.Key), npchrstr)
+        npchrstr = re.sub('%keyname%', event.Key, npchrstr)
         npchrstr = re.sub('%scancode%', str(event.ScanCode), npchrstr)
         npchrstr = re.sub('%vkcode%', str(event.KeyID), npchrstr)
         
@@ -555,7 +555,7 @@ class LogWriter(threading.Thread):
                 # so we just return a nice string and don't worry about it.
                 return "noprocname"
         elif os.name == 'posix':
-            return str(event.WindowProcName)
+            return unicode(event.WindowProcName, 'latin-1')
 
     def cancel(self):
         '''To exit cleanly, flush all write buffers, and stop all running timers.
