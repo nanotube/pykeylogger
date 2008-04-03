@@ -7,6 +7,7 @@ Version 1.0.2 (2008-03-21)
 *) Add some pretty graphics to the main control panel window.
 *) Add icons to the frozen windows executables.
 *) Make click-image format and quality (for jpg only) configurable through the control panel.
+*) Fix some bugs with non-ascii character input.
 
 -----
 Version 1.0.1 (2008-03-19)
