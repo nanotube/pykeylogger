@@ -31,6 +31,9 @@ setup(
     
     data_files = [("",["pykeylogger.ini",
                         "pykeylogger.val",
+                        "pykeyloggericon.ico",
+                        "pykeyloggericon.svg",
+                        "pykeyloggericon_big.gif",
                         "CHANGELOG.TXT",
                         "LICENSE.txt",
                         "README.txt",

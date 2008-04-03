@@ -7,3 +7,4 @@ include pykeylogger.val
 exclude test*.py
 include MANIFEST
 include MANIFEST.in
+include pykeyloggericon*
