@@ -21,6 +21,7 @@
 ##############################################################################
 
 import time
+import datetime
 import threading
 import Image
 import Queue
@@ -136,7 +137,7 @@ class ImageWriter(threading.Thread):
         self.PrintDebug(cropbox)
         
         #savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
-        savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
+        savefilename = os.path.join(self.imagedir, "click_" + datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + str(datetime.datetime.today().microsecond) + "_" + self.filter.sub(r'__', self.getProcessName(event)) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
         
         if os.name == 'posix':
             
@@ -277,9 +278,9 @@ if __name__ == '__main__':
     settings['Log Maintenance'] = {'Delete Old Logs':False,'Flush Interval':1000,'Log Rotation Interval':4,'Delete Old Logs':False}
     settings['Zip'] = {'Zip Enable':False}
     settings['General'] = {'Log Directory':'logs','System Log':'None','Log Key Count':True}
-    settings['Image Capture'] = {'Capture Clicks Width':300,'Capture Clicks Height':300}
+    settings['Image Capture'] = {'Capture Clicks Width':300,'Capture Clicks Height':300, 'Capture Clicks Image Format':'png', 'Capture Clicks Image Quality': 75}
         
-    iw = ImageWriter(cmdoptions, settings, q)
+    iw = ImageWriter(settings, cmdoptions, q)
     iw.start()
     q.put(event)
     time.sleep(5)
