@@ -8,6 +8,7 @@ Version 1.0.2 (2008-03-21)
 *) Add icons to the frozen windows executables.
 *) Make click-image format and quality (for jpg only) configurable through the control panel.
 *) Fix some bugs with non-ascii character input.
+*) Add microseconds to click image filenames, since it is possible to have multiple clicks in one second, and we don't want to overwrite image files that already exist.
 
 -----
 Version 1.0.1 (2008-03-19)
