@@ -2,7 +2,7 @@ PyKeylogger Changelog
 ---------------------
 
 -----
-Version 1.0.2 (2008-03-21)
+Version 1.0.2 (2008-04-08)
 
 *) Add some pretty graphics to the main control panel window.
 *) Add icons to the frozen windows executables.
