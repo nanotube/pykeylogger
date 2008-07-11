@@ -98,7 +98,7 @@ class PyKeyloggerControlPanel:
         textlabel = Label(self.root, text="PyKeylogger " + str(version.version), font=("arial", 12))
         textlabel.pack()
         
-        photo = PhotoImage(file="pykeyloggericon_big.gif")
+        photo = PhotoImage(file=version.name + "icon_big.gif")
         imagelabel = Label(self.root, image=photo, height=160, width=200)
         imagelabel.photo = photo
         imagelabel.pack()
@@ -202,7 +202,7 @@ class Command:
 
 if __name__ == '__main__':
     # some simple testing code
-    settings={"bla":"mu", 'maxlogage': "2.0", "configfile":"practicepykeylogger.ini"}
+    
     class BlankKeylogger:
         def stop(self):
             pass
@@ -223,8 +223,8 @@ if __name__ == '__main__':
     
     class BlankOptions:
         def __init__(self):
-            self.configfile="pykeylogger.ini"
-            self.configval="pykeylogger.val"
+            self.configfile=version.name + ".ini"
+            self.configval=version.name + ".val"
     
     klobject=BlankKeylogger()
     cmdoptions=BlankOptions()

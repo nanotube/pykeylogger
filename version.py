@@ -1,7 +1,7 @@
 
-name = "pykeylogger"
-version = "1.0.2"
-description = "Simple Python Keylogger"
+name = "pykeylogger" # change this for stealth. you must also change the filenames of the .ini, .val, and the icon files and replace "pykeylogger" with what you put in here.
+version = "1.0.3"
+description = "Simple Python Keylogger" # change this for stealth
 url = "http://pykeylogger.sourceforge.net"
 license = "GPL"
 author = "Daniel Folkinshteyn"

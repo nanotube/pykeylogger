@@ -29,11 +29,11 @@ setup(
     #~ options = {'py2exe': {'bundle_files': 1}},
     #~ zipfile = None,
     
-    data_files = [("",["pykeylogger.ini",
-                        "pykeylogger.val",
-                        "pykeyloggericon.ico",
-                        "pykeyloggericon.svg",
-                        "pykeyloggericon_big.gif",
+    data_files = [("",[version.name+".ini",
+                        version.name+".val",
+                        version.name+"icon.ico",
+                        version.name+"icon.svg",
+                        version.name+"icon_big.gif",
                         "CHANGELOG.TXT",
                         "LICENSE.txt",
                         "README.txt",
@@ -42,16 +42,16 @@ setup(
     console = [
         {
             "script": "keylogger.pyw",
-            "dest_base": "keylogger_debug",
-            "icon_resources": [(0, "pykeyloggericon.ico")]
+            "dest_base": version.name+"_debug",
+            "icon_resources": [(0, version.name+"icon.ico")]
         }
     ],
     
     windows = [
        {
            "script": "keylogger.pyw",
-           "dest_base": "keylogger",
-            "icon_resources": [(0, "pykeyloggericon.ico")]
+           "dest_base": version.name,
+            "icon_resources": [(0, version.name+"icon.ico")]
        }
     ],
     )

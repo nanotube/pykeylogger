@@ -177,8 +177,8 @@ class KeyLogger:
         parser.add_option("-v", "--configval", action="store", dest="configval", help="filename of the configuration validation file. [default: %default]")
         
         parser.set_defaults(debug=False, 
-                            configfile="pykeylogger.ini", 
-                            configval="pykeylogger.val")
+                            configfile=version.name + ".ini", 
+                            configval=version.name + ".val")
         
         (self.cmdoptions, args) = parser.parse_args()
     
