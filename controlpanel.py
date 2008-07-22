@@ -33,6 +33,7 @@ from supportscreen import SupportScreen
 from supportscreen import AboutDialog
 import sys
 import version
+import os.path
 
 class PyKeyloggerControlPanel:
     def __init__(self, cmdoptions, mainapp):
@@ -98,7 +99,7 @@ class PyKeyloggerControlPanel:
         textlabel = Label(self.root, text="PyKeylogger " + str(version.version), font=("arial", 12))
         textlabel.pack()
         
-        photo = PhotoImage(file=version.name + "icon_big.gif")
+        photo = PhotoImage(file=os.path.join(myutils.get_main_dir(), version.name + "icon_big.gif"))
         imagelabel = Label(self.root, image=photo, height=160, width=200)
         imagelabel.photo = photo
         imagelabel.pack()
