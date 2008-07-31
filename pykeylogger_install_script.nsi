@@ -14,7 +14,7 @@
 ;General
 
     !define PYKEYLOGGER_NAME "Simple Python Keylogger"
-    !define PYKEYLOGGER_VERSION "1.0.2"
+    !define PYKEYLOGGER_VERSION "1.0.3"
     !define PYKEYLOGGER_PUBLISHER "Daniel Folkinshteyn"
     !define PYKEYLOGGER_WEB_SITE "http://pykeylogger.sourceforge.net"
     !define PYKEYLOGGER_INSTALLDIR "PyKeylogger"
@@ -55,7 +55,7 @@
     
     ; Welcome page
     !define MUI_WELCOMEPAGE_TITLE "Install PyKeylogger"
-    !define MUI_WELCOMEPAGE_TEXT "PyKeylogger is a free open source keylogger written in the python programming language, available under the terms of the GNU General Public License. If you have any questions or feedback, please feel free to visit the project site, ${PYKEYLOGGER_WEB_SITE}."
+    !define MUI_WELCOMEPAGE_TEXT "PyKeylogger is a free open source keylogger written in the python programming language, available under the terms of the GNU General Public License. $\n $\n $\nIf you have any questions or feedback, please feel free to visit the project site, ${PYKEYLOGGER_WEB_SITE}."
     !insertmacro MUI_PAGE_WELCOME
     
     ; License page
@@ -80,7 +80,7 @@
     
     ; Uninstall welcome page: warn about removing logs
     !define MUI_WELCOMEPAGE_TITLE "Uninstall PyKeylogger"
-    !define MUI_WELCOMEPAGE_TEXT "You are about to completely remove PyKeylogger from your system. Note that if you store the keylogger logs in the installation directory (the default log location), YOUR LOGS WILL ALSO BE DELETED."
+    !define MUI_WELCOMEPAGE_TEXT "You are about to completely remove PyKeylogger from your system. $\n $\n $\nNote that if you store the keylogger logs in the installation directory (the default log location), YOUR LOGS WILL ALSO BE DELETED."
     !insertmacro MUI_UNPAGE_WELCOME
 
     !insertmacro MUI_UNPAGE_CONFIRM
@@ -97,7 +97,7 @@
     ;;;;;;;;;;;;;
     ;Files
     
-    Section "Install Files" SecFiles
+    Section "Program Files" SecFiles
 
         SetOutPath "$INSTDIR"
         SetOverwrite try
@@ -111,7 +111,18 @@
 
         ;Create uninstaller
         WriteUninstaller "$INSTDIR\Uninstall.exe"
-
+        
+        ; Create entry in Add/Remove programs
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayName" "PyKeylogger - Simple Python Keylogger"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "UninstallString" "$INSTDIR\Uninstall.exe"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "InstallLocation" "$INSTDIR"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayIcon" "$INSTDIR\pykeylogger.exe,0"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayVersion" "${PYKEYLOGGER_VERSION}"
+        WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "NoModify" 1
+        WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "NoRepair" 1
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "URLInfoAbout" "${PYKEYLOGGER_WEB_SITE}"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "HelpLink" "${PYKEYLOGGER_WEB_SITE}"
+    
     SectionEnd
 
     ;;;;;;;;;;;;;
@@ -123,8 +134,8 @@
 
             ;Create shortcuts
             CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger.lnk" "$INSTDIR\keylogger.exe" " " "$INSTDIR\pykeyloggericon.ico" 0
-            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Debug Mode.lnk" "$INSTDIR\keylogger_debug.exe" "-d" "$INSTDIR\pykeyloggericon.ico" 0
+            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger.lnk" "$INSTDIR\pykeylogger.exe" " " "$INSTDIR\pykeyloggericon.ico" 0
+            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Debug Mode.lnk" "$INSTDIR\pykeylogger_debug.exe" "-d" "$INSTDIR\pykeyloggericon.ico" 0
             WriteIniStr "$INSTDIR\${PYKEYLOGGER_NAME} Website.url" "InternetShortcut" "URL" "${PYKEYLOGGER_WEB_SITE}"
             CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Website.lnk" "$INSTDIR\${PYKEYLOGGER_NAME} Website.url"
             CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall PyKeylogger.lnk" "$INSTDIR\Uninstall.exe"
@@ -144,7 +155,7 @@
 ;Descriptions
 
     ;Language strings
-    LangString DESC_SecFiles ${LANG_ENGLISH} "Install Application Files."
+    LangString DESC_SecFiles ${LANG_ENGLISH} "Install Program Files."
     LangString DESC_SecStartMenuShortcut ${LANG_ENGLISH} "Create Start Menu Shortcuts."
     LangString DESC_SecDesktopShortcut ${LANG_ENGLISH} "Create Desktop Shortcut."
 
@@ -170,6 +181,9 @@
         
         ; Registry  
         DeleteRegKey /ifempty HKCU "Software\${PYKEYLOGGER_INSTALLDIR}"
+        ; Registry Add/Remove programs
+        DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}"
+        
         SetAutoClose false ; this lets us look at the uninstall log
 
     SectionEnd
