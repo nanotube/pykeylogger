@@ -2,6 +2,14 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 1.0.3 (2008-08-04)
+
+*) get the big icon by full path, fixing a possible bug... (http://sourceforge.net/forum/forum.php?thread_id=2121353&forum_
+id=493189)
+*) make pykeylogger stealth-able by a simple change of version.name. version.name now propagates to .ini, .val, and icon filenames that pykeylogger looks for by default, and also to the name of the executables built with py2exe.
+*) create a .exe installer distribution for pykeylogger: more user-friendliness!
+
+-----
 Version 1.0.2 (2008-04-08)
 
 *) Add some pretty graphics to the main control panel window.
