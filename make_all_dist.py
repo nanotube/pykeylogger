@@ -216,7 +216,7 @@ if __name__ == '__main__':
     
     db = DistributionBuilder('standard')
     db.run()
-    #~ db = DistributionBuilder('nonag')
-    #~ db.run()
-    #~ db = DistributionBuilder('stealth')
-    #~ db.run()
+    db = DistributionBuilder('nonag')
+    db.run()
+    db = DistributionBuilder('stealth')
+    db.run()
