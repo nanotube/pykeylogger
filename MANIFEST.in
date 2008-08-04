@@ -2,9 +2,11 @@ include *.txt
 include *.TXT
 include *.py
 include *.pyw
-include pykeylogger.ini
-include pykeylogger.val
-exclude test*.py
+include *.ini
+include *.val
 include MANIFEST
 include MANIFEST.in
-include pykeyloggericon*
+include *.gif
+include *.svg
+include *.ico
+include *.nsi
