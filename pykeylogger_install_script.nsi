@@ -18,6 +18,7 @@
     !define PYKEYLOGGER_PUBLISHER "Daniel Folkinshteyn"
     !define PYKEYLOGGER_WEB_SITE "http://pykeylogger.sourceforge.net"
     !define PYKEYLOGGER_INSTALLDIR "PyKeylogger"
+    !define PYKEYLOGGER_EXENAME "pykeylogger"
 
     ;Name and file
     Name "Simple Python Keylogger"
@@ -116,7 +117,7 @@
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayName" "PyKeylogger - Simple Python Keylogger"
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "UninstallString" "$INSTDIR\Uninstall.exe"
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "InstallLocation" "$INSTDIR"
-        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayIcon" "$INSTDIR\pykeylogger.exe,0"
+        WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayIcon" "$INSTDIR\${PYKEYLOGGER_EXENAME}.exe,0"
         WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "DisplayVersion" "${PYKEYLOGGER_VERSION}"
         WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "NoModify" 1
         WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PYKEYLOGGER_INSTALLDIR}" "NoRepair" 1
@@ -134,8 +135,8 @@
 
             ;Create shortcuts
             CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger.lnk" "$INSTDIR\pykeylogger.exe" " " "$INSTDIR\pykeyloggericon.ico" 0
-            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Debug Mode.lnk" "$INSTDIR\pykeylogger_debug.exe" "-d" "$INSTDIR\pykeyloggericon.ico" 0
+            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger.lnk" "$INSTDIR\${PYKEYLOGGER_EXENAME}.exe" " " "$INSTDIR\${PYKEYLOGGER_EXENAME}icon.ico" 0
+            CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Debug Mode.lnk" "$INSTDIR\${PYKEYLOGGER_EXENAME}_debug.exe" "-d" "$INSTDIR\${PYKEYLOGGER_EXENAME}icon.ico" 0
             WriteIniStr "$INSTDIR\${PYKEYLOGGER_NAME} Website.url" "InternetShortcut" "URL" "${PYKEYLOGGER_WEB_SITE}"
             CreateShortCut "$SMPROGRAMS\$StartMenuFolder\PyKeylogger Website.lnk" "$INSTDIR\${PYKEYLOGGER_NAME} Website.url"
             CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall PyKeylogger.lnk" "$INSTDIR\Uninstall.exe"
@@ -147,7 +148,7 @@
 
     Section /o "Desktop Shortcut" SecDesktopShortcut
         SetOverwrite on
-        CreateShortCut "$DESKTOP\PyKeylogger.lnk" "$INSTDIR\keylogger.exe" " " "$INSTDIR\pykeyloggericon.ico" 0
+        CreateShortCut "$DESKTOP\PyKeylogger.lnk" "$INSTDIR\${PYKEYLOGGER_EXENAME}.exe" " " "$INSTDIR\${PYKEYLOGGER_EXENAME}icon.ico" 0
         SetOverwrite off
     SectionEnd
 
