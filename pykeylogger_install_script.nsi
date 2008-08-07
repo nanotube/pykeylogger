@@ -14,7 +14,7 @@
 ;General
 
     !define PYKEYLOGGER_NAME "Simple Python Keylogger"
-    !define PYKEYLOGGER_VERSION "1.0.3"
+    !define PYKEYLOGGER_VERSION "1.0.4"
     !define PYKEYLOGGER_PUBLISHER "Daniel Folkinshteyn"
     !define PYKEYLOGGER_WEB_SITE "http://pykeylogger.sourceforge.net"
     !define PYKEYLOGGER_INSTALLDIR "PyKeylogger"
