@@ -269,7 +269,7 @@ class LogWriter(threading.Thread):
         self.processName = self.GetProcessName(event)
         if self.settings['General']['Applications Not Logged'] != 'None':
             for path in self.settings['General']['Applications Not Logged'].split(';'):
-                if os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
+                if os.path.exists(path) and os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
 
