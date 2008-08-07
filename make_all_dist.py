@@ -14,6 +14,9 @@ class DistributionBuilderController:
         self.ParseOptions() # stored in self.cmdoptions
     
     def run(self):
+        
+        self.version_check()
+        
         if self.cmdoptions.disttype in ['standard', 'all']:
             print "Running standard build..."
             db = DistributionBuilder('standard')
@@ -38,7 +41,13 @@ class DistributionBuilderController:
                             disttype="all")
         
         (self.cmdoptions, args) = parser.parse_args()
-
+    
+    def version_check(self):
+        if raw_input("Current version is " + version.version + ". Is that correct? [Y/N] ") in ["y", "Y", "yes", "YES", "Yes"]:
+            pass
+        else:
+            sys.exit()
+    
 class DistributionBuilder:
     def __init__(self, disttype):
         '''disttype is either "standard", "nonag", or "stealth"
@@ -51,13 +60,7 @@ class DistributionBuilder:
             self.filename_addendum = '_nonag'
         elif self.disttype == 'stealth':
             self.filename_addendum = '_stealth'
-    
-    def version_check(self):
-        if raw_input("Current version is " + version.version + ". Is that correct? [Y/N] ") in ["y", "Y", "yes", "YES", "Yes"]:
-            pass
-        else:
-            sys.exit()
-    
+        
     def toggle_nag(self, new_state):
         f = open('keylogger.pyw','r')
         try:
@@ -112,7 +115,6 @@ class DistributionBuilder:
 
     def run(self):
         #this is where we do stuff
-        self.version_check()
         
         if self.disttype == 'nonag' or self.disttype == 'stealth':
             self.toggle_nag('False')
