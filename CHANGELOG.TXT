@@ -2,6 +2,14 @@ PyKeylogger Changelog
 ---------------------
 
 -----
+Version 1.0.4 (2008-08-07)
+
+*) Fix bug discovered by Will Ashford (who also gracefully provided a simple fix): if an application that isn't present on the computer is listed under 'Applications Not Logged', then no keystrokes whatsoever would be recorded, since an exception gets thrown every time.
+*) Fix bug where the desktop shortcut created by the installer pointed to a nonexistent executable.
+*) Fix the stealth installer build to link shortcuts to the correct stealth-renamed executables.
+*) Usability improvements for the distribution builder script.
+
+-----
 Version 1.0.3 (2008-08-04)
 
 *) get the big icon by full path, fixing a possible bug... (http://sourceforge.net/forum/forum.php?thread_id=2121353&forum_
