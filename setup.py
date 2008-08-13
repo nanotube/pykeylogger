@@ -8,7 +8,11 @@
 
 
 from distutils.core import setup
-import py2exe
+import sys
+
+if sys.argv[1] == 'py2exe':
+    import py2exe
+
 import version
 
 setup(
