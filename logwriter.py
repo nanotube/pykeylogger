@@ -192,7 +192,7 @@ class LogWriter(threading.Thread):
                 
                 # try a few different environment vars to get the username
                 for varname in ['USERNAME','USER','LOGNAME']:
-                    username = os.getenv(var)
+                    username = os.getenv(varname)
                     if username is not None:
                         break
                 if username is None:
