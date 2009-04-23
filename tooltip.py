@@ -105,17 +105,23 @@ class ToolTip:
                 KeyError = 'KeyError: Unknown option: "%s"' %key
                 raise KeyError
 
-    ##----these methods handle the callbacks on "<Enter>", "<Leave>" and "<Motion>"---------------##
-    ##----events on the parent widget; override them if you want to change the widget's behavior--##
-
     def enter(self, event=None):
+        """Handles the callback on <Enter> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         self._schedule()
 
     def leave(self, event=None):
+        """Handles the callback on <Leave> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         self._unschedule()
         self._hide()
 
     def motion(self, event=None):
+        """Handles the callback on <Motion> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         if self._tipwindow and self._follow_mouse:
             x, y = self.coords()
             self._tipwindow.wm_geometry("+%d+%d" % (x, y))
