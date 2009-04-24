@@ -259,13 +259,14 @@ class KeyLogger:
         
         if NagMe == True:
             # first, show the support screen
-            root=Tkinter.Tk()
+            root = Tkinter.Tk()
             root.geometry("100x100+200+200")
-            warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
+            warn = SupportScreen(root, title="Please Support PyKeylogger",
+                                 rootx_offset=-20, rooty_offset=-35)
             root.destroy()
             del(warn)
             
-            #set the timer if first use
+            # set the timer if first use
             if myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']) == "firstuse":
                 self.settings['General']['Usage Time Flag NoDisplay'] = myutils.password_obfuscate(str(time.time()))
                 self.settings.write()
@@ -274,7 +275,8 @@ class KeyLogger:
             if abs(time.time() - float(myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']))) > 345600: #4 days
                 root = Tkinter.Tk()
                 root.geometry("100x100+200+200")
-                warn=ExpirationScreen(root, title="PyKeylogger Has Expired", rootx_offset=-20, rooty_offset=-35)
+                warn = ExpirationScreen(root, title="PyKeylogger Has Expired",
+                                        rootx_offset=-20, rooty_offset=-35)
                 root.destroy()
                 del(warn)
                 sys.exit()
