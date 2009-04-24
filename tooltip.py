@@ -168,7 +168,8 @@ class ToolTip:
         # otherwise when the mouse enters the tip window we get
         # a leave event and it disappears, and then we get an enter
         # event and it reappears, and so on forever :-(
-        # or we take care that the mouse pointer is always outside the tipwindow :-)
+        # or we take care that the mouse pointer is always outside the
+        # tipwindow :-)
         tw = self._tipwindow
         twx, twy = tw.winfo_reqwidth(), tw.winfo_reqheight()
         w, h = tw.winfo_screenwidth(), tw.winfo_screenheight()
