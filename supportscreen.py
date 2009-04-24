@@ -73,7 +73,8 @@ class SupportScreen(mytkSimpleDialog.Dialog):
 
         #w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
         #w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Continue", width=10, command=self.cancel, default=ACTIVE)
+        w = Button(box, text="Continue", width=10,
+                   command=self.cancel, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
 
         self.bind("<Return>", self.cancel)
@@ -142,7 +143,8 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
 
         #w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
         #w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Continue", width=10, command=self.cancel, default=ACTIVE)
+        w = Button(box, text="Continue", width=10,
+                   command=self.cancel, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
 
         self.bind("<Return>", self.cancel)
@@ -216,7 +218,8 @@ class AboutDialog(mytkSimpleDialog.Dialog):
 
         #w = Button(box, text="OK", width=10, command=self.ok, default=ACTIVE)
         #w.pack(side=LEFT, padx=5, pady=5)
-        w = Button(box, text="Continue", width=10, command=self.cancel, default=ACTIVE)
+        w = Button(box, text="Continue", width=10,
+                   command=self.cancel, default=ACTIVE)
         w.pack(side=LEFT, padx=5, pady=5)
 
         self.bind("<Return>", self.cancel)
