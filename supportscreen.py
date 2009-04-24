@@ -83,7 +83,8 @@ class SupportScreen(mytkSimpleDialog.Dialog):
         box.pack()
 
     def openHREF(self, event):
-        start, end = self.t.tag_prevrange("href", self.t.index("@%s,%s" % (event.x, event.y)))
+        start, end = self.t.tag_prevrange("href",
+           self.t.index("@%s,%s" % (event.x, event.y)))
         #print "Going to %s..." % t.get(start, end)
         webbrowser.open(self.t.get(start, end))
 
@@ -153,7 +154,8 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         box.pack()
 
     def openHREF(self, event):
-        start, end = self.t.tag_prevrange("href", self.t.index("@%s,%s" % (event.x, event.y)))
+        start, end = self.t.tag_prevrange("href",
+           self.t.index("@%s,%s" % (event.x, event.y)))
         #print "Going to %s..." % t.get(start, end)
         webbrowser.open(self.t.get(start, end))
 
@@ -228,7 +230,8 @@ class AboutDialog(mytkSimpleDialog.Dialog):
         box.pack()
 
     def openHREF(self, event):
-        start, end = self.t.tag_prevrange("href", self.t.index("@%s,%s" % (event.x, event.y)))
+        start, end = self.t.tag_prevrange("href",
+           self.t.index("@%s,%s" % (event.x, event.y)))
         #print "Going to %s..." % t.get(start, end)
         webbrowser.open(self.t.get(start, end))
 
