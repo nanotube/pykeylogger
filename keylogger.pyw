@@ -110,14 +110,19 @@ class KeyLogger:
            file before doing anything.
            
            '''
+        log_dir = os.path.normpath(self.settings['General']['Log Directory'])
         if os.path.isabs(self.settings['General']['Log Directory']):
-            self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
+            self.settings['General']['Log Directory'] = log_dir
         else:
-            self.settings['General']['Log Directory'] = os.path.join(myutils.get_main_dir(), os.path.normpath(self.settings['General']['Log Directory']))
+            self.settings['General']['Log Directory'] = \
+               os.path.join(myutils.get_main_dir(), log_dir)
         
-        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
-        self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
-        self.settings['General']['System Log'] = self.filter.sub(r'__',self.settings['General']['System Log'])
+        # Regexp filter for the non-allowed characters in windows filenames.
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
+        self.settings['General']['Log File'] = \
+           self.filter.sub(r'__',self.settings['General']['Log File'])
+        self.settings['General']['System Log'] = \
+           self.filter.sub(r'__',self.settings['General']['System Log'])
         
         # todo: also want to run imagesdirectoryname (tbc) through self.filter 
         
