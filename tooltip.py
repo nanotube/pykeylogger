@@ -126,7 +126,7 @@ class ToolTip:
             x, y = self.coords()
             self._tipwindow.wm_geometry("+%d+%d" % (x, y))
 
-    ##------the methods that do the work:---------------------------------------------------------##
+    ##------the methods that do the work:------------------------------------##
 
     def _schedule(self):
         self._unschedule()
@@ -161,7 +161,7 @@ class ToolTip:
         if tw:
             tw.destroy()
 
-    ##----these methods might be overridden in derived classes:----------------------------------##
+    ##----these methods might be overridden in derived classes:--------------##
 
     def coords(self):
         # The tip window must be completely outside the master widget;
