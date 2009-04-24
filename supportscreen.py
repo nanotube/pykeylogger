@@ -4,9 +4,9 @@ import mytkSimpleDialog
 import ScrolledText
 import version
 
+BASE_SF_URL = "http://pykeylogger.wiki.sourceforge.net"
+
 class SupportScreen(mytkSimpleDialog.Dialog):
-    
-    BASE_SF_URL = "http://pykeylogger.wiki.sourceforge.net"
     
     def __init__(self, parent, title = None,
                  rootx_offset=50, rooty_offset=50):
@@ -65,8 +65,9 @@ class SupportScreen(mytkSimpleDialog.Dialog):
         self.t.config(cursor="arrow")
 
     def buttonbox(self):
-        # add standard button box. override if you don't want the
-        # standard buttons
+        """Adds standard button box.
+        
+           Override if you don't want the standard buttons."""
         
         box = Frame(self)
 
@@ -133,8 +134,9 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         self.t.config(cursor="arrow")
 
     def buttonbox(self):
-        # add standard button box. override if you don't want the
-        # standard buttons
+        """Adds standard button box.
+        
+           Override if you don't want the standard buttons."""
         
         box = Frame(self)
 
@@ -206,8 +208,9 @@ class AboutDialog(mytkSimpleDialog.Dialog):
         self.t.config(cursor="arrow")
 
     def buttonbox(self):
-        # add standard button box. override if you don't want the
-        # standard buttons
+        """Adds standard button box.
+        
+           Override if you don't want the standard buttons."""
         
         box = Frame(self)
 
