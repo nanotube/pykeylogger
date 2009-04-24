@@ -90,8 +90,10 @@ class SupportScreen(mytkSimpleDialog.Dialog):
 
 
 class ExpirationScreen(mytkSimpleDialog.Dialog):
-    def __init__(self, parent, title = None, rootx_offset=50, rooty_offset=50):
-        mytkSimpleDialog.Dialog.__init__(self, parent, title, rootx_offset, rooty_offset)
+    def __init__(self, parent, title = None,
+                 rootx_offset=50, rooty_offset=50):
+        mytkSimpleDialog.Dialog.__init__(self, parent, title,
+                                         rootx_offset, rooty_offset)
 
     def body(self, master):
         self.t = ScrolledText.ScrolledText(master)
@@ -160,8 +162,10 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         webbrowser.open(self.t.get(start, end))
 
 class AboutDialog(mytkSimpleDialog.Dialog):
-    def __init__(self, parent, title = None, rootx_offset=50, rooty_offset=50):
-        mytkSimpleDialog.Dialog.__init__(self, parent, title, rootx_offset, rooty_offset)
+    def __init__(self, parent, title = None,
+                 rootx_offset=50, rooty_offset=50):
+        mytkSimpleDialog.Dialog.__init__(self, parent, title,
+                                         rootx_offset, rooty_offset)
 
     def body(self, master):
         self.t = ScrolledText.ScrolledText(master)
