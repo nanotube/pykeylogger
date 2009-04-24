@@ -127,7 +127,8 @@ class KeyLogger:
         # todo: also want to run imagesdirectoryname (tbc) through self.filter 
         
     def ParseControlKey(self):
-        self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
+        self.ControlKeyHash = \
+           ControlKeyHash(self.settings['General']['Control Key'])
         
     def OnKeyDownEvent(self, event):
         '''Called when a key is pressed.
