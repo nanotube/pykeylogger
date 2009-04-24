@@ -318,7 +318,8 @@ class ControlKeyHash:
         self.controlKeyList = controlkeysetting.split(';')
         
         # Capitalize all items for greater tolerance of variant user inputs.
-        self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
+        self.controlKeyList = \
+           [item.capitalize() for item in self.controlKeyList]
         # Remove duplicates.
         self.controlKeyList = list(set(self.controlKeyList))
         
@@ -327,13 +328,17 @@ class ControlKeyHash:
         if os.name == 'nt':
             for item in self.controlKeyList:
                 if item in lin_win_dict.keys():
-                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+                    self.controlKeyList[self.controlKeyList.index(item)] = \
+                       lin_win_dict[item]
         elif os.name == 'posix':
             for item in self.controlKeyList:
                 if item in win_lin_dict.keys():
-                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+                    self.controlKeyList[self.controlKeyList.index(item)] = \
+                       lin_win_dict[item]
         
-        self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+        self.controlKeyHash = dict(zip(
+           self.controlKeyList,
+           [False for item in self.controlKeyList]))
     
     def update(self, event):
         if event.MessageName == 'key down' and event.Key.capitalize() in self.controlKeyHash.keys():
