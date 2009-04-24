@@ -206,24 +206,32 @@ class KeyLogger:
            '''
         
         if not os.path.isabs(self.cmdoptions.configfile):
-            self.cmdoptions.configfile = os.path.join(myutils.get_main_dir(), self.cmdoptions.configfile)
+            self.cmdoptions.configfile = os.path.join(
+                myutils.get_main_dir(), self.cmdoptions.configfile)
         if not os.path.isabs(self.cmdoptions.configval):
-            self.cmdoptions.configval = os.path.join(myutils.get_main_dir(), self.cmdoptions.configval)
+            self.cmdoptions.configval = os.path.join(
+                myutils.get_main_dir(), self.cmdoptions.configval)
             
-        self.settings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+        self.settings = ConfigObj(self.cmdoptions.configfile,
+                                  configspec=self.cmdoptions.configval,
+                                  list_values=False)
 
         # validate the config file
-        errortext="Some of your input contains errors. Detailed error output below.\n\n"
+        errortext = "Some of your input contains errors. " + \
+                    "Detailed error output below.\n\n"
         val = Validator()
         valresult = self.settings.validate(val, preserve_errors=True)
+        error_tpl = "Error in item \"%s\": %s\n"
         if valresult != True:
             for section in valresult.keys():
                 if valresult[section] != True:
                     sectionval = valresult[section]
                     for key in sectionval.keys():
                         if sectionval[key] != True:
-                            errortext += "Error in item \"" + str(key) + "\": " + str(sectionval[key]) + "\n"
-            tkMessageBox.showerror("Errors in config file. Exiting.", errortext)
+                            errortext += error_tpl % \
+                               (str(key), str(sectionval[key]))
+            tkMessageBox.showerror("Errors in config file. Exiting.",
+                                   errortext)
             sys.exit()
         
     def NagscreenLogic(self):
