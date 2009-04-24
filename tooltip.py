@@ -204,7 +204,8 @@ def demo():
     l = Tkinter.Listbox(root)
     l.insert('end', "I'm a listbox")
     l.pack(side='top')
-    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set to 1, so I won't be placed outside my parent")
+    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set "
+       "to 1, so I won't be placed outside my parent")
     b = Tkinter.Button(root, text='Quit', command=root.quit)
     b.pack(side='bottom')
     t2 = ToolTip(b, text='Enough of this')
