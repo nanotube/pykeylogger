@@ -51,9 +51,12 @@ import Queue
 import threading
 
 class KeyLogger:
-    ''' Captures all keystrokes, puts events in Queue for later processing
-    by the LogWriter class
-    '''
+    '''Captures all keystrokes, enqueue events.
+    
+       Puts keystrokes events in queue for later processing by the LogWriter
+       class.
+       
+       '''
     def __init__(self): 
         
         self.ParseOptions() # stored in self.cmdoptions
@@ -102,13 +105,13 @@ class KeyLogger:
             self.hm.start()
         
     def process_settings(self):
-        '''Process some settings values to correct for user input errors, 
-        and to detect proper full path of the log directory.
+        '''Sanitizes user input and detects full path of the log directory.
         
-        We can change things in the settings configobj with impunity here,
-        since the control panel process get a fresh read of settings from file
-        before doing anything.
-        '''
+           We can change things in the settings configobj with impunity here,
+           since the control panel process get a fresh read of settings from
+           file before doing anything.
+           
+           '''
         
         if os.path.isabs(self.settings['General']['Log Directory']):
             self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
@@ -125,11 +128,12 @@ class KeyLogger:
         self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
         
     def OnKeyDownEvent(self, event):
-        '''This function is the stuff that's supposed to happen when a key is pressed.
-        Puts the event in queue, 
-        Updates the control key combo status,
-        And passes the event on to the system.
-        '''
+        '''Called when a key is pressed.
+        
+           Puts the event in queue, updates the control key combo status,
+           and passes the event on to the system.
+           
+           '''
         
         self.q_logwriter.put(event)
         
@@ -163,8 +167,7 @@ class KeyLogger:
         return True
     
     def stop(self):
-        '''Exit cleanly.
-        '''
+        '''Exit cleanly.'''
         
         if os.name == 'posix':
             self.hm.cancel()
@@ -176,8 +179,7 @@ class KeyLogger:
         sys.exit()
     
     def ParseOptions(self):
-        '''Read command line options
-        '''
+        '''Read command line options.'''
         parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
         parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
         parser.add_option("-c", "--configfile", action="store", dest="configfile", help="filename of the configuration ini file. [default: %default]")
@@ -190,12 +192,18 @@ class KeyLogger:
         (self.cmdoptions, args) = parser.parse_args()
     
     def ParseConfigFile(self):
-        '''Read config file options from .ini file.
-        Filename as specified by "--configfile" option, default "pykeylogger.ini".
-        Validation file specified by "--configval" option, default "pykeylogger.val".
+        '''Reads config file options from .ini file.
         
-        Give detailed error box and exit if validation on the config file fails.
-        '''
+           Filename as specified by "--configfile" option,
+           default "pykeylogger.ini".
+           
+           Validation file specified by "--configval" option,
+           default "pykeylogger.val".
+           
+           Give detailed error box and exit if validation on the config file
+           fails.
+           
+           '''
         
         if not os.path.isabs(self.cmdoptions.configfile):
             self.cmdoptions.configfile = os.path.join(myutils.get_main_dir(), self.cmdoptions.configfile)
@@ -219,8 +227,7 @@ class KeyLogger:
             sys.exit()
         
     def NagscreenLogic(self):
-        '''Figure out whether the nagscreen should be shown, and if so, show it.
-        '''
+        '''Show the nagscreen (or not).'''
         
         # Congratulations, you have found the nag control. See, that wasn't so hard, was it? :)
         # 
@@ -254,9 +261,12 @@ class KeyLogger:
                 sys.exit()
 
 class ControlKeyHash:
-    '''Encapsulates the control key dictionary which is used to keep
-    track of whether the control key combo has been pressed.
-    '''
+    '''Encapsulates the control key dictionary.
+       
+       This dictionary is used to keep track of whether the control key combo
+       has been pressed.
+       
+       '''
     def __init__(self, controlkeysetting):
         
         #~ lin_win_dict = {'Alt_L':'Lmenu',
@@ -320,9 +330,12 @@ class ControlKeyHash:
         return str(self.controlKeyHash)
 
 class ControlKeyMonitor(threading.Thread):
-    '''Polls the control key hash status periodically, to see if
-    the control key combo has been pressed. Brings up control panel if it has.
-    '''
+    '''Polls the control key hash status periodically.
+       
+       Done to see if the control key combo has been pressed.
+       Brings up control panel if it has.
+       
+       '''
     def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
