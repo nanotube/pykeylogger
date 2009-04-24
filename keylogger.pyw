@@ -341,9 +341,11 @@ class ControlKeyHash:
            [False for item in self.controlKeyList]))
     
     def update(self, event):
-        if event.MessageName == 'key down' and event.Key.capitalize() in self.controlKeyHash.keys():
+        if event.MessageName == 'key down' and \
+           event.Key.capitalize() in self.controlKeyHash.keys():
             self.controlKeyHash[event.Key.capitalize()] = True
-        if event.MessageName == 'key up' and event.Key.capitalize() in self.controlKeyHash.keys():
+        if event.MessageName == 'key up' and \
+           event.Key.capitalize() in self.controlKeyHash.keys():
             self.controlKeyHash[event.Key.capitalize()] = False
     
     def reset(self):
