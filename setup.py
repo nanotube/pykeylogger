@@ -28,8 +28,8 @@ setup(
     author_email = version.author_email,
     platforms = [version.platform],
     
-    # the following doesn't work - for some reason bundling everything into one exe 
-    # causes the program to crash out on start.
+    # The following doesn't work - for some reason bundling everything into one
+    # exe causes the program to crash out on start.
     #~ options = {'py2exe': {'bundle_files': 1}},
     #~ zipfile = None,
     
@@ -55,7 +55,7 @@ setup(
        {
            "script": "keylogger.pyw",
            "dest_base": version.name,
-            "icon_resources": [(0, version.name+"icon.ico")]
+               "icon_resources": [(0, version.name+"icon.ico")]
        }
     ],
     )
