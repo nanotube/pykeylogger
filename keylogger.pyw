@@ -180,16 +180,26 @@ class KeyLogger:
     
     def ParseOptions(self):
         '''Read command line options.'''
-        parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
-        parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
-        parser.add_option("-c", "--configfile", action="store", dest="configfile", help="filename of the configuration ini file. [default: %default]")
-        parser.add_option("-v", "--configval", action="store", dest="configval", help="filename of the configuration validation file. [default: %default]")
+        version_str = version.description + " version " + version.version + \
+                      " (" + version.url + ")."
+        parser = OptionParser(version=version_str)
+        parser.add_option("-d", "--debug",
+           action="store_true", dest="debug",
+           help="debug mode (print output to console instead of the log file) "
+                "[default: %default]")
+        parser.add_option("-c", "--configfile",
+           action="store", dest="configfile",
+           help="filename of the configuration ini file. [default: %default]")
+        parser.add_option("-v", "--configval",
+           action="store", dest="configval",
+           help="filename of the configuration validation file. "
+                "[default: %default]")
         
         parser.set_defaults(debug=False,
                             configfile=version.name + ".ini",
                             configval=version.name + ".val")
         
-        (self.cmdoptions, args) = parser.parse_args()
+        self.cmdoptions, args = parser.parse_args()
     
     def ParseConfigFile(self):
         '''Reads config file options from .ini file.
