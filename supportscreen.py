@@ -244,17 +244,20 @@ if __name__ == '__main__':
     # test code
     root=Tk()
     root.geometry("100x100+200+200")
-    warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
+    warn=SupportScreen(root, title="Please Support PyKeylogger",
+                       rootx_offset=-20, rooty_offset=-35)
     root.quit()
     root.destroy()
     
     root=Tk()
     root.geometry("100x100+200+200")
-    warn=ExpirationScreen(root, title="PyKeylogger Has Expired", rootx_offset=-20, rooty_offset=-35)
+    warn=ExpirationScreen(root, title="PyKeylogger Has Expired",
+                          rootx_offset=-20, rooty_offset=-35)
     root.quit()
     root.destroy()
     
     root=Tk()
     root.geometry("100x100+200+200")
-    warn=AboutDialog(root, title="About PyKeylogger", rootx_offset=-20, rooty_offset=-35)
+    warn=AboutDialog(root, title="About PyKeylogger",
+                     rootx_offset=-20, rooty_offset=-35)
     root.quit()
