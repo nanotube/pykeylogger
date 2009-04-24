@@ -353,7 +353,7 @@ class ControlKeyHash:
             self.controlKeyHash[key] = False
     
     def check(self):
-        if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+        if self.controlKeyHash.values() == [True] * len(self.controlKeyHash):
             return True
         else:
             return False
