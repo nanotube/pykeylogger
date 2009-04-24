@@ -63,10 +63,17 @@ class KeyLogger:
         self.process_settings()
         self.q_logwriter = Queue.Queue(0)
         self.q_imagewriter = Queue.Queue(0)
-        self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
-        self.iw = ImageWriter(self.settings, self.cmdoptions, self.q_imagewriter)
+        self.lw = LogWriter(self.settings,
+                            self.cmdoptions,
+                            self.q_logwriter)
+        self.iw = ImageWriter(self.settings,
+                              self.cmdoptions,
+                              self.q_imagewriter)
         if os.name == 'posix':
-            self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
+            self.hashchecker = ControlKeyMonitor(self.cmdoptions,
+                                                 self.lw,
+                                                 self,
+                                                 self.ControlKeyHash)
         
         self.hm = hooklib.HookManager()
         
