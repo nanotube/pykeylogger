@@ -140,7 +140,6 @@ class ImageWriter(threading.Thread):
     def cancel(self):
         self.finished.set()
     
-    #def capturewindow(self, Window = None, start_x = 0, start_y = 0, width = None, height = None, saveto = "image.png"):
     def capture_image(self, event):
         screensize = self.getScreenSize()
 
@@ -154,7 +153,6 @@ class ImageWriter(threading.Thread):
         
         self.PrintDebug(cropbox)
         
-        #savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
         savefilename = os.path.join(self.imagedir, "click_" + datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + str(datetime.datetime.today().microsecond) + "_" + self.filter.sub(r'__', self.getProcessName(event)) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
         
         if os.name == 'posix':
