@@ -96,7 +96,8 @@ class ImageWriter(threading.Thread):
         
         consolehandler = logging.StreamHandler()
         consolehandler.setLevel(loglevel)
-        formatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+        formatter = logging.Formatter(
+           '%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
         consolehandler.setFormatter(formatter)
         self.logger.addHandler(consolehandler)
     
@@ -108,7 +109,9 @@ class ImageWriter(threading.Thread):
         while not self.finished.isSet():
             try:
                 event = self.q.get(timeout=0.05)
-                if event.MessageName.startswith("mouse left") or event.MessageName.startswith("mouse middle") or event.MessageName.startswith("mouse right"):
+                if event.MessageName.startswith("mouse left") or \
+                   event.MessageName.startswith("mouse middle") or \
+                   event.MessageName.startswith("mouse right"):
                     self.capture_image(event)
                     self.PrintDebug(self.print_event(event))
             except Queue.Empty:
@@ -135,7 +138,10 @@ class ImageWriter(threading.Thread):
 
         # The cropbox will take care of making sure our image is within
         # screen boundaries.
-        cropbox = CropBox(topleft=Point(0,0), bottomright=self.imagedimensions, min=Point(0,0), max=screensize)
+        cropbox = CropBox(topleft=Point(0,0),
+                          bottomright=self.imagedimensions,
+                          min=Point(0,0),
+                          max=screensize)
         cropbox.reposition(Point(event.Position[0], event.Position[1]))
         
         self.PrintDebug(cropbox)
@@ -168,12 +174,15 @@ class ImageWriter(threading.Thread):
         
     def getScreenSize(self):
         if os.name == 'posix':
-            self.rootwin = self.local_dpy.get_input_focus().focus.query_tree().root
+            self.rootwin = \
+               self.local_dpy.get_input_focus().focus.query_tree().root
             if self.rootwin == 0:
                 self.rootwin = self.local_dpy.get_input_focus()
-            return Point(self.rootwin.get_geometry().width, self.rootwin.get_geometry().height)
+            return Point(self.rootwin.get_geometry().width,
+                         self.rootwin.get_geometry().height)
         if os.name == 'nt':
-            return Point(win32api.GetSystemMetrics(0), win32api.GetSystemMetrics (1))
+            return Point(win32api.GetSystemMetrics(0),
+                         win32api.GetSystemMetrics (1))
     
     def getProcessName(self, event):
         '''Get the process name from the event window handle.
@@ -186,13 +195,15 @@ class ImageWriter(threading.Thread):
         if os.name == 'nt':
             hwnd = event.Window
             try:
-                threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
+                threadpid, procpid = \
+                   win32process.GetWindowThreadProcessId(hwnd)
                 
                 # PROCESS_QUERY_INFORMATION (0x0400) or
                 # PROCESS_VM_READ (0x0010) or
                 # PROCESS_ALL_ACCESS (0x1F0FFF)
                 
-                mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
+                mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS,
+                                                False, procpid)
                 procname = win32process.GetModuleFileNameEx(mypyproc, 0)
                 return procname
             except:
@@ -220,8 +231,11 @@ class Point:
 
 
 class CropBox:
-    def __init__(self, topleft=Point(0,0), bottomright=Point(100,100), min=Point(0,0), max=Point(1600,1200)):
-        
+    def __init__(self,
+                 topleft=Point(0,0),
+                 bottomright=Point(100,100),
+                 min=Point(0,0),
+                 max=Point(1600,1200)):
         self.topleft = copy.deepcopy(topleft)
         self.bottomright = copy.deepcopy(bottomright)
         self.min = copy.deepcopy(min)
@@ -230,10 +244,13 @@ class CropBox:
         self.maxsize = self.max - self.min
         # make sure our box is not bigger than the whole image
         if (self.size.x > self.maxsize.x):
-            self.bottomright.x = self.bottomright.x - self.size.x + self.maxsize.x
+            self.bottomright.x = \
+               self.bottomright.x - self.size.x + self.maxsize.x
         if (self.size.y > self.maxsize.y):
-            self.bottomright.y = self.bottomright.y - self.size.y + self.maxsize.y
-        self.center = Point(self.size.x/2 + self.topleft.x, self.size.y/2 + self.topleft.y)
+            self.bottomright.y = \
+               self.bottomright.y - self.size.y + self.maxsize.y
+        self.center = Point(self.size.x/2 + self.topleft.x,
+                            self.size.y/2 + self.topleft.y)
         
     def move(self, xmove=0, ymove=0):
         # make sure we can't move beyond image boundaries
@@ -247,7 +264,8 @@ class CropBox:
             ymove = self.max.y - self.bottomright.y
         self.topleft.move(xmove, ymove)
         self.bottomright.move(xmove, ymove)
-        self.center = Point(self.size.x/2 + self.topleft.x, self.size.y/2 + self.topleft.y)
+        self.center = Point(self.size.x/2 + self.topleft.x,
+                            self.size.y/2 + self.topleft.y)
         #print self.center
     
     def reposition(self, newcenter = Point(500,500)):
@@ -289,11 +307,18 @@ if __name__ == '__main__':
     
     settings={}
     settings['E-mail'] = {'SMTP Send Email':False}
-    settings['Log Maintenance'] = {'Delete Old Logs':False,'Flush Interval':1000,'Log Rotation Interval':4,'Delete Old Logs':False}
+    settings['Log Maintenance'] = {'Delete Old Logs':False,
+                                   'Flush Interval':1000,
+                                   'Log Rotation Interval':4,
+                                   'Delete Old Logs':False}
     settings['Zip'] = {'Zip Enable':False}
-    settings['General'] = {'Log Directory':'logs','System Log':'None','Log Key Count':True}
-    settings['Image Capture'] = {'Capture Clicks Width':300,'Capture Clicks Height':300, 'Capture Clicks Image Format':'png', 'Capture Clicks Image Quality': 75}
-        
+    settings['General'] = {'Log Directory':'logs',
+                           'System Log':'None',
+                           'Log Key Count':True}
+    settings['Image Capture'] = {'Capture Clicks Width':300,
+                                 'Capture Clicks Height':300,
+                                 'Capture Clicks Image Format':'png',
+                                 'Capture Clicks Image Quality': 75}
     iw = ImageWriter(settings, cmdoptions, q)
     iw.start()
     q.put(event)
