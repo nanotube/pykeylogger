@@ -53,7 +53,9 @@ class ImageWriter(threading.Thread):
         
         self.createLogger()
         
-        self.imagedimensions = Point(self.settings['Image Capture']['Capture Clicks Width'], self.settings['Image Capture']['Capture Clicks Height'])
+        self.imagedimensions = \
+           Point(self.settings['Image Capture']['Capture Clicks Width'],
+                 self.settings['Image Capture']['Capture Clicks Height'])
         
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
         
@@ -62,7 +64,8 @@ class ImageWriter(threading.Thread):
             self.local_dpy = display.Display()
         
         #Make sure the image directory is there. If not, create it.
-        self.imagedir = os.path.join(self.settings['General']['Log Directory'], "images")
+        self.imagedir = os.path.join(self.settings['General']['Log Directory'],
+                                     "images")
         #~ originalDir = os.getcwd()
         #~ os.chdir(self.settings['General']['Log Directory'])
         try:
@@ -71,9 +74,11 @@ class ImageWriter(threading.Thread):
             if(detail.errno==17): 
                 pass
             else: 
-                self.logger.error("error creating click image directory", sys.exc_info())
+                self.logger.error("error creating click image directory",
+                                  sys.exc_info())
         except: 
-            self.logger.error("error creating click image directory", sys.exc_info())
+            self.logger.error("error creating click image directory",
+                              sys.exc_info())
         
         #if (event.detail == 1) or (event.detail == 2) or (event.detail == 3):
             #self.captureclick()
