@@ -127,7 +127,15 @@ class ImageWriter(threading.Thread):
         if os.name == 'posix':
             return str(event)
         if os.name == 'nt':
-            return "Window: " + str(event.Window) + "\nWindow Handle: " + str(event.WindowName) + "\nWindow's Process Name: " + self.getProcessName(event) + "\nPosition: " + str(event.Position) + "\nMessageName: " + str(event.MessageName) + "\n"
+            str_tpl = "Window: %s\n" + \
+                      "Window Handle: %s\n" + \
+                      "Window's Process Name: %s\n" + \
+                      "Position: %s\nMessageName: %s\n"
+            return str_tpl % (str(event.Window),
+                              str(event.WindowName),
+                              self.getProcessName(event),
+                              str(event.Position),
+                              str(event.MessageName))
     
     def cancel(self):
         self.finished.set()
@@ -223,7 +231,7 @@ class Point:
         self.x = self.x + xmove
         self.y = self.y + ymove
     def __str__(self):
-        return "[" + str(self.x) + "," + str(self.y) + "]"
+        return "[%d,%d]" % (self.x, self.y)
     def __add__(self, other):
         return Point(self.x+other.x, self.y+other.y)
     def __sub__(self, other):
