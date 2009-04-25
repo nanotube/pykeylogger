@@ -57,7 +57,8 @@ class ImageWriter(threading.Thread):
            Point(self.settings['Image Capture']['Capture Clicks Width'],
                  self.settings['Image Capture']['Capture Clicks Height'])
         
-        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
+        # Regexp filter for the non-allowed characters in windows filenames.
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
         
         # Hook to our display.
         if os.name == 'posix':
@@ -90,7 +91,8 @@ class ImageWriter(threading.Thread):
         self.logger = logging.getLogger('imagewriter')
         self.logger.setLevel(logging.DEBUG)
         
-        # create the "debug" handler - output messages to the console, to stderr, if debug option is set
+        # Create the "debug" handler - output messages to the console,
+        # to stderr, if debug option is set.
         if self.cmdoptions.debug:
             loglevel = logging.DEBUG
         else:
@@ -148,7 +150,9 @@ class ImageWriter(threading.Thread):
             
             AllPlanes = ~0
 
-            try: #cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, self.savefilename
+            try:
+                # cropbox.topleft.x, cropbox.topleft.y,
+                # cropbox.size.x, cropbox.size.y, self.savefilename
                 raw = self.rootwin.get_image(cropbox.topleft.x, cropbox.topleft.y, cropbox.size.x, cropbox.size.y, X.ZPixmap, AllPlanes)
                 Image.fromstring("RGBX", (cropbox.size.x, cropbox.size.y), raw.data, "raw", "BGRX").convert("RGB").save(savefilename, quality=self.settings['Image Capture']['Capture Clicks Image Quality'])
                 return 0
@@ -183,15 +187,18 @@ class ImageWriter(threading.Thread):
             try:
                 threadpid, procpid = win32process.GetWindowThreadProcessId(hwnd)
                 
-                # PROCESS_QUERY_INFORMATION (0x0400) or PROCESS_VM_READ (0x0010) or PROCESS_ALL_ACCESS (0x1F0FFF)
+                # PROCESS_QUERY_INFORMATION (0x0400) or
+                # PROCESS_VM_READ (0x0010) or
+                # PROCESS_ALL_ACCESS (0x1F0FFF)
                 
                 mypyproc = win32api.OpenProcess(win32con.PROCESS_ALL_ACCESS, False, procpid)
                 procname = win32process.GetModuleFileNameEx(mypyproc, 0)
                 return procname
             except:
                 #self.logger.error("Failed to get process info from hwnd.", exc_info=sys.exc_info())
-                # this happens frequently enough - when the last event caused the closure of the window or program
-                # so we just return a nice string and don't worry about it.
+                # This happens frequently enough - when the last event caused
+                # the closure of the window or program so we just return a nice
+                # string and don't worry about it.
                 return "noprocname"
         elif os.name == 'posix':
             return str(event.WindowProcName)
