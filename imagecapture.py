@@ -43,7 +43,6 @@ elif os.name == 'posix':
 
 class ImageWriter(threading.Thread):
     def __init__(self, settings, cmdoptions, queue):
-        
         threading.Thread.__init__(self)
         self.finished = threading.Event()
         
@@ -70,24 +69,21 @@ class ImageWriter(threading.Thread):
         #~ originalDir = os.getcwd()
         #~ os.chdir(self.settings['General']['Log Directory'])
         try:
-            os.makedirs(self.imagedir, 0777) 
+            os.makedirs(self.imagedir, 0777)
         except OSError, detail:
-            if(detail.errno==17): 
+            if(detail.errno==17):
                 pass
-            else: 
+            else:
                 self.logger.error("error creating click image directory",
                                   sys.exc_info())
-        except: 
+        except:
             self.logger.error("error creating click image directory",
                               sys.exc_info())
         
         #if (event.detail == 1) or (event.detail == 2) or (event.detail == 3):
             #self.captureclick()
-        
-        pass
     
     def createLogger(self):
-        
         self.logger = logging.getLogger('imagewriter')
         self.logger.setLevel(logging.DEBUG)
         
@@ -117,7 +113,7 @@ class ImageWriter(threading.Thread):
                     self.capture_image(event)
                     self.PrintDebug(self.print_event(event))
             except Queue.Empty:
-                pass 
+                pass
     
     def print_event(self, event):
         '''prints event. need this because pyhook's event don't have a default __str__ method,
@@ -133,7 +129,6 @@ class ImageWriter(threading.Thread):
     
     #def capturewindow(self, Window = None, start_x = 0, start_y = 0, width = None, height = None, saveto = "image.png"):
     def capture_image(self, event):
-        
         screensize = self.getScreenSize()
 
         # The cropbox will take care of making sure our image is within
@@ -278,6 +273,7 @@ if __name__ == '__main__':
     
     class mouseevent:
         pass
+    
     event = mouseevent()
     event.Window = 655808
     event.WindowName = "WindowName"
