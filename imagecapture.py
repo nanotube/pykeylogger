@@ -101,8 +101,7 @@ class ImageWriter(threading.Thread):
         self.logger.addHandler(consolehandler)
     
     def PrintDebug(self, stuff, exc_info=False):
-        '''Write stuff to console.
-        '''
+        '''Writes stuff to console.'''
         self.logger.debug(stuff, exc_info=exc_info)
     
     def run(self):
@@ -116,9 +115,12 @@ class ImageWriter(threading.Thread):
                 pass
     
     def print_event(self, event):
-        '''prints event. need this because pyhook's event don't have a default __str__ method,
-        so we check for os type, and make it work on windows.
-        '''
+        '''Prints the event.
+        
+           We need this because pyhook's event don't have a default __str__
+           method, so we check for os type, and make it work on windows.
+        
+           '''
         if os.name == 'posix':
             return str(event)
         if os.name == 'nt':
@@ -174,9 +176,13 @@ class ImageWriter(threading.Thread):
             return Point(win32api.GetSystemMetrics(0), win32api.GetSystemMetrics (1))
     
     def getProcessName(self, event):
-        '''Acquire the process name from the event window handle for use in the image filename.
-        On Linux, process name is a direct attribute of the event.
-        '''
+        '''Get the process name from the event window handle.
+           
+           Talking about the event window handle for use in the image filename.
+           
+           On Linux, process name is a direct attribute of the event.
+           
+           '''
         if os.name == 'nt':
             hwnd = event.Window
             try:
