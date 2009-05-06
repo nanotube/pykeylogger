@@ -462,6 +462,7 @@ class LogWriter(threading.Thread):
                 emaillog.write(zipFileList.pop())
                 emaillog.close()
         except:
+            self.PrintDebug('Error sending email.', exc_info=True)
             pass # better luck next time
     
     def OpenLogFile(self):
