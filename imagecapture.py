@@ -32,6 +32,7 @@ import re
 import logging
 import sys
 import copy
+import myutils
 
 if os.name == 'nt':
     import win32api, win32con, win32process
@@ -117,9 +118,9 @@ class ImageWriter(threading.Thread):
         so we check for os type, and make it work on windows.
         '''
         if os.name == 'posix':
-            return str(event)
+            return myutils.to_unicode(event)
         if os.name == 'nt':
-            return "Window: " + str(event.Window) + "\nWindow Handle: " + str(event.WindowName) + "\nWindow's Process Name: " + self.getProcessName(event) + "\nPosition: " + str(event.Position) + "\nMessageName: " + str(event.MessageName) + "\n"
+            return "Window: " + myutils.to_unicode(event.Window) + "\nWindow Handle: " + myutils.to_unicode(event.WindowName) + "\nWindow's Process Name: " + myutils.to_unicode(self.getProcessName(event)) + "\nPosition: " + myutils.to_unicode(event.Position) + "\nMessageName: " + myutils.to_unicode(event.MessageName) + "\n"
     
     def cancel(self):
         self.finished.set()
@@ -137,7 +138,7 @@ class ImageWriter(threading.Thread):
         self.PrintDebug(cropbox)
         
         #savefilename = os.path.join(self.imagedir, "click_" + time.strftime('%Y%m%d_%H%M%S') + "_" + self.filter.sub(r'__', self.getProcessName(event)) + ".png")
-        savefilename = os.path.join(self.imagedir, "click_" + datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + str(datetime.datetime.today().microsecond) + "_" + self.filter.sub(r'__', self.getProcessName(event)) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
+        savefilename = os.path.join(myutils.to_unicode(self.imagedir), "click_" + datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + str(datetime.datetime.today().microsecond) + "_" + self.filter.sub(r'__', myutils.to_unicode(self.getProcessName(event))) + "." + self.settings['Image Capture']['Capture Clicks Image Format'])
         
         if os.name == 'posix':
             
