@@ -545,11 +545,11 @@ class LogWriter(threading.Thread):
                     try:
                         os.remove(os.path.join(root,fname))
                     except:
-                        self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+                        self.PrintDebug('Error deleting file:', exc_info=True)
                     try:
                         os.rmdir(root)
                     except:
-                        self.PrintDebug(str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+                        self.PrintDebug('Error deleting directory:', exc_info=True)
 
     def GetProcessName(self, event):
         '''Acquire the process name from the window handle for use in the log filename.
