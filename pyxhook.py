@@ -78,7 +78,7 @@ class HookManager(threading.Thread):
         self.MouseAllButtonsDown = lambda x: True
         self.MouseAllButtonsUp = lambda x: True
         
-        self.contextEventMask = [0,2]
+        self.contextEventMask = [X.KeyPress,X.MotionNotify]
         
         # Hook to our display.
         self.local_dpy = display.Display()
@@ -123,12 +123,19 @@ class HookManager(threading.Thread):
         print event
     
     def HookKeyboard(self):
-        self.contextEventMask[0] = X.KeyPress
+        
+        # We don't need to do anything here anymore, since the default mask 
+        # is now set to contain X.KeyPress
+        #self.contextEventMask[0] = X.KeyPress
     
     def HookMouse(self):
+        
+        # We don't need to do anything here anymore, since the default mask 
+        # is now set to contain X.MotionNotify
+        
         # need mouse motion to track pointer position, since ButtonPress events
         # don't carry that info.
-        self.contextEventMask[1] = X.MotionNotify
+        #self.contextEventMask[1] = X.MotionNotify
     
     def processevents(self, reply):
         if reply.category != record.FromServer:
