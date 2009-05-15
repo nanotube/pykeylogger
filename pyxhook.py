@@ -123,13 +123,13 @@ class HookManager(threading.Thread):
         print event
     
     def HookKeyboard(self):
-        
+        pass
         # We don't need to do anything here anymore, since the default mask 
         # is now set to contain X.KeyPress
         #self.contextEventMask[0] = X.KeyPress
     
     def HookMouse(self):
-        
+        pass
         # We don't need to do anything here anymore, since the default mask 
         # is now set to contain X.MotionNotify
         
