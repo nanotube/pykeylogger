@@ -33,6 +33,7 @@ else:
 import time
 import re
 import Queue
+from Queue import Empty
 import traceback
 import threading
 import logging
@@ -217,7 +218,7 @@ class LogWriter(threading.Thread):
                 else:
                     self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
                     self.eventlist = eventlisttmp
-            except Queue.Empty:
+            except Empty:
                 pass #let's keep iterating
             except:
                 self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
