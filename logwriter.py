@@ -33,7 +33,7 @@ else:
 import time
 import re
 import Queue
-from Queue import Empty
+from Queue import Empty # to avoid some weird exceptions on exit
 import traceback
 import threading
 import logging

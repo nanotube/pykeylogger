@@ -48,6 +48,7 @@ from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
 import myutils
 import Queue
+from Queue import Empty # to avoid some weird exceptions on exit
 import threading
 
 class KeyLogger:
