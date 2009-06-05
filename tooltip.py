@@ -1,39 +1,67 @@
 '''Michael Lange <klappnase at 8ung dot at>
-The ToolTip class provides a flexible tooltip widget for Tkinter; it is based on IDLE's ToolTip
-module which unfortunately seems to be broken (at least the version I saw).
+
+The ToolTip class provides a flexible tooltip widget for Tkinter; it is based
+on IDLE's ToolTip module which unfortunately seems to be broken (at least the
+version I saw).
+
 INITIALIZATION OPTIONS:
-anchor :        where the text should be positioned inside the widget, must be on of "n", "s", "e", "w", "nw" and so on;
+anchor :        where the text should be positioned inside the widget, must be
+                on of "n", "s", "e", "w", "nw" and so on;
                 default is "center"
-bd :            borderwidth of the widget; default is 1 (NOTE: don't use "borderwidth" here)
-bg :            background color to use for the widget; default is "lightyellow" (NOTE: don't use "background")
-delay :         time in ms that it takes for the widget to appear on the screen when the mouse pointer has
-                entered the parent widget; default is 1500
-fg :            foreground (i.e. text) color to use; default is "black" (NOTE: don't use "foreground")
-follow_mouse :  if set to 1 the tooltip will follow the mouse pointer instead of being displayed
-                outside of the parent widget; this may be useful if you want to use tooltips for
-                large widgets like listboxes or canvases; default is 0
-font :          font to use for the widget; default is system specific
-justify :       how multiple lines of text will be aligned, must be "left", "right" or "center"; default is "left"
-padx :          extra space added to the left and right within the widget; default is 4
-pady :          extra space above and below the text; default is 2
-relief :        one of "flat", "ridge", "groove", "raised", "sunken" or "solid"; default is "solid"
-state :         must be "normal" or "disabled"; if set to "disabled" the tooltip will not appear; default is "normal"
+bd :            borderwidth of the widget; default is 1
+                (NOTE: don't use "borderwidth" here)
+bg :            background color to use for the widget;
+                default is "lightyellow" (NOTE: don't use "background")
+delay :         time in ms that it takes for the widget to appear on the screen
+                when the mouse pointer has entered the parent widget;
+                default is 1500
+fg :            foreground (i.e. text) color to use; default is "black"
+                (NOTE: don't use "foreground")
+follow_mouse :  if set to 1 the tooltip will follow the mouse pointer instead
+                of being displayed outside of the parent widget;
+                this may be useful if you want to use tooltips for large
+                widgets like listboxes or canvases;
+                default is 0
+font :          font to use for the widget;
+                default is system specific
+justify :       how multiple lines of text will be aligned,
+                must be "left", "right" or "center";
+                default is "left"
+padx :          extra space added to the left and right within the widget;
+                default is 4
+pady :          extra space above and below the text;
+                default is 2
+relief :        one of "flat", "ridge", "groove", "raised", "sunken" or
+                "solid";
+                default is "solid"
+state :         must be "normal" or "disabled";
+                if set to "disabled" the tooltip will not appear;
+                default is "normal"
 text :          the text that is displayed inside the widget
-textvariable :  if set to an instance of Tkinter.StringVar() the variable's value will be used as text for the widget
-width :         width of the widget; the default is 0, which means that "wraplength" will be used to limit the widgets width
+textvariable :  if set to an instance of Tkinter.StringVar() the variable's
+                value will be used as text for the widget
+width :         width of the widget;
+                the default is 0, which means that "wraplength" will be used to
+                limit the widgets width
 wraplength :    limits the number of characters in each line; default is 150
 
 WIDGET METHODS:
-configure(**opts) : change one or more of the widget's options as described above; the changes will take effect the
-                    next time the tooltip shows up; NOTE: follow_mouse cannot be changed after widget initialization
+configure(**opts) : change one or more of the widget's options as described
+                    above; the changes will take effect the next time the
+                    tooltip shows up;
+                    NOTE: follow_mouse cannot be changed after widget
+                    initialization
 
 Other widget methods that might be useful if you want to subclass ToolTip:
 enter() :           callback when the mouse pointer enters the parent widget
 leave() :           called when the mouse pointer leaves the parent widget
-motion() :          is called when the mouse pointer moves inside the parent widget if follow_mouse is set to 1 and the
-                    tooltip has shown up to continually update the coordinates of the tooltip window
+motion() :          is called when the mouse pointer moves inside the parent
+                    widget if follow_mouse is set to 1 and the tooltip has
+                    shown up to continually update the coordinates of the
+                    tooltip window
 coords() :          calculates the screen coordinates of the tooltip window
-create_contents() : creates the contents of the tooltip window (by default a Tkinter.Label)
+create_contents() : creates the contents of the tooltip window
+                    (by default a Tkinter.Label)
 '''
 # Ideas gleaned from PySol
 
@@ -42,10 +70,22 @@ import Tkinter
 class ToolTip:
     def __init__(self, master, text='Your text here', delay=1500, **opts):
         self.master = master
-        self._opts = {'anchor':'center', 'bd':1, 'bg':'lightyellow', 'delay':delay, 'fg':'black',\
-                      'follow_mouse':0, 'font':None, 'justify':'left', 'padx':4, 'pady':2,\
-                      'relief':'solid', 'state':'normal', 'text':text, 'textvariable':None,\
-                      'width':0, 'wraplength':400}
+        self._opts = {'anchor':'center',
+                      'bd':1,
+                      'bg':'lightyellow',
+                      'delay':delay,
+                      'fg':'black',
+                      'follow_mouse':0,
+                      'font':None,
+                      'justify':'left',
+                      'padx':4,
+                      'pady':2,
+                      'relief':'solid',
+                      'state':'normal',
+                      'text':text,
+                      'textvariable':None,
+                      'width':0,
+                      'wraplength':400}
         self.configure(**opts)
         self._tipwindow = None
         self._id = None
@@ -65,22 +105,28 @@ class ToolTip:
                 KeyError = 'KeyError: Unknown option: "%s"' %key
                 raise KeyError
 
-    ##----these methods handle the callbacks on "<Enter>", "<Leave>" and "<Motion>"---------------##
-    ##----events on the parent widget; override them if you want to change the widget's behavior--##
-
     def enter(self, event=None):
+        """Handles the callback on <Enter> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         self._schedule()
 
     def leave(self, event=None):
+        """Handles the callback on <Leave> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         self._unschedule()
         self._hide()
 
     def motion(self, event=None):
+        """Handles the callback on <Motion> events on the parent widget.
+           
+           Override them if you want to change the widget's behavior."""
         if self._tipwindow and self._follow_mouse:
             x, y = self.coords()
             self._tipwindow.wm_geometry("+%d+%d" % (x, y))
 
-    ##------the methods that do the work:---------------------------------------------------------##
+    ##------the methods that do the work:------------------------------------##
 
     def _schedule(self):
         self._unschedule()
@@ -115,14 +161,15 @@ class ToolTip:
         if tw:
             tw.destroy()
 
-    ##----these methods might be overridden in derived classes:----------------------------------##
+    ##----these methods might be overridden in derived classes:--------------##
 
     def coords(self):
         # The tip window must be completely outside the master widget;
         # otherwise when the mouse enters the tip window we get
         # a leave event and it disappears, and then we get an enter
         # event and it reappears, and so on forever :-(
-        # or we take care that the mouse pointer is always outside the tipwindow :-)
+        # or we take care that the mouse pointer is always outside the
+        # tipwindow :-)
         tw = self._tipwindow
         twx, twy = tw.winfo_reqwidth(), tw.winfo_reqheight()
         w, h = tw.winfo_screenwidth(), tw.winfo_screenheight()
@@ -158,7 +205,8 @@ def demo():
     l = Tkinter.Listbox(root)
     l.insert('end', "I'm a listbox")
     l.pack(side='top')
-    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set to 1, so I won't be placed outside my parent")
+    t1 = ToolTip(l, follow_mouse=1, text="I'm a tooltip with follow_mouse set "
+       "to 1, so I won't be placed outside my parent")
     b = Tkinter.Button(root, text='Quit', command=root.quit)
     b.pack(side='bottom')
     t2 = ToolTip(b, text='Enough of this')

