@@ -65,6 +65,7 @@ class KeyLogger:
         self.ParseControlKey()
         self.NagscreenLogic()
         self.process_settings()
+        os.chdir(self.settings['General']['Log Directory'])
         self.create_loggers()
         self.q_logwriter = Queue.Queue(0)
         self.q_imagewriter = Queue.Queue(0)

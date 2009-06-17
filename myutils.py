@@ -14,6 +14,11 @@ try:
 except ImportError:
     codecs = None
 
+# used to store the settings dict and make it globally accessible.
+_settings = {}
+# used to store the cmdoptions dict and make it globally accessible.
+_cmdoptions = {}
+
 def password_obfuscate(password):
     return base64.b64encode(zlib.compress(password))
 def password_recover(password):
@@ -81,7 +86,7 @@ class OnDemandRotatingFileHandler(BaseRotatingHandler):
         
         For example, with a base file name of "app.log", and other arguments 
         as default, a rolled-over logfile might have a name of
-        "20090610_234620.app.log.1".
+        "20090610_234620.app.log".
         
         The file being written to is always "app.log".
         
@@ -122,3 +127,5 @@ class OnDemandRotatingFileHandler(BaseRotatingHandler):
         BaseRotatingHandler class definition.
         '''
         return 0
+
+    

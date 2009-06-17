@@ -2,6 +2,33 @@ from threading import Thread, Event
 import logging
 import time
 import re
+import os.path
+from myutils import _settings, _cmdoptions
+import copy
+
+# python 2.5 does some email things differently from python 2.4 and py2exe doesn't like it. 
+# hence, the version check.
+if sys.version_info[0] == 2 and sys.version_info[1] >= 5:
+    from email.mime.multipart import MIMEMultipart 
+    from email.mime.base import MIMEBase 
+    from email.mime.text import MIMEText 
+    from email.utils import COMMASPACE, formatdate 
+    import email.encoders as Encoders
+    
+    #need these to work around py2exe
+    import email.generator
+    import email.iterators
+    import email.utils
+    import email.base64mime 
+    
+if sys.version_info[0] == 2 and sys.version_info[1] < 5:
+    # these are for python 2.4 - they don't play nice with python 2.5 + py2exe.
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEBase import MIMEBase
+    from email.MIMEText import MIMEText
+    from email.Utils import COMMASPACE, formatdate
+    from email import Encoders
+
 
 class BaseTimerClass(Thread):
     '''This is the base class for timer (delay) based threads.
@@ -9,15 +36,23 @@ class BaseTimerClass(Thread):
     Timer-based threads are ones that do not need to be looking at
     keyboard-mouse events to do their job.
     '''
-    def __init__(self, settings, cmdoptions, mainthread, *args, **kwargs):
+    def __init__(self, dir_lock, loggername, *args, **kwargs):
         Thread.__init__(self)
         self.finished = Event()
-        
-        self.settings = settings # settings dict
-        self.cmdoptions = cmdoptions # cli options dict
-        self.mainthread = mainthread # reference to main thread
+        self.dir_lock = dir_lock
+        self.loggername = loggername
         self.args = args # arguments, if any, to pass to task_function
         self.kwargs = kwargs # keyword args, if any, to pass to task_function
+        
+        # set this up for clarity
+        self.subsettings = _settings[loggername]
+        
+        # set these up here because we will usually need them.
+        self.logger = logging.getLogger(self.loggername)
+        self.logfile_path = self.logger.handlers[0].stream.name
+        self.log_full_dir = os.path.dirname(self.logfile_path)
+        self.log_rel_dir = os.path.basename(self.log_full_dir)
+        self.logfile_name = os.path.basename(self.logfile_path)
         
         self.interval = None # set this in derived class
         
@@ -35,49 +70,44 @@ class BaseTimerClass(Thread):
             if not self.finished.isSet():
                 self.task_function(*self.args, **self.kwargs)
                 
-        self.finished.set() # just in case :)
-
         
 class LogRotator(BaseTimerClass):
-    '''This rotates the logfiles for the specified loggers.
+    '''This rotates the logfiles for the specified logger.
     
     This is also one of the simplest time-based worker threads, so would
     serve as a good example if you want to write your own.
     '''
     
     def __init__(self, *args, **kwargs):
-        '''Takes an extra argument: loggers_to_rotate, a list names.'''
         BaseTimerClass.__init__(self, *args, **kwargs)
         
+        ##TODO: this should be logger-specific
         self.interval = \
-            float(self.settings['Log Maintenance']['Log Rotation Interval'])*60*60
+            float(self.subsettings['Log Maintenance']['Log Rotation Interval'])*60*60
         
         self.task_function = self.rotate_logs
-
-    def rotate_logs(self, loggers_to_rotate):
+    
+    def rotate_logs(self):
         
-        for loggername in loggers_to_rotate:
-            logger = logging.getLogger(loggername)
-            for handler in logger.handlers:
-                try:
-                    handler.doRollover()
-                except AttributeError:
-                    logging.getLogger('').debug("Logger %s, handler %r, "
-                        "is not capable of rollover." % (loggername, handler))
+        for handler in self.logger.handlers:
+            try:
+                handler.doRollover()
+            except AttributeError:
+                logging.getLogger('').debug("Logger %s, handler %r, "
+                    "is not capable of rollover." % (loggername, handler))
 
         
 class LogFlusher(BaseTimerClass):
     '''Flushes the logfile write buffers to disk for the specified loggers.'''
     def __init__(self, *args, **kwargs):
-        '''Takes two extra arguments: list of logger names to flush, and
-        log message string.'''
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        self.interval = self.settings['Log Maintenance']['Flush Interval']
+        ##TODO: this should be logger-specific
+        self.interval = float(self.subsettings['Log Maintenance']['Flush Interval'])
         
         self.task_function = self.flush_log_write_buffer
-        
-    def flush_log_write_buffer(self, loggers_to_flush, 
+    
+    def flush_log_write_buffer(self,
             log_message="Logger %s: flushing file write buffers with timer."):
         '''Flushes all relevant log buffers.
         
@@ -86,12 +116,9 @@ class LogFlusher(BaseTimerClass):
         This string is customizable so that manual flushing can use a 
         different message.
         '''
-        for loggername in loggers_to_flush:
-            logger = logging.getLogger(loggername)
-            logging.getLogger('').debug("Logger %s: flushing file write "
-                        "buffers due to timer." % loggername)
-            for handler in logger.handlers:
-                handler.flush()
+        logging.getLogger('').debug(log_message % loggername)
+        for handler in self.logger.handlers:
+            handler.flush()
 
 class OldLogDeleter(BaseTimerClass):
     '''Deletes old logs.
@@ -101,18 +128,23 @@ class OldLogDeleter(BaseTimerClass):
     Age of logs to delete is specified in .ini file settings.
     '''
     def __init__(self, *args, **kwargs):
-        '''Takes an extra argument: list of base log names work on.'''
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        self.interval = float(self.settings['Log Maintenance']['Age Check Interval'])*60*60
+        ##TODO: this should be logger-specific
+        self.interval = \
+            float(self.subsettings['Log Maintenance']['Age Check Interval'])*60*60
         
         self.task_function = self.delete_old_logs
 
-    def delete_old_logs(self, list_of_filenames):
-        logdir = self.settings['General']['Log Directory']
-        max_log_age = float(self.settings['Log Maintenance']['Max Log Age'])*24*60*60
-        filename_re = re.compile(r'(' + r'|'.join(list_of_filenames) + r')')
-        for dirpath, dirnames, filenames in os.walk(logdir):
+    def delete_old_logs(self):
+                
+        ##TODO: the following should be logger-specific
+        max_log_age = \
+            float(self.subsettings['Log Maintenance']['Max Log Age'])*24*60*60
+        filename_re = re.compile(re.escape(self.logfile_name))
+        
+        # todo: replace os.walk with simple os.listdir, since this is now log-specific
+        for dirpath, dirnames, filenames in os.walk(self.log_full_dir):
             for fname in filenames:
                 if filename_re.search(fname):
                     filepath = os.path.join(dirpath, fname)
@@ -125,133 +157,177 @@ class OldLogDeleter(BaseTimerClass):
                         logging.getLogger('').debug("Error deleting old log "
                         "file: %s" % filepath)
 
+class LogZipper(BaseTimerClass):
+    '''Zip up log files for the specified logger.
+    
+    If rotator is enabled, just zip the rotated files.
+    
+    Otherwise, rotate, then zip.'''
+    
+    def __init__(self, *args, **kwargs):
+        BaseTimerClass.__init__(self, *args, **kwargs)
+        
+        ##TODO: this should be logger-specific
+        self.interval = float(self.subsettings['Zip']['Zip Interval'])*60*60
+        
+        self.task_function = self.zip_logs
+    
+    def zip_logs(self):
+        ##todo: move the following 4 lines to base __init__
+        logger = logging.getLogger(self.loggername)
+        logfilepath = logger.handlers[0].stream.name
+        log_full_dir = os.path.dirname(logfilepath)
+        log_rel_dir = os.path.basename(log_full_dir)
+        logfilename = os.path.basename(logfilepath)
+        
+        if not self.subsettings['Log Maintenance']['Enable Log Rotation']:
+            lr = LogRotator(self.dir_lock, self.loggername)
+            lr.rotate_logs()
+            
+        zipfile_name = "%s." + self.logfile_name + ".zip" % \
+                time.strftime("%Y%m%d_%H%M%S")
+        
+        myzip = zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED)
+        
+        filelist = os.listdir(self.log_rel_dir)
+        for fname in filelist:
+            if self.needs_zipping(fname):
+                myzip.write(os.path.join(self.log_rel_dir, fname))
+                        
+        myzip.close()
+        
+        myzip = zipfile.ZipFile(zipfile_name, "r", zipfile.ZIP_DEFLATED)
+        if myzip.testzip() != None:
+            logging.getLogger('').debug("Warning: zipfile for logger %s "
+                    "did not pass integrity test.\n" % self.loggername)
+        myzip.close()
+        
+        # write the name of the last completed zip file
+        # so that we can check against this when emailing or ftping, to make sure
+        # we do not try to transfer a zipfile which is in the process of being created
+        
+        ziplog=open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'w')
+        ziplog.write(zipfile_name)
+        ziplog.close()
+    
+    def needs_zipping(self, fname):
+        if fname.endswith('.zip') or fname.startswith('_internal_') or \
+                re.match(r'\d{8}_\d{6}\.', fname):
+            return False
+        else:
+            return True
 
 class EmailLogSender(BaseTimerClass):
     '''Send log files by email to address[es] specified in .ini file.
     
-    If log zipper is not enabled, we zip things here. Then email out all
-    the zips.
+    If log zipper is not enabled, we call a zipper here. 
+    
+    Otherwise, we just email out all the zips for the specified logger.
     '''
     
     def __init__(self, *args, **kwargs):
-        '''Takes an extra argument: list of base log names work on.'''
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        self.interval = float(self.settings['E-mail']['Email Interval'])*60*60
+        ##TODO: this should be logger-specific
+        self.interval = float(self.subsettings['E-mail']['Email Interval'])*60*60
         
         self.task_function = self.send_email
 
     def send_email(self):
-        pass
-    
-    def SendZipByEmail(self):
-        '''Send the zipped logfile archive by email, using mail settings specified in the .ini file
+        '''Zip and send logfiles by email for the specified logger.
+        
+        We use the email settings specified in the .ini file for the logger.
         '''
-        # basic logic flow:
-        #~ if autozip is not enabled, just call the ziplogfiles function ourselves
-        
-        #~ read ziplog.txt (in a try block) and check if it conforms to being a proper zip filename
-        #~ if not, then print error and get out
-        
-        #~ in a try block, read emaillog.txt to get latest emailed zip, and check for proper filename
-            #~ if fail, just go ahead with sending all available zipfiles
-        
-        #~ do a os.listdir() on the dirname, and trim it down to only contain our zipfiles
-            #~ and moreover, only zipfiles with names between lastemailed and latestzip, including latestzip,
-            #~ but not including lastemailed.
-        
-        #~ send all the files in list
-        
-        #~ write new lastemailed to emaillog.txt
-        
-        self.PrintDebug("Sending mail to " + self.settings['E-mail']['SMTP To'] + "\n")
-        
-        if self.settings['Zip']['Zip Enable'] == False or os.path.isfile(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt")) == False:
-            self.ZipLogFiles()
+
+        if self.subsettings['Zip']['Zip Enable'] == False:
+            lz = LogZipper(self.dir_lock, self.loggername)
+            lz.zip_logs()
         
         try:
-            ziplog = open(os.path.join(self.settings['General']['Log Directory'], "ziplog.txt"), 'r')
-            latestZipFile = ziplog.readline()
+            ziplog = open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'r')
+            self.latest_zip_file = ziplog.readline()
             ziplog.close()
-            if not self.CheckIfZipFile(latestZipFile):
-                self.PrintDebug("latest zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-                return
         except:
-            self.PrintDebug("Unexpected error opening ziplog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\n")
+            logging.getLogger('').debug("Unexpected error opening "
+                    "_internal_ziplog.txt", sys.exc_info())
             return
-        
+
         try:
-            latestZipEmailed = "" #initialize to blank, just in case emaillog.txt doesn't get read
-            emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'r')
-            latestZipEmailed = emaillog.readline()
+            self.latest_zip_emailed = "" #in case emaillog doesn't exist.
+            emaillog = open(os.path.join(self.log_full_dir, 
+                    "_internal_emaillog.txt"), 'r')
+            self.latest_zip_emailed = emaillog.readline()
             emaillog.close()
-            if not self.CheckIfZipFile(latestZipEmailed):
-                self.PrintDebug("latest emailed zip filename does not match proper filename pattern. something went wrong. stopping.\n")
-                return
         except:
-            self.PrintDebug("Error opening emaillog.txt: " + str(sys.exc_info()[0]) + ", " + str(sys.exc_info()[1]) + "\nWill email all available log zips.\n")
+            logging.getLogger('').debug("Cannot open _internal_emaillog.txt. "
+                    "Will email all available zip files.", exc_info=True)
         
-        zipFileList = os.listdir(self.settings['General']['Log Directory'])
-        self.PrintDebug(str(zipFileList))
-        if len(zipFileList) > 0:
-            # removing elements from a list while iterating over it produces undesirable results
-            # so we do the os.listdir again to iterate over
-            for filename in os.listdir(self.settings['General']['Log Directory']):
-                if not self.CheckIfZipFile(filename):
-                    zipFileList.remove(filename)
-                    self.PrintDebug("removing " + filename + " from zipfilelist because it's not a zipfile\n")
-                # we can do the following string comparison due to the structured and dated format of the filenames
-                elif filename <= latestZipEmailed or filename > latestZipFile:
-                    zipFileList.remove(filename)
-                    self.PrintDebug("removing " + filename + " from zipfilelist because it's not in range\n")
+        zipfile_list = os.listdir(self.log_full_dir)
+        zipfile_list_copy = copy.deepcopy(zipfile_list)
+        logging.getLogger('').debug(str(zipfile_list))
+        if len(zipfile_list) > 0:
+            # removing elements from a list while iterating over it produces 
+            # undesirable results so we do os.listdir again to iterate over
+            for filename in zipfile_list_copy:
+                if not self.needs_emailing(filename):
+                    zipfile_list.remove(filename)
+                    logging.getLogger('').debug("removing %s from "
+                        "zipfilelist." % filename)
         
-        self.PrintDebug(str(zipFileList))
-        
+        logging.getLogger('').debug(str(zipfile_list))
+
         # set up the message
         msg = MIMEMultipart()
-        msg['From'] = self.settings['E-mail']['SMTP From']
-        msg['To'] = COMMASPACE.join(self.settings['E-mail']['SMTP To'].split(";"))
+        msg['From'] = self.subsettings['E-mail']['SMTP From']
+        msg['To'] = COMMASPACE.join(self.subsettings['E-mail']['SMTP To'].split(";"))
         msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = self.settings['E-mail']['SMTP Subject']
+        msg['Subject'] = self.subsettings['E-mail']['SMTP Subject']
 
-        msg.attach( MIMEText(self.settings['E-mail']['SMTP Message Body']) )
+        msg.attach(MIMEText(self.subsettings['E-mail']['SMTP Message Body']))
 
-        if len(zipFileList) == 0:
-            msg.attach( MIMEText("No new logs present.") )
+        if len(zipfile_list) == 0:
+            msg.attach(MIMEText("No new logs present."))
 
-        if len(zipFileList) > 0:
-            for file in zipFileList:
+        if len(zipfile_list) > 0:
+            for fname in zipfile_list:
                 part = MIMEBase('application', "octet-stream")
-                part.set_payload( open(os.path.join(self.settings['General']['Log Directory'], file),"rb").read() )
+                part.set_payload(open(os.path.join(self.log_full_dir, fname),"rb").read())
                 Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 'attachment; filename="%s"'
-                               % os.path.basename(file))
+                part.add_header('Content-Disposition', 
+                        'attachment; filename="%s"' % os.path.basename(file))
                 msg.attach(part)
 
         # set up the server and send the message
         # wrap it all in a try/except, so that everything doesn't hang up
         # in case of network problems and whatnot.
         try:
-            mysmtp = smtplib.SMTP(self.settings['E-mail']['SMTP Server'], self.settings['E-mail']['SMTP Port'])
+            mysmtp = smtplib.SMTP(self.subsettings['E-mail']['SMTP Server'], 
+                                    self.subsettings['E-mail']['SMTP Port'])
             
-            if self.cmdoptions.debug: 
+            if _cmdoptions.debug: 
                 mysmtp.set_debuglevel(1)
-            if self.settings['E-mail']['SMTP Use TLS'] == True:
+            if self.subsettings['E-mail']['SMTP Use TLS'] == True:
                 # we find that we need to use two ehlos (one before and one after starttls)
                 # otherwise we get "SMTPException: SMTP AUTH extension not supported by server"
                 # thanks for this solution go to http://forums.belution.com/en/python/000/009/17.shtml
                 mysmtp.ehlo()
                 mysmtp.starttls()
                 mysmtp.ehlo()
-            if self.settings['E-mail']['SMTP Needs Login'] == True:
-                mysmtp.login(self.settings['E-mail']['SMTP Username'], myutils.password_recover(self.settings['E-mail']['SMTP Password']))
-            sendingresults = mysmtp.sendmail(self.settings['E-mail']['SMTP From'], self.settings['E-mail']['SMTP To'].split(";"), msg.as_string())
-            self.PrintDebug("Email sending errors (if any): " + str(sendingresults) + "\n")
+            if self.subsettings['E-mail']['SMTP Needs Login'] == True:
+                mysmtp.login(self.subsettings['E-mail']['SMTP Username'], 
+                        myutils.password_recover(self.subsettings['E-mail']['SMTP Password']))
+            sendingresults = mysmtp.sendmail(self.subsettings['E-mail']['SMTP From'], 
+                    self.subsettings['E-mail']['SMTP To'].split(";"), msg.as_string())
+            logging.getLogger('').debug("Email sending errors (if any): "
+                    "%s \n" % str(sendingresults))
             
-            # need to put the quit in a try, since TLS connections may error out due to bad implementation with
+            # need to put the quit in a try, since TLS connections may error 
+            # out due to bad implementation with 
             # socket.sslerror: (8, 'EOF occurred in violation of protocol')
-            # Most SSL servers and clients (primarily HTTP, but some SMTP as well) are broken in this regard: 
-            # they do not properly negotiate TLS connection shutdown. This error is otherwise harmless.
+            # Most SSL servers and clients (primarily HTTP, but some SMTP 
+            # as well) are broken in this regard: 
+            # they do not properly negotiate TLS connection shutdown. 
+            # This error is otherwise harmless.
             # reference URLs:
             # http://groups.google.de/group/comp.lang.python/msg/252b421a7d9ff037
             # http://mail.python.org/pipermail/python-list/2005-August/338280.html
@@ -261,16 +337,23 @@ class EmailLogSender(BaseTimerClass):
                 pass
             
             # write the latest emailed zip to log for the future
-            if len(zipFileList) > 0:
-                zipFileList.sort()
-                emaillog = open(os.path.join(self.settings['General']['Log Directory'], "emaillog.txt"), 'w')
-                emaillog.write(zipFileList.pop())
+            if len(zipfile_list) > 0:
+                zipfile_list.sort()
+                emaillog = open(os.path.join(self.log_full_dir, 
+                        "_internal_emaillog.txt"), 'w')
+                emaillog.write(zipfile_list.pop())
                 emaillog.close()
         except:
-            self.PrintDebug('Error sending email.', exc_info=True)
+            logging.getLogger('').debug('Error sending email.', exc_info=True)
             pass # better luck next time
 
-
+    def needs_emailing(self, fname):
+        if fname.endswith('.zip') and fname <= self.latest_zip_file and \
+                fname > self.latest_zip_emailed
+            return True
+        else:
+            return False
+            
         
 if __name__ == '__main__':
     # some basic testing code
@@ -290,7 +373,7 @@ if __name__ == '__main__':
     time.sleep(5)
     ttc.cancel()
 
-    ttc = TestTimerClass('some stuff','more stuff','even more stuff')
+    ttc = TestTimerClass()
     ttc.start()
     time.sleep(5)
     ttc.cancel()
