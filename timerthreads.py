@@ -142,31 +142,32 @@ class OldLogDeleter(BaseTimerClass):
             float(self.subsettings['Log Maintenance']['Age Check Interval'])*60*60
         
         self.task_function = self.delete_old_logs
-
+        
+        self.max_log_age = \
+            float(self.subsettings['Log Maintenance']['Max Log Age'])*24*60*60
+        
     def delete_old_logs(self):
                 
-        ##TODO: the following should be logger-specific
-        max_log_age = \
-            float(self.subsettings['Log Maintenance']['Max Log Age'])*24*60*60
-        filename_re = re.compile(re.escape(self.logfile_name))
-        
-        # todo: replace os.walk with simple os.listdir, since this is now log-specific
         self.dir_lock.acquire()
         try:
-            for dirpath, dirnames, filenames in os.walk(self.log_full_dir):
-                for fname in filenames:
-                    if filename_re.search(fname):
-                        filepath = os.path.join(dirpath, fname)
-                        testvalue = time.time() - os.path.getmtime(filepath) > max_log_age
-                    
-                    if testvalue:
-                        try:
-                            os.remove(filepath)
-                        except:
-                            logging.getLogger('').debug("Error deleting old log "
-                            "file: %s" % filepath)
+            for fname in os.listdir(self.log_full_dir):
+                if self.needs_deleting(fname):
+                    try:
+                        filepath = os.path.join(self.log_full_dir, fname)
+                        os.remove(filepath)
+                    except:
+                        logging.getLogger('').debug("Error deleting old log "
+                        "file: %s" % filepath)
         finally:
             self.dir_lock.release()
+    
+    def needs_deleting(self, filename):
+        filepath = os.path.join(self.log_full_dir, filename)
+        if not filename.startswith('_internal_') and \
+                time.time() - os.path.getmtime(filepath) > self.max_log_age
+            return True
+        else:
+            return False
 
 class LogZipper(BaseTimerClass):
     '''Zip up log files for the specified logger.
