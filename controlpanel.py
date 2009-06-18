@@ -145,7 +145,7 @@ class ConfigPanel(mytkSimpleDialog.Dialog):
         self.entrydict=dict()
         self.tooltipdict=dict()
         for key in self.settings[self.section].keys():
-            if key.find("NoDisplay") == -1: #don't want to display settings that shouldn't be changed
+            if not key.startswith("_"): #don't want to display settings that shouldn't be changed
                 if key.find("Tooltip") == -1:
                     Label(master, text=key).grid(row=index, sticky=W)
                     self.entrydict[key]=Entry(master)

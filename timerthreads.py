@@ -90,11 +90,14 @@ class LogRotator(BaseTimerClass):
     def rotate_logs(self):
         
         for handler in self.logger.handlers:
+            self.dir_lock.acquire()
             try:
                 handler.doRollover()
             except AttributeError:
                 logging.getLogger('').debug("Logger %s, handler %r, "
                     "is not capable of rollover." % (loggername, handler))
+            finally:
+                self.dir_lock.release()
 
         
 class LogFlusher(BaseTimerClass):
@@ -118,7 +121,11 @@ class LogFlusher(BaseTimerClass):
         '''
         logging.getLogger('').debug(log_message % loggername)
         for handler in self.logger.handlers:
-            handler.flush()
+            self.dir_lock.acquire()
+            try:
+                handler.flush()
+            finally:
+                self.dir_lock.release()
 
 class OldLogDeleter(BaseTimerClass):
     '''Deletes old logs.
@@ -144,18 +151,22 @@ class OldLogDeleter(BaseTimerClass):
         filename_re = re.compile(re.escape(self.logfile_name))
         
         # todo: replace os.walk with simple os.listdir, since this is now log-specific
-        for dirpath, dirnames, filenames in os.walk(self.log_full_dir):
-            for fname in filenames:
-                if filename_re.search(fname):
-                    filepath = os.path.join(dirpath, fname)
-                    testvalue = time.time() - os.path.getmtime(filepath) > max_log_age
-                
-                if testvalue:
-                    try:
-                        os.remove(filepath)
-                    except:
-                        logging.getLogger('').debug("Error deleting old log "
-                        "file: %s" % filepath)
+        self.dir_lock.acquire()
+        try:
+            for dirpath, dirnames, filenames in os.walk(self.log_full_dir):
+                for fname in filenames:
+                    if filename_re.search(fname):
+                        filepath = os.path.join(dirpath, fname)
+                        testvalue = time.time() - os.path.getmtime(filepath) > max_log_age
+                    
+                    if testvalue:
+                        try:
+                            os.remove(filepath)
+                        except:
+                            logging.getLogger('').debug("Error deleting old log "
+                            "file: %s" % filepath)
+        finally:
+            self.dir_lock.release()
 
 class LogZipper(BaseTimerClass):
     '''Zip up log files for the specified logger.
@@ -187,28 +198,32 @@ class LogZipper(BaseTimerClass):
         zipfile_name = "%s." + self.logfile_name + ".zip" % \
                 time.strftime("%Y%m%d_%H%M%S")
         
-        myzip = zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED)
-        
-        filelist = os.listdir(self.log_rel_dir)
-        for fname in filelist:
-            if self.needs_zipping(fname):
-                myzip.write(os.path.join(self.log_rel_dir, fname))
-                        
-        myzip.close()
-        
-        myzip = zipfile.ZipFile(zipfile_name, "r", zipfile.ZIP_DEFLATED)
-        if myzip.testzip() != None:
-            logging.getLogger('').debug("Warning: zipfile for logger %s "
-                    "did not pass integrity test.\n" % self.loggername)
-        myzip.close()
-        
-        # write the name of the last completed zip file
-        # so that we can check against this when emailing or ftping, to make sure
-        # we do not try to transfer a zipfile which is in the process of being created
-        
-        ziplog=open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'w')
-        ziplog.write(zipfile_name)
-        ziplog.close()
+        self.dir_lock.acquire()
+        try:
+            myzip = zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED)
+            
+            filelist = os.listdir(self.log_rel_dir)
+            for fname in filelist:
+                if self.needs_zipping(fname):
+                    myzip.write(os.path.join(self.log_rel_dir, fname))
+                            
+            myzip.close()
+            
+            myzip = zipfile.ZipFile(zipfile_name, "r", zipfile.ZIP_DEFLATED)
+            if myzip.testzip() != None:
+                logging.getLogger('').debug("Warning: zipfile for logger %s "
+                        "did not pass integrity test.\n" % self.loggername)
+            myzip.close()
+            
+            # write the name of the last completed zip file
+            # so that we can check against this when emailing or ftping, to make sure
+            # we do not try to transfer a zipfile which is in the process of being created
+            
+            ziplog=open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'w')
+            ziplog.write(zipfile_name)
+            ziplog.close()
+        finally:
+            self.dir_lock.release()
     
     def needs_zipping(self, fname):
         if fname.endswith('.zip') or fname.startswith('_internal_') or \
@@ -262,41 +277,45 @@ class EmailLogSender(BaseTimerClass):
             logging.getLogger('').debug("Cannot open _internal_emaillog.txt. "
                     "Will email all available zip files.", exc_info=True)
         
-        zipfile_list = os.listdir(self.log_full_dir)
-        zipfile_list_copy = copy.deepcopy(zipfile_list)
-        logging.getLogger('').debug(str(zipfile_list))
-        if len(zipfile_list) > 0:
-            # removing elements from a list while iterating over it produces 
-            # undesirable results so we do os.listdir again to iterate over
-            for filename in zipfile_list_copy:
-                if not self.needs_emailing(filename):
-                    zipfile_list.remove(filename)
-                    logging.getLogger('').debug("removing %s from "
-                        "zipfilelist." % filename)
-        
-        logging.getLogger('').debug(str(zipfile_list))
+        self.dir_lock.acquire()
+        try:
+            zipfile_list = os.listdir(self.log_full_dir)
+            zipfile_list_copy = copy.deepcopy(zipfile_list)
+            logging.getLogger('').debug(str(zipfile_list))
+            if len(zipfile_list) > 0:
+                # removing elements from a list while iterating over it produces 
+                # undesirable results so we do os.listdir again to iterate over
+                for filename in zipfile_list_copy:
+                    if not self.needs_emailing(filename):
+                        zipfile_list.remove(filename)
+                        logging.getLogger('').debug("removing %s from "
+                            "zipfilelist." % filename)
+            
+            logging.getLogger('').debug(str(zipfile_list))
 
-        # set up the message
-        msg = MIMEMultipart()
-        msg['From'] = self.subsettings['E-mail']['SMTP From']
-        msg['To'] = COMMASPACE.join(self.subsettings['E-mail']['SMTP To'].split(";"))
-        msg['Date'] = formatdate(localtime=True)
-        msg['Subject'] = self.subsettings['E-mail']['SMTP Subject']
+            # set up the message
+            msg = MIMEMultipart()
+            msg['From'] = self.subsettings['E-mail']['SMTP From']
+            msg['To'] = COMMASPACE.join(self.subsettings['E-mail']['SMTP To'].split(";"))
+            msg['Date'] = formatdate(localtime=True)
+            msg['Subject'] = self.subsettings['E-mail']['SMTP Subject']
 
-        msg.attach(MIMEText(self.subsettings['E-mail']['SMTP Message Body']))
+            msg.attach(MIMEText(self.subsettings['E-mail']['SMTP Message Body']))
 
-        if len(zipfile_list) == 0:
-            msg.attach(MIMEText("No new logs present."))
+            if len(zipfile_list) == 0:
+                msg.attach(MIMEText("No new logs present."))
 
-        if len(zipfile_list) > 0:
-            for fname in zipfile_list:
-                part = MIMEBase('application', "octet-stream")
-                part.set_payload(open(os.path.join(self.log_full_dir, fname),"rb").read())
-                Encoders.encode_base64(part)
-                part.add_header('Content-Disposition', 
-                        'attachment; filename="%s"' % os.path.basename(file))
-                msg.attach(part)
-
+            if len(zipfile_list) > 0:
+                for fname in zipfile_list:
+                    part = MIMEBase('application', "octet-stream")
+                    part.set_payload(open(os.path.join(self.log_full_dir, fname),"rb").read())
+                    Encoders.encode_base64(part)
+                    part.add_header('Content-Disposition', 
+                            'attachment; filename="%s"' % os.path.basename(file))
+                    msg.attach(part)
+        finally:
+            self.dir_lock.release()
+            
         # set up the server and send the message
         # wrap it all in a try/except, so that everything doesn't hang up
         # in case of network problems and whatnot.

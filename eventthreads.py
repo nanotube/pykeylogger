@@ -4,6 +4,8 @@ from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
 from Queue import Queue, Empty
 from timerthreads import (LogRotator, LogFlusher, OldLogDeleter, LogZipper,
     EmailLogSender)
+import os
+import os.path
 
 if os.name == 'posix':
     pass
@@ -81,9 +83,24 @@ class FirstStageBaseEventClass(BaseEventClass):
         
         # configure the data logger
         logger = logging.getLogger(self.loggername)
-        logpath = os.path.join(_settings['General']['Log Directory'],
-                            _settings[loggername]['General']['Log Subdirectory'], 
-                                _settings[loggername]['General']['Log Filename'])
+        logdir = os.path.join(_settings['General']['Log Directory'],
+                            self.subsettings['General']['Log Subdirectory'])
+        logpath = os.path.join(logdir, 
+                            self.subsettings['General']['Log Filename'])
+                                
+        #make sure we have the directory where we want to log
+        try:
+            os.makedirs(logdir)
+        except OSError, detail:
+            if(detail.errno==17):  #if directory already exists, swallow the error
+                pass
+            else:
+                logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+        except:
+            logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+                                
         loghandler = OnDemandRotatingFileHandler(logpath)
         loghandler.setLevel(logging.INFO)
         logformatter = logging.Formatter('%(message)s')
@@ -92,7 +109,7 @@ class FirstStageBaseEventClass(BaseEventClass):
     
     def spawn_timer_threads(self):
         self.timer_threads = {}
-        for key in _settings[loggername].keys():
+        for key in _settings[loggername].sections:
             try:
             #if _settings[loggername][key].has_key('_Thread_Class']:
                 self.timer_threads[key] = \
@@ -159,8 +176,8 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
         '''This function returns False if the process name associated with an event
         is listed in the noLog option, and True otherwise.'''
         
-        if self.settings['General']['Applications Not Logged'] != 'None':
-            for path in self.settings['General']['Applications Not Logged'].split(';'):
+        if self.subsettings['General']['Applications Not Logged'] != 'None':
+            for path in self.subsettings['General']['Applications Not Logged'].split(';'):
                 if os.path.exists(path) and os.stat(path) == os.stat(process_name):  #we use os.stat instead of comparing strings due to multiple possible representations of a path
                     return False
         return True
