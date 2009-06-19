@@ -94,6 +94,12 @@ class FirstStageBaseEventClass(BaseEventClass):
         logger = logging.getLogger(self.loggername)
         logdir = os.path.join(_settings['General']['Log Directory'],
                             self.subsettings['General']['Log Subdirectory'])
+        
+        # Regexp filter for the non-allowed characters in windows filenames.
+        self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
+        self.subsettings['General']['Log Filename'] = \
+           self.filter.sub(r'__',self.subsettings['General']['Log Filename'])
+           
         logpath = os.path.join(logdir, 
                             self.subsettings['General']['Log Filename'])
                                 
