@@ -15,6 +15,9 @@ else:
 from baseeventclasses import (FirstStageBaseEventClass, 
     SecondStageBaseEventClass)
     
+_settings = _settings['settings']
+_cmdoptions = _cmdoptions['cmdoptions']
+    
 class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
     '''Standard detailed log writer, first stage.
     

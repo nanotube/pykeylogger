@@ -15,6 +15,9 @@ from Queue import Queue, Empty
 import os
 import os.path
 
+_settings = _settings['settings']
+_cmdoptions = _cmdoptions['cmdoptions']
+
 class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
     '''On-click image capture, first stage: prepare data.
     

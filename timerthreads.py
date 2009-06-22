@@ -30,6 +30,10 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 5:
     from email import Encoders
 
 
+_settings = _settings['settings']
+_cmdoptions = _cmdoptions['cmdoptions']
+
+
 class BaseTimerClass(Thread):
     '''This is the base class for timer (delay) based threads.
     

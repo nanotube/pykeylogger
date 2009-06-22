@@ -7,6 +7,9 @@ from timerthreads import (LogRotator, LogFlusher, OldLogDeleter, LogZipper,
 import os
 import os.path
 
+_settings = _settings['settings']
+_cmdoptions = _cmdoptions['cmdoptions']
+
 '''Event classes have two stages. The thinking is as follows.
 
 The actual hooking routine needs to be /really/ fast, so as not to delay
