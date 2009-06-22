@@ -115,16 +115,25 @@ class FirstStageBaseEventClass(BaseEventClass):
         self.timer_threads = {}
         for key in _settings[loggername].sections:
             try:
-            #if _settings[loggername][key].has_key('_Thread_Class']:
                 self.timer_threads[key] = \
                     eval(_settings[loggername][key]['_Thread_Class'] + \
-                            '(self.dir_lock, loggername)')
+                    '(self.dir_lock, loggername)')
             except KeyError:
                 pass # this is not a thread to be started.
     
     def spawn_second_stage_thread(self): # override in derived class
         self.sst_q = Queue(0)
         self.sst = SecondStageEventClass(self.dir_lock, self.sst_q, self.loggername)
+        
+    def run(self):
+        for key in self.timer_threads.keys():
+            self.timer_threads[key].start()
+            self.sst.start()
+            
+    def cancel(self):
+        for key in self.timer_threads.keys():
+            self.timer_threads[key].cancel()
+            self.sst.cancel()
         
 
 class SecondStageBaseEventClass(BaseEventClass):
