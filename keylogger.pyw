@@ -99,8 +99,8 @@ class KeyLogger:
                 threadname = self.settings[section]['General']['_Thread_Class']
                 self.queues[section] = Queue(0)
                 self.timer_threads[section] = \
-                        eval(section['General']['_Thread_Class'] + \
-                        '(self.queues[threadname], section)')
+                    eval(self.settings[section]['General']['_Thread_Class'] + \
+                    '(self.queues[threadname], section)')
             except KeyError:
                 pass # this is not a thread to be started.
     
