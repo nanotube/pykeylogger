@@ -56,8 +56,16 @@ class BaseEventClass(Thread):
         while not self.finished.isSet():
             self.task_function(*self.args, **self.kwargs)
                 
-    def task_function(self):
-        pass # to be overridden in derived classes.
+    def task_function(self): # to be overridden in derived classes.
+        try:
+            event = self.q.get(timeout=0.05)
+            print event
+        except Empty:
+            pass #let's keep iterating
+        except:
+            self.logger.debug("some exception was caught in "
+                "the logwriter loop...\nhere it is:\n", exc_info=True)
+            pass #let's keep iterating
 
 
 class FirstStageBaseEventClass(BaseEventClass):
@@ -88,16 +96,16 @@ class FirstStageBaseEventClass(BaseEventClass):
             if(detail.errno==17):  #if directory already exists, swallow the error
                 pass
             else:
-                logging.getLogger('').error("error creating log directory", 
+                self.logger.error("error creating log directory", 
                         exc_info=True)
         except:
-            logging.getLogger('').error("error creating log directory", 
+            self.logger.error("error creating log directory", 
                         exc_info=True)
 
     def create_loggers(self):
         
         # configure the data logger
-        logger = logging.getLogger(self.loggername)
+        self.logger = logging.getLogger(self.loggername)
         logdir = os.path.join(self.settings['General']['Log Directory'],
                             self.subsettings['General']['Log Subdirectory'])
         
@@ -115,7 +123,7 @@ class FirstStageBaseEventClass(BaseEventClass):
         loghandler.setLevel(logging.INFO)
         logformatter = logging.Formatter('%(message)s')
         loghandler.setFormatter(logformatter)
-        logger.addHandler(loghandler)
+        self.logger.addHandler(loghandler)
     
     def spawn_timer_threads(self):
         self.timer_threads = {}
@@ -130,17 +138,20 @@ class FirstStageBaseEventClass(BaseEventClass):
     
     def spawn_second_stage_thread(self): # override in derived class
         self.sst_q = Queue(0)
-        self.sst = SecondStageEventClass(self.dir_lock, self.sst_q, self.loggername)
+        self.sst = SecondStageBaseEventClass(self.dir_lock, self.sst_q, self.loggername)
         
     def run(self):
         for key in self.timer_threads.keys():
             self.timer_threads[key].start()
             self.sst.start()
             
+        BaseEventClass.run(self)
+            
     def cancel(self):
         for key in self.timer_threads.keys():
             self.timer_threads[key].cancel()
             self.sst.cancel()
+        BaseEventClass.cancel(self)
         
 
 class SecondStageBaseEventClass(BaseEventClass):
@@ -159,3 +170,27 @@ class SecondStageBaseEventClass(BaseEventClass):
         # set the following in the derived class
         #self.task_function = self.your_working_function
 
+# some testing code
+if __name__ == '__main__':
+    from configobj import ConfigObj
+    import time
+    
+    _settings['settings'] = ConfigObj( \
+        {'General': \
+            {'Log Directory': 'logs'},
+            
+        'TestLogger': {'General': \
+            {'Log Subdirectory': 'testlog',
+            'Log Filename':'testlog.txt',
+            }}} )
+            
+            
+    _cmdoptions['cmdoptions'] = {}
+    q = Queue(0)
+    for i in range(10):
+        q.put('test %d' % i)
+    loggername = 'TestLogger'
+    fsbec = FirstStageBaseEventClass(q, loggername)
+    fsbec.start()
+    time.sleep(1)
+    fsbec.cancel()

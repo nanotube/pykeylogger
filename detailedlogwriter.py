@@ -31,15 +31,15 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
             
     def process_event(self):
         try:
-            event = self.q.get(timeout=0.2) #need the timeout so that thread terminates properly when exiting
+            event = self.q.get(timeout=0.05) #need the timeout so that thread terminates properly when exiting
             if not event.MessageName.startswith('key down'):
-                logging.getLogger('').debug('not a useful event')
+                self.logger.debug('not a useful event')
             process_name = self.get_process_name(event)
             loggable = self.needs_logging(event, process_name)  # see if the program is in the no-log list.
             if not loggable:
-                logging.getLogger('').debug("not loggable, we are outta here\n")
+                self.logger.debug("not loggable, we are outta here\n")
                 return
-            logging.getLogger('').debug("loggable, lets log it. key: %s" % \
+            self.logger.debug("loggable, lets log it. key: %s" % \
                 to_unicode(event.Key))
             
             username = self.get_username()
@@ -49,7 +49,7 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
         except Empty:
             pass #let's keep iterating
         except:
-            logging.getLogger('').debug("some exception was caught in "
+            self.logger.debug("some exception was caught in "
                 "the logwriter loop...\nhere it is:\n", exc_info=True)
             pass #let's keep iterating
     
@@ -149,7 +149,7 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
         except Empty:
             pass #let's keep iterating
         except:
-            logging.getLogger('').debug("some exception was caught in the "
+            self.logger.debug("some exception was caught in the "
                 "logwriter loop...\nhere it is:\n", exc_info=True)
             pass #let's keep iterating
 
@@ -199,6 +199,6 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
                 line = to_unicode(self.field_sep).join(self.eventlist) + "\n"
                 self.logger.info(line)
             except:
-                logging.getLogger('').debug(to_unicode(self.eventlist), 
+                self.logger.debug(to_unicode(self.eventlist), 
                     exc_info=True)
                 pass # keep going, even though this doesn't get logged...

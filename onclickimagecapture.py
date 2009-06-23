@@ -46,14 +46,14 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
             if event.MessageName.startswith("mouse left") or \
                     event.MessageName.startswith("mouse middle") or \
                     event.MessageName.startswith("mouse right"):
-                logging.getLogger('').debug(self.print_event(event))
+                self.logger.debug(self.print_event(event))
                 process_name = self.get_process_name(event)
                 image_data = self.capture_image(event)
                 self.sst_q.put((process_name, image_data, event))
         except Queue.Empty:
             pass
         except:
-            logging.getLogger('').debug("some exception was caught in the "
+            self.logger.debug("some exception was caught in the "
                 "imagecapture loop...\nhere it is:\n", exc_info=True)
             pass #let's keep iterating
             
@@ -69,7 +69,7 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                           max=screensize)
         cropbox.reposition(Point(event.Position[0], event.Position[1]))
         
-        logging.getLogger('').debug(cropbox)
+        self.logger.debug(cropbox)
                 
         if os.name == 'posix':
             
@@ -90,7 +90,7 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
             except error.BadValue:
                 print "getimage: bad value error - tell me about this one, I've not managed to make it happen yet"
             except:
-                print logging.getLogger('').debug('Error in getimage.',
+                print self.logger.debug('Error in getimage.',
                         exc_info = True)
         
         if os.name == 'nt':
@@ -183,7 +183,7 @@ class OnClickImageCaptureSecondStage(SecondStageBaseEventClass):
             image_data.save(savefilename, 
                 quality=self.subsettings['General']['Capture Clicks Image Quality'])
         except:
-            logging.getLogger('').debug('Error writing image to file',
+            self.logger.debug('Error writing image to file',
                             exc_info=True)
 
 
