@@ -244,6 +244,7 @@ class KeyLogger:
             self.event_threads[key].cancel()
         
         #print threading.enumerate()
+        logging.shutdown()
         sys.exit()
     
     def parse_options(self):
