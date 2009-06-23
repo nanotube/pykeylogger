@@ -8,6 +8,8 @@ import os
 import os.path
 import logging
 import re
+import copy
+import Image
 
 if os.name == 'nt':
     import win32api, win32con, win32process
@@ -50,7 +52,7 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                 process_name = self.get_process_name(event)
                 image_data = self.capture_image(event)
                 self.sst_q.put((process_name, image_data, event))
-        except Queue.Empty:
+        except Empty:
             pass
         except:
             self.logger.debug("some exception was caught in the "

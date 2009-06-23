@@ -34,6 +34,7 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
             event = self.q.get(timeout=0.05) #need the timeout so that thread terminates properly when exiting
             if not event.MessageName.startswith('key down'):
                 self.logger.debug('not a useful event')
+                return
             process_name = self.get_process_name(event)
             loggable = self.needs_logging(event, process_name)  # see if the program is in the no-log list.
             if not loggable:
@@ -83,16 +84,16 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
         elif os.name == 'posix':
             return to_unicode(event.WindowProcName)
             
-        def get_username(self):
-            '''Try a few different environment vars to get the username.'''
-            username = None
-            for varname in ['USERNAME','USER','LOGNAME']:
-                username = os.getenv(varname)
-                if username is not None:
-                    break
-            if username is None:
-                username = 'none'
-            return username
+    def get_username(self):
+        '''Try a few different environment vars to get the username.'''
+        username = None
+        for varname in ['USERNAME','USER','LOGNAME']:
+            username = os.getenv(varname)
+            if username is not None:
+                break
+        if username is None:
+            username = 'none'
+        return username
 
     def spawn_second_stage_thread(self): 
         self.sst_q = Queue(0)
