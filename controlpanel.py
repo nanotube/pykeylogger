@@ -22,6 +22,7 @@
 
 from Tkinter import *
 import mytkSimpleDialog # mytkSimpleDialog adds relative widnow placement configuration to tkSimpleDialog
+import tkSimpleDialog
 import tkMessageBox
 #import ConfigParser
 from configobj import ConfigObj
@@ -47,16 +48,13 @@ class PyKeyloggerControlPanel:
         self.root.config(height=20, width=20)
         self.root.geometry("+200+200")
         self.root.protocol("WM_DELETE_WINDOW", self.ClosePanel)
-        #self.root.iconify()
-        #if self.panelsettings['General']['Master Password'] != "x\x9c\x03\x00\x00\x00\x00\x01":
-        #    self.PasswordDialog()
-        #print len(self.panelsettings['General']['Master Password'])
-        #print zlib.decompress(self.panelsettings['General']['Master Password'])
+        self.root.withdraw()
         passcheck = self.PasswordDialog()
         
         # call the password authentication widget
         # if password match, then create the main panel
         if passcheck == 0:
+            self.root.deiconify()
             self.InitializeMainPanel()
             self.root.mainloop()
         elif passcheck == 1:
@@ -95,8 +93,8 @@ class PyKeyloggerControlPanel:
         helpmenu = Menu(menu)
         menu.add_cascade(label="Help", menu=helpmenu)
         helpmenu.add_command(label="Manual [Web-based]", command=Command(webbrowser.open, "http://pykeylogger.wiki.sourceforge.net/Usage_Instructions"))
-        helpmenu.add_command(label="About", command=Command(AboutDialog, self.root, title="About PyKeylogger", rootx_offset=-20, rooty_offset=-35))
-        helpmenu.add_command(label="Support PyKeylogger!", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger", rootx_offset=-20, rooty_offset=-35))
+        helpmenu.add_command(label="About", command=Command(AboutDialog, self.root, title="About PyKeylogger"))
+        helpmenu.add_command(label="Support PyKeylogger!", command=Command(SupportScreen, self.root, title="Please Support PyKeylogger"))
         
         textlabel = Label(self.root, text="PyKeylogger " + str(version.version), font=("arial", 12))
         textlabel.pack()
@@ -107,9 +105,7 @@ class PyKeyloggerControlPanel:
         imagelabel.pack()
         
     def PasswordDialog(self):
-        #passroot=Tk()
-        #passroot.title("Enter Password")
-        mypassword = mytkSimpleDialog.askstring("Enter Password", "Password:", show="*", rootx_offset=-20, rooty_offset=-35)
+        mypassword = tkSimpleDialog.askstring("Enter Password", "Password:", show="*")
         if mypassword != myutils.password_recover(self.panelsettings['General']['Master Password']):
             if mypassword != None:
                 tkMessageBox.showerror("Incorrect Password", "Incorrect Password")
@@ -233,4 +229,5 @@ if __name__ == '__main__':
     
     klobject=BlankKeylogger()
     cmdoptions=BlankOptions()
-    myapp = PyKeyloggerControlPanel(cmdoptions, klobject)
+    _cmdoptions = {'cmdoptions':cmdoptions}
+    myapp = PyKeyloggerControlPanel(klobject)

@@ -328,9 +328,9 @@ class KeyLogger:
         if NagMe == True:
             # first, show the support screen
             root = Tkinter.Tk()
-            root.geometry("100x100+200+200")
-            warn = SupportScreen(root, title="Please Support PyKeylogger",
-                                 rootx_offset=-20, rooty_offset=-35)
+            #root.geometry("100x100+200+200")
+            root.withdraw()
+            warn = SupportScreen(root, title="Please Support PyKeylogger")
             root.destroy()
             del(warn)
             
@@ -346,9 +346,9 @@ class KeyLogger:
             if abs(time.time() - float(myutils.password_recover(utfnd))) > \
                3600 * 24 * 4:
                 root = Tkinter.Tk()
-                root.geometry("100x100+200+200")
-                warn = ExpirationScreen(root, title="PyKeylogger Has Expired",
-                                        rootx_offset=-20, rooty_offset=-35)
+                #root.geometry("100x100+200+200")
+                root.withdraw()
+                warn = ExpirationScreen(root, title="PyKeylogger Has Expired")
                 root.destroy()
                 del(warn)
                 sys.exit()
