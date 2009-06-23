@@ -6,9 +6,9 @@ from timerthreads import (LogRotator, LogFlusher, OldLogDeleter, LogZipper,
     EmailLogSender)
 import os
 import os.path
+import logging
+import re
 
-_settings = _settings['settings']
-_cmdoptions = _cmdoptions['cmdoptions']
 
 '''Event classes have two stages. The thinking is as follows.
 
@@ -43,7 +43,10 @@ class BaseEventClass(Thread):
         self.args = args # arguments, if any, to pass to task_function
         self.kwargs = kwargs # keyword args, if any, to pass to task_function
         
-        self.subsettings = _settings[loggername]        
+        self.settings = _settings['settings']
+        self.cmdoptions = _cmdoptions['cmdoptions']
+        
+        self.subsettings = self.settings[loggername]        
     
     def cancel(self):
         '''Stop the iteration'''
@@ -95,7 +98,7 @@ class FirstStageBaseEventClass(BaseEventClass):
         
         # configure the data logger
         logger = logging.getLogger(self.loggername)
-        logdir = os.path.join(_settings['General']['Log Directory'],
+        logdir = os.path.join(self.settings['General']['Log Directory'],
                             self.subsettings['General']['Log Subdirectory'])
         
         # Regexp filter for the non-allowed characters in windows filenames.
@@ -116,13 +119,14 @@ class FirstStageBaseEventClass(BaseEventClass):
     
     def spawn_timer_threads(self):
         self.timer_threads = {}
-        for key in _settings[loggername].sections:
-            try:
-                self.timer_threads[key] = \
-                    eval(_settings[loggername][key]['_Thread_Class'] + \
-                    '(self.dir_lock, loggername)')
-            except KeyError:
-                pass # this is not a thread to be started.
+        for section in self.subsettings.sections:
+            if section != 'General':
+                try:
+                    self.timer_threads[section] = \
+                        eval(self.subsettings[section]['_Thread_Class'] + \
+                        '(self.dir_lock, self.loggername)')
+                except KeyError:
+                    pass # this is not a thread to be started.
     
     def spawn_second_stage_thread(self): # override in derived class
         self.sst_q = Queue(0)

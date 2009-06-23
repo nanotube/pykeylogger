@@ -1,6 +1,14 @@
 from baseeventclasses import (FirstStageBaseEventClass, 
     SecondStageBaseEventClass)
-    
+
+from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
+    to_unicode)
+from Queue import Queue, Empty
+import os
+import os.path
+import logging
+import re
+
 if os.name == 'nt':
     import win32api, win32con, win32process
     import ImageGrab
@@ -8,15 +16,7 @@ elif os.name == 'posix':
     from Xlib import X, XK, display, error
     from Xlib.ext import record
     from Xlib.protocol import rq
-    
-from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
-    to_unicode)
-from Queue import Queue, Empty
-import os
-import os.path
 
-_settings = _settings['settings']
-_cmdoptions = _cmdoptions['cmdoptions']
 
 class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
     '''On-click image capture, first stage: prepare data.
@@ -33,8 +33,8 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
         self.task_function = self.process_event
 
         self.imagedimensions = \
-           Point(self.settings['Image Capture']['Capture Clicks Width'],
-                 self.settings['Image Capture']['Capture Clicks Height'])
+           Point(self.subsettings['General']['Capture Clicks Width'],
+                 self.subsettings['General']['Capture Clicks Height'])
                  
         # Hook to our display.
         if os.name == 'posix':
@@ -182,7 +182,9 @@ class OnClickImageCaptureSecondStage(SecondStageBaseEventClass):
                 self.subsettings['General']['Capture Clicks Image Format'])
             image_data.save(savefilename, 
                 quality=self.subsettings['General']['Capture Clicks Image Quality'])
-
+        except:
+            logging.getLogger('').debug('Error writing image to file',
+                            exc_info=True)
 
 
 class Point:

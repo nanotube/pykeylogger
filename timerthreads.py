@@ -2,6 +2,7 @@ from threading import Thread, Event
 import logging
 import time
 import re
+import sys
 import os.path
 from myutils import _settings, _cmdoptions
 import copy
@@ -30,10 +31,6 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 5:
     from email import Encoders
 
 
-_settings = _settings['settings']
-_cmdoptions = _cmdoptions['cmdoptions']
-
-
 class BaseTimerClass(Thread):
     '''This is the base class for timer (delay) based threads.
     
@@ -47,6 +44,9 @@ class BaseTimerClass(Thread):
         self.loggername = loggername
         self.args = args # arguments, if any, to pass to task_function
         self.kwargs = kwargs # keyword args, if any, to pass to task_function
+        
+        self.settings = _settings['settings']
+        self.cmdoptions = _cmdoptions['cmdoptions']
         
         # set this up for clarity
         self.subsettings = _settings[loggername]
@@ -168,7 +168,7 @@ class OldLogDeleter(BaseTimerClass):
     def needs_deleting(self, filename):
         filepath = os.path.join(self.log_full_dir, filename)
         if not filename.startswith('_internal_') and \
-                time.time() - os.path.getmtime(filepath) > self.max_log_age
+                time.time() - os.path.getmtime(filepath) > self.max_log_age:
             return True
         else:
             return False
@@ -373,7 +373,7 @@ class EmailLogSender(BaseTimerClass):
 
     def needs_emailing(self, fname):
         if fname.endswith('.zip') and fname <= self.latest_zip_file and \
-                fname > self.latest_zip_emailed
+                fname > self.latest_zip_emailed:
             return True
         else:
             return False

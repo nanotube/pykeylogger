@@ -3,6 +3,7 @@ from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
 from Queue import Queue, Empty
 import os
 import os.path
+import logging
 
 if os.name == 'posix':
     pass
@@ -14,9 +15,6 @@ else:
 
 from baseeventclasses import (FirstStageBaseEventClass, 
     SecondStageBaseEventClass)
-    
-_settings = _settings['settings']
-_cmdoptions = _cmdoptions['cmdoptions']
     
 class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
     '''Standard detailed log writer, first stage.
@@ -34,6 +32,8 @@ class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
     def process_event(self):
         try:
             event = self.q.get(timeout=0.2) #need the timeout so that thread terminates properly when exiting
+            if not event.MessageName.startswith('key down'):
+                logging.getLogger('').debug('not a useful event')
             process_name = self.get_process_name(event)
             loggable = self.needs_logging(event, process_name)  # see if the program is in the no-log list.
             if not loggable:

