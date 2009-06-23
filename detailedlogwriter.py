@@ -4,6 +4,8 @@ from Queue import Queue, Empty
 import os
 import os.path
 import logging
+import time
+import re
 
 if os.name == 'posix':
     pass
@@ -142,7 +144,7 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
                 #append char to log
                 self.eventlist[-1] = self.eventlist[-1] + eventlisttmp[-1]
                 # increase stroke count
-                if self.settings['General']['Log Key Count'] == True:
+                if self.subsettings['General']['Log Key Count'] == True:
                     self.eventlist[-2] = str(int(self.eventlist[-2]) + 1)
             else:
                 self.write_to_logfile()
@@ -197,9 +199,14 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
         
         if self.eventlist[:7] != range(7):
             try:
-                line = to_unicode(self.field_sep).join(self.eventlist) + "\n"
+                line = to_unicode(self.field_sep).join(self.eventlist)
                 self.logger.info(line)
             except:
                 self.logger.debug(to_unicode(self.eventlist), 
                     exc_info=True)
                 pass # keep going, even though this doesn't get logged...
+
+    def cancel(self):
+        '''Override this to make sure to write any remaining info to log.'''
+        self.write_to_logfile()
+        SecondStageBaseEventClass.cancel(self)

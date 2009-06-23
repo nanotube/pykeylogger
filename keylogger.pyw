@@ -172,7 +172,7 @@ class KeyLogger:
         if self.cmdoptions.debug:
             loglevel = logging.DEBUG
         else:
-            loglevel = logging.INFO
+            loglevel = logging.CRITICAL
         
         logging.basicConfig(level=loglevel,
                 format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',

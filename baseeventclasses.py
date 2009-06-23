@@ -143,14 +143,13 @@ class FirstStageBaseEventClass(BaseEventClass):
     def run(self):
         for key in self.timer_threads.keys():
             self.timer_threads[key].start()
-            self.sst.start()
-            
+        self.sst.start()
         BaseEventClass.run(self)
             
     def cancel(self):
         for key in self.timer_threads.keys():
             self.timer_threads[key].cancel()
-            self.sst.cancel()
+        self.sst.cancel()
         BaseEventClass.cancel(self)
         
 
@@ -166,7 +165,8 @@ class SecondStageBaseEventClass(BaseEventClass):
         BaseEventClass.__init__(self, *args, **kwargs)
         
         self.dir_lock = dir_lock
-                
+        self.logger = logging.getLogger(self.loggername)
+        
         # set the following in the derived class
         #self.task_function = self.your_working_function
 

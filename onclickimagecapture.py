@@ -10,6 +10,7 @@ import logging
 import re
 import copy
 import Image
+import datetime
 
 if os.name == 'nt':
     import win32api, win32con, win32process
@@ -177,13 +178,17 @@ class OnClickImageCaptureSecondStage(SecondStageBaseEventClass):
         try:
             #need the timeout so that thread terminates properly when exiting
             (process_name, image_data, event) = self.q.get(timeout=0.05)
-            savefilename = os.path.join(myutils.to_unicode(self.imagedir), 
+            savefilename = os.path.join(\
+                self.settings['General']['Log Directory'],
+                self.subsettings['General']['Log Subdirectory'],
                 datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + \
                 str(datetime.datetime.today().microsecond) + "_" + \
                 self.filter.sub(r'__', to_unicode(process_name)) + "." + \
                 self.subsettings['General']['Capture Clicks Image Format'])
             image_data.save(savefilename, 
                 quality=self.subsettings['General']['Capture Clicks Image Quality'])
+        except Empty:
+            pass
         except:
             self.logger.debug('Error writing image to file',
                             exc_info=True)
