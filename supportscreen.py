@@ -1,6 +1,5 @@
 from Tkinter import *
 import webbrowser
-import mytkSimpleDialog
 import tkSimpleDialog
 import ScrolledText
 import version

@@ -42,7 +42,7 @@ Log Subdirectory = string(max=64, default="detailed_log")
 
 # default: None
 Log Filename Tooltip = string()
-Log Filename = string(default="logfile.txt")
+Log Filename = filename_check()
 
 # default: False
 Parse Backspace Tooltip = string()
