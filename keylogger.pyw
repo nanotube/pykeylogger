@@ -41,7 +41,7 @@ from logwriter import LogWriter
 from imagecapture import ImageWriter
 import version
 #import ConfigParser
-from configobj import ConfigObj
+from configobj import ConfigObj, flatten_errors
 from validate import Validator
 from controlpanel import PyKeyloggerControlPanel
 from supportscreen import SupportScreen, ExpirationScreen
@@ -296,23 +296,27 @@ class KeyLogger:
                                   list_values=False)
 
         # validate the config file
-        errortext = "Some of your input contains errors. " + \
-                    "Detailed error output below.\n\n"
-        val = Validator()
-        valresult = self.settings.validate(val, preserve_errors=True)
-        error_tpl = "Error in item \"%s\": %s\n"
-        if valresult != True:
-            for section in valresult.keys():
-                if valresult[section] != True:
-                    sectionval = valresult[section]
-                    for key in sectionval.keys():
-                        if sectionval[key] != True:
-                            errortext += error_tpl % \
-                               (str(key), str(sectionval[key]))
-            tkMessageBox.showerror("Errors in config file. Exiting.",
-                                   errortext)
-            sys.exit()
+        errortext=["Some of your input contains errors. "
+                    "Detailed error output below.\n\n",]
         
+        val = Validator()
+        val.functions['filename_check'] = myutils.validate_logfile_name
+        valresult=self.settings.validate(val, preserve_errors=True)
+        if valresult != True:
+            for section_list, key, error in flatten_errors(self.settings, 
+                                                                valresult):
+                if key is not None:
+                    section_list.append(key)
+                else:
+                    section_list.append('[missing section]')
+                section_string = ','.join(section_list)
+                if error == False:
+                    error = 'Missing value or section.'
+                errortext.append('%s = %s' % (section_string, error))
+            tkMessageBox.showerror("Erros in config file. Exiting.", 
+                        '\n\n'.join(errortext), parent=self.dialog.interior())
+            sys.exit(1)
+
     def NagscreenLogic(self):
         '''Show the nagscreen (or not).'''
         

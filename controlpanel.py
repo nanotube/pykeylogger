@@ -288,13 +288,13 @@ class ConfigPanel():
 
     def validate(self):
                 
-        def walk_nested_dict(d):
-            for key1, value1 in d.items():
-                if isinstance(value1, dict):
-                    for key2, value2 in walk_nested_dict(value1):
-                        yield [key1, key2], value2
-                else:
-                    yield [key1,], value1
+        #def walk_nested_dict(d):
+            #for key1, value1 in d.items():
+                #if isinstance(value1, dict):
+                    #for key2, value2 in walk_nested_dict(value1):
+                        #yield [key1, key2], value2
+                #else:
+                    #yield [key1,], value1
         
         for key1, value1 in self.entrydict.items():
             if not isinstance(value1, dict): # shouldn't happen
@@ -323,7 +323,7 @@ class ConfigPanel():
                     "Detailed error output below.\n\n",]
         
         val = Validator()
-        val.functions['filename_check'] = self.validate_logfile_name
+        val.functions['filename_check'] = myutils.validate_logfile_name
         valresult=self.settings.validate(val, preserve_errors=True)
         if valresult != True:
             for section_list, key, error in flatten_errors(self.settings, 
@@ -347,25 +347,7 @@ class ConfigPanel():
         # this is where we write out the config file to disk
         #self.settings.write()
         pass
-    
-    def validate_logfile_name(self, value):
-        '''Check for logfile naming restrictions.
-        
-        These restrictions are in place to avoid conflicts with internal
-        file operations.
-        
-        Log filenames cannot:
-        * End in '.zip'
-        * Start with '_internal_'
-        * Start with 'XXXXXXXX_XXXXXX.' where X is a digit
-        '''
-        if not value.startswith('_internal_') and \
-                not value.endswith('.zip') and \
-                not re.match(r'\d{8}_\d{6}\.', value):
-            return value
-        else:
-            raise VdtValueError(value)
-        
+
     
 class Command:
     ''' A class we can use to avoid using the tricky "Lambda" expression.

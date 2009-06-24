@@ -5,6 +5,8 @@ import os
 import os.path
 import imp
 import locale
+from validate import VdtValueError
+import re
 
 # for the OnDemandRotatingFileHandler class
 from logging.handlers import BaseRotatingHandler
@@ -66,6 +68,27 @@ def to_unicode(x):
                 ret = x.decode('utf-8', 'replace').encode('utf-8')
     return ret
     
+def validate_logfile_name(value):
+    '''Check for logfile naming restrictions.
+    
+    These restrictions are in place to avoid conflicts with internal
+    file operations.
+    
+    Log filenames cannot:
+    * End in '.zip'
+    * Start with '_internal_'
+    * Start with 'XXXXXXXX_XXXXXX.' where X is a digit
+    
+    This function gets plugged into an instance of validate.Validator.
+    '''
+    if not value.startswith('_internal_') and \
+            not value.endswith('.zip') and \
+            not re.match(r'\d{8}_\d{6}\.', value):
+        return value
+    else:
+        raise VdtValueError(value)
+
+
 
 class OnDemandRotatingFileHandler(BaseRotatingHandler):
     '''Handler which allows the rotating of the logfile on demand.
