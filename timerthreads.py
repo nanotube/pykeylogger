@@ -28,6 +28,7 @@ import sys
 import os.path
 from myutils import _settings, _cmdoptions
 import copy
+import zipfile
 
 # python 2.5 does some email things differently from python 2.4 and py2exe doesn't like it. 
 # hence, the version check.
@@ -202,50 +203,69 @@ class LogZipper(BaseTimerClass):
         self.task_function = self.zip_logs
     
     def zip_logs(self):
-        ##todo: move the following 4 lines to base __init__
-        logger = logging.getLogger(self.loggername)
-        logfilepath = logger.handlers[0].stream.name
-        log_full_dir = os.path.dirname(logfilepath)
-        log_rel_dir = os.path.basename(log_full_dir)
-        logfilename = os.path.basename(logfilepath)
+        '''Zip the rotated log files.
         
-        if not self.subsettings['Log Rotation']['Enable Log Rotation']:
+        Zip files are named as <time>.<logfilename>.zip and placed in the
+        appropriate log subdirectory.
+        
+        Delete rotated log files which are zipped.
+        '''
+        
+        if not self.subsettings['Log Rotation']['Log Rotation Enable']:
             lr = LogRotator(self.dir_lock, self.loggername)
             lr.rotate_logs()
             
-        zipfile_name = "%s." + self.logfile_name + ".zip" % \
+        zipfile_name = ("%s." + self.logfile_name + ".zip") % \
                 time.strftime("%Y%m%d_%H%M%S")
+        zipfile_rel_path = os.path.join(self.log_rel_dir, zipfile_name)
         
         self.dir_lock.acquire()
         try:
-            myzip = zipfile.ZipFile(zipfile_name, "w", zipfile.ZIP_DEFLATED)
+            myzip = zipfile.ZipFile(zipfile_rel_path, "w", 
+                                    zipfile.ZIP_DEFLATED)
             
             filelist = os.listdir(self.log_rel_dir)
+            # will contain all files just zipped, and thus to be deleted
+            filelist_copy = copy.deepcopy(filelist)
             for fname in filelist:
                 if self.needs_zipping(fname):
                     myzip.write(os.path.join(self.log_rel_dir, fname))
+                else: 
+                    filelist_copy.remove(fname)
                             
             myzip.close()
             
-            myzip = zipfile.ZipFile(zipfile_name, "r", zipfile.ZIP_DEFLATED)
+            myzip = zipfile.ZipFile(zipfile_rel_path, "r", 
+                                    zipfile.ZIP_DEFLATED)
             if myzip.testzip() != None:
                 logging.getLogger('').debug("Warning: zipfile for logger %s "
                         "did not pass integrity test.\n" % self.loggername)
+            else:
+                # if zip checks out, delete files just added to zip.
+                for fname in filelist_copy:
+                    os.remove(os.path.join(self.log_rel_dir, fname))
             myzip.close()
             
             # write the name of the last completed zip file
             # so that we can check against this when emailing or ftping, 
             # to make sure we do not try to transfer a zipfile which is
             # in the process of being created
-            ziplog=open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'w')
+            ziplog=open(os.path.join(self.log_full_dir, 
+                                        "_internal_ziplog.txt"), 'w')
             ziplog.write(zipfile_name)
             ziplog.close()
         finally:
             self.dir_lock.release()
     
     def needs_zipping(self, fname):
+        '''Decide if file should go into the zip.
+        
+        Don't want to zip other zips, internal control files, or the log
+        file currently being written to. More simply stated, we only want
+        to zip rotated log files.
+        '''
         if fname.endswith('.zip') or fname.startswith('_internal_') or \
-                re.match(r'\d{8}_\d{6}\.', fname):
+                not re.match(r'\d{8}_\d{6}\.', fname):
             return False
         else:
             return True
