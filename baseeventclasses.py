@@ -1,3 +1,25 @@
+##############################################################################
+##
+## PyKeylogger: Simple Python Keylogger for Windows
+## Copyright (C) 2009  nanotube@users.sf.net
+##
+## http://pykeylogger.sourceforge.net/
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+##############################################################################
+
 from threading import Thread, Event, RLock
 from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
     to_unicode)
@@ -130,10 +152,13 @@ class FirstStageBaseEventClass(BaseEventClass):
         for section in self.subsettings.sections:
             if section != 'General':
                 try:
+                    self.logger.debug('Creating thread %s' % section)
                     self.timer_threads[section] = \
                         eval(self.subsettings[section]['_Thread_Class'] + \
                         '(self.dir_lock, self.loggername)')
                 except KeyError:
+                    self.logger.debug('Error creating thread %s' % section,
+                                exc_info=True)
                     pass # this is not a thread to be started.
     
     def spawn_second_stage_thread(self): # override in derived class
@@ -142,6 +167,8 @@ class FirstStageBaseEventClass(BaseEventClass):
         
     def run(self):
         for key in self.timer_threads.keys():
+            self.logger.debug('Starting thread %s: %s' % \
+                    (key, self.timer_threads[key]))
             self.timer_threads[key].start()
         self.sst.start()
         BaseEventClass.run(self)

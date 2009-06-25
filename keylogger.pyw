@@ -1,7 +1,7 @@
 ##############################################################################
 ##
 ## PyKeylogger: Simple Python Keylogger for Windows
-## Copyright (C) 2007  nanotube@users.sf.net
+## Copyright (C) 2009  nanotube@users.sf.net
 ##
 ## http://pykeylogger.sourceforge.net/
 ##
@@ -37,8 +37,6 @@ else:
 import re
 from optparse import OptionParser
 import traceback
-from logwriter import LogWriter
-from imagecapture import ImageWriter
 import version
 #import ConfigParser
 from configobj import ConfigObj, flatten_errors

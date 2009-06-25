@@ -25,7 +25,7 @@ import tkSimpleDialog
 import tkMessageBox
 import Pmw
 from configobj import ConfigObj, flatten_errors
-from validate import Validator, VdtValueError
+from validate import Validator
 from tooltip import ToolTip
 import myutils
 import webbrowser
@@ -76,7 +76,10 @@ class PyKeyloggerControlPanel:
     def callback(self):
         tkMessageBox.showwarning(title="Not Implemented", 
                     message="This feature has not yet been implemented")
-        
+    
+    def initiate_timer_action(self, loggername, actionname):
+        self.mainapp.event_threads[loggername].timer_threads[actionname].task_function()
+            
     def initialize_main_panel(self):
         #create the main panel window
         #root = Tk()
@@ -139,7 +142,9 @@ class MainMenu:
                 self.menubar.addmenuitem(section + ' Actions', 
                                 'command',
                                 'Trigger %s' % subsection, 
-                                command = controlpanel.callback,
+                                command = Command(controlpanel.initiate_timer_action,
+                                        section, 
+                                        subsection),
                                 label = 'Trigger %s' % subsection)
         
         self.menubar.addmenuitem('Actions', 'separator')
