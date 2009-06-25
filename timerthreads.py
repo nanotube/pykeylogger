@@ -120,7 +120,7 @@ class LogRotator(BaseTimerClass):
             try:
                 handler.doRollover()
             except AttributeError:
-                logging.getLogger('').debug("Logger %s, handler %r, "
+                self.logger.debug("Logger %s, handler %r, "
                     "is not capable of rollover." % (loggername, handler))
             finally:
                 self.dir_lock.release()
@@ -175,7 +175,7 @@ class OldLogDeleter(BaseTimerClass):
                         filepath = os.path.join(self.log_full_dir, fname)
                         os.remove(filepath)
                     except:
-                        logging.getLogger('').debug("Error deleting old log "
+                        self.logger.debug("Error deleting old log "
                         "file: %s" % filepath)
         finally:
             self.dir_lock.release()
@@ -238,7 +238,7 @@ class LogZipper(BaseTimerClass):
             myzip = zipfile.ZipFile(zipfile_rel_path, "r", 
                                     zipfile.ZIP_DEFLATED)
             if myzip.testzip() != None:
-                logging.getLogger('').debug("Warning: zipfile for logger %s "
+                self.logger.debug("Warning: zipfile for logger %s "
                         "did not pass integrity test.\n" % self.loggername)
             else:
                 # if zip checks out, delete files just added to zip.
@@ -246,14 +246,6 @@ class LogZipper(BaseTimerClass):
                     os.remove(os.path.join(self.log_rel_dir, fname))
             myzip.close()
             
-            # write the name of the last completed zip file
-            # so that we can check against this when emailing or ftping, 
-            # to make sure we do not try to transfer a zipfile which is
-            # in the process of being created
-            ziplog=open(os.path.join(self.log_full_dir, 
-                                        "_internal_ziplog.txt"), 'w')
-            ziplog.write(zipfile_name)
-            ziplog.close()
         finally:
             self.dir_lock.release()
     
@@ -296,22 +288,13 @@ class EmailLogSender(BaseTimerClass):
             lz.zip_logs()
         
         try:
-            ziplog = open(os.path.join(self.log_full_dir, "_internal_ziplog.txt"), 'r')
-            self.latest_zip_file = ziplog.readline()
-            ziplog.close()
-        except:
-            logging.getLogger('').debug("Unexpected error opening "
-                    "_internal_ziplog.txt", sys.exc_info())
-            return
-
-        try:
             self.latest_zip_emailed = "" #in case emaillog doesn't exist.
             emaillog = open(os.path.join(self.log_full_dir, 
                     "_internal_emaillog.txt"), 'r')
             self.latest_zip_emailed = emaillog.readline()
             emaillog.close()
         except:
-            logging.getLogger('').debug("Cannot open _internal_emaillog.txt. "
+            self.logger.debug("Cannot open _internal_emaillog.txt. "
                     "Will email all available zip files.", exc_info=True)
         
         self.dir_lock.acquire()
@@ -320,16 +303,16 @@ class EmailLogSender(BaseTimerClass):
             # removing elements from a list while iterating over it produces 
             # undesirable results so we make a copy
             zipfile_list_copy = copy.deepcopy(zipfile_list)
-            logging.getLogger('').debug(str(zipfile_list))
+            self.logger.debug(str(zipfile_list))
             if len(zipfile_list) > 0:
                 
                 for filename in zipfile_list_copy:
                     if not self.needs_emailing(filename):
                         zipfile_list.remove(filename)
-                        logging.getLogger('').debug("removing %s from "
+                        self.logger.debug("removing %s from "
                             "zipfilelist." % filename)
             
-            logging.getLogger('').debug(str(zipfile_list))
+            self.logger.debug(str(zipfile_list))
 
             # set up the message
             msg = MIMEMultipart()
@@ -375,7 +358,7 @@ class EmailLogSender(BaseTimerClass):
                         myutils.password_recover(self.subsettings['E-mail']['SMTP Password']))
             sendingresults = mysmtp.sendmail(self.subsettings['E-mail']['E-mail From'], 
                     self.subsettings['E-mail']['E-mail To'].split(";"), msg.as_string())
-            logging.getLogger('').debug("Email sending errors (if any): "
+            self.logger.debug("Email sending errors (if any): "
                     "%s \n" % str(sendingresults))
             
             # need to put the quit in a try, since TLS connections may error 
@@ -401,12 +384,11 @@ class EmailLogSender(BaseTimerClass):
                 emaillog.write(zipfile_list.pop())
                 emaillog.close()
         except:
-            logging.getLogger('').debug('Error sending email.', exc_info=True)
+            self.logger.debug('Error sending email.', exc_info=True)
             pass # better luck next time
 
     def needs_emailing(self, fname):
-        if fname.endswith('.zip') and fname <= self.latest_zip_file and \
-                fname > self.latest_zip_emailed:
+        if fname.endswith('.zip') and fname > self.latest_zip_emailed:
             return True
         else:
             return False
