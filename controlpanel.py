@@ -255,7 +255,7 @@ class ConfigPanel():
                             entry.setvalue(myutils.password_recover(itemvalue))
                         entry.pack(fill='x', expand=1, padx=10, pady=5)
                         self.balloon.bind(entry, 
-                                subsubsettings[itemname + ' Tooltip'])
+                                subsubsettings[itemname + ' Tooltip'].replace('\\n','\n'))
                         self.entrydict[section][subsection].update({itemname: entry})
                         
         
