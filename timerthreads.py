@@ -120,10 +120,11 @@ class LogRotator(BaseTimerClass):
         for handler in self.logger.handlers:
             self.dir_lock.acquire()
             try:
+                self.logger.debug("Handler %r: rolling over" % handler)
                 handler.doRollover()
             except AttributeError:
-                self.logger.debug("Logger %s, handler %r, "
-                    "is not capable of rollover." % (loggername, handler))
+                self.logger.debug("Handler %r is not capable of rollover." % \
+                            handler)
             finally:
                 self.dir_lock.release()
 
@@ -140,8 +141,7 @@ class LogFlusher(BaseTimerClass):
     def flush_log_write_buffer(self):
         '''Flushes all relevant log buffers.'''
         
-        self.logger.debug("Logger %s: flushing file write buffers." % \
-                            self.loggername)
+        self.logger.debug("Flushing file write buffers.")
         for handler in self.logger.handlers:
             self.dir_lock.acquire()
             try:
@@ -170,11 +170,14 @@ class OldLogDeleter(BaseTimerClass):
     def delete_old_logs(self):
                 
         self.dir_lock.acquire()
+        self.logger.debug("Initiating old log deletion")
         try:
             for fname in os.listdir(self.log_full_dir):
                 if self.needs_deleting(fname):
                     try:
                         filepath = os.path.join(self.log_full_dir, fname)
+                        self.logger.debug("Deleting old log "
+                        "file: %s" % filepath)
                         os.remove(filepath)
                     except:
                         self.logger.debug("Error deleting old log "
@@ -220,7 +223,9 @@ class LogZipper(BaseTimerClass):
         Delete rotated log files which are zipped.
         '''
         
-        if not self.subsettings['Log Rotation']['Log Rotation Enable']:
+        self.logger.debug('Initiating log zip.')
+        
+        if not self.subsettings['Log Rotation']['Enable Log Rotation']:
             lr = LogRotator(self.dir_lock, self.loggername)
             lr.rotate_logs()
             
@@ -259,6 +264,7 @@ class LogZipper(BaseTimerClass):
                     self.logger.debug("Error in integrity test of zipfile "
                                 "for logger %s" % self.loggername)
             else:
+                self.logger.debug('Nothing to zip.')
                 os.remove(zipfile_rel_path) # don't need zero-length zip.
             
             
@@ -297,6 +303,7 @@ class EmailLogSender(BaseTimerClass):
         
         We use the email settings specified in the .ini file for the logger.
         '''
+        self.logger.debug('Initiating log email.')
 
         if self.subsettings['Zip']['Enable Zip'] == False:
             lz = LogZipper(self.dir_lock, self.loggername)
