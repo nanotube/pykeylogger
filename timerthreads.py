@@ -241,17 +241,24 @@ class LogZipper(BaseTimerClass):
                     filelist_copy.remove(fname)
                             
             myzip.close()
-            
-            myzip = zipfile.ZipFile(zipfile_rel_path, "r", 
-                                    zipfile.ZIP_DEFLATED)
-            if myzip.testzip() != None:
-                self.logger.debug("Warning: zipfile for logger %s "
-                        "did not pass integrity test.\n" % self.loggername)
+            if len(filelist_copy) != 0:
+                try:
+                    myzip = zipfile.ZipFile(zipfile_rel_path, "r", 
+                                            zipfile.ZIP_DEFLATED)
+                    if myzip.testzip() != None:
+                        self.logger.debug("Warning: zipfile for logger %s "
+                                "did not pass integrity test.\n" % self.loggername)
+                    else:
+                        # if zip checks out, delete files just added to zip.
+                        for fname in filelist_copy:
+                            os.remove(os.path.join(self.log_rel_dir, fname))
+                    myzip.close()
+                except:
+                    self.logger.debug("Error in integrity test of zipfile "
+                                "for logger %s" % self.loggername)
             else:
-                # if zip checks out, delete files just added to zip.
-                for fname in filelist_copy:
-                    os.remove(os.path.join(self.log_rel_dir, fname))
-            myzip.close()
+                os.remove(zipfile_rel_path) # don't need zero-length zip.
+            
             
         finally:
             self.dir_lock.release()
