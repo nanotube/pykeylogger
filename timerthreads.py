@@ -29,6 +29,7 @@ import os.path
 from myutils import _settings, _cmdoptions
 import copy
 import zipfile
+import smtplib
 
 # python 2.5 does some email things differently from python 2.4 and py2exe doesn't like it. 
 # hence, the version check.
