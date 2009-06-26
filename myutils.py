@@ -27,7 +27,7 @@ import os
 import os.path
 import imp
 import locale
-from validate import VdtValueError
+from validate import ValidateError, VdtValueError
 import re
 
 # for the OnDemandRotatingFileHandler class
@@ -89,8 +89,14 @@ def to_unicode(x):
             except UnicodeError:
                 ret = x.decode('utf-8', 'replace').encode('utf-8')
     return ret
+
+class VdtValueDetailError(ValidateError):
+    def __init__(self, value, reason):
+        ValidateError.__init__(self, "the value "%s" is unacceptable.\n"
+                "reason: %s" % (value, reason))
     
-def validate_logfile_name(value):
+
+def validate_log_filename(value):
     '''Check for logfile naming restrictions.
     
     These restrictions are in place to avoid conflicts with internal
@@ -99,18 +105,35 @@ def validate_logfile_name(value):
     Log filenames cannot:
     * End in '.zip'
     * Start with '_internal_'
-    * Start with 'XXXXXXXX_XXXXXX.' where X is a digit
     
     This function gets plugged into an instance of validate.Validator.
     '''
     if not value.startswith('_internal_') and \
-            not value.endswith('.zip') and \
-            not re.match(r'\d{8}_\d{6}\.', value):
+            not value.endswith('.zip'):
         return value
     else:
-        raise VdtValueError(value)
+        raise VdtValueDetailError(value, 
+                "filename cannot end in '.zip' or start with '_internal_'")
 
-
+def validate_image_filename(value):
+    '''Check for logfile naming restrictions.
+    
+    These restrictions are in place to avoid conflicts with internal
+    file operations and ensure unique click image filenames.
+    
+    Image filenames:
+    * Cannot start with '_internal_'
+    * Must contain %time% variable somewhere.
+    
+    This function gets plugged into an instance of validate.Validator.
+    '''
+    if not value.startswith('_internal_') and \
+            re.search(r'%time%', value):
+        return value
+    else:
+        raise VdtValueDetailError(value, 
+                "filename cannot start with '_internal_' and must contain"
+                "%time% to ensure uniqueness")
 
 class OnDemandRotatingFileHandler(BaseRotatingHandler):
     '''Handler which allows the rotating of the logfile on demand.

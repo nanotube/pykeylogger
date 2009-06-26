@@ -328,7 +328,8 @@ class ConfigPanel():
                     "Detailed error output below.\n\n",]
         
         val = Validator()
-        val.functions['filename_check'] = myutils.validate_logfile_name
+        val.functions['log_filename_check'] = myutils.validate_log_filename
+        val.functions['image_filename_check'] = myutils.validate_image_filename
         valresult=self.settings.validate(val, preserve_errors=True)
         if valresult != True:
             for section_list, key, error in flatten_errors(self.settings, 

@@ -181,8 +181,15 @@ class OldLogDeleter(BaseTimerClass):
             self.dir_lock.release()
     
     def needs_deleting(self, filename):
+        '''Check if file needs deleting.
+        
+        Delete everything older than specified max log age, 
+        except for internal tracking files and the 
+        unrotated logfile being written to.
+        '''
         filepath = os.path.join(self.log_full_dir, filename)
         if not filename.startswith('_internal_') and \
+                not filename == self.logfile_name and \
                 time.time() - os.path.getmtime(filepath) > self.max_log_age:
             return True
         else:
@@ -253,11 +260,10 @@ class LogZipper(BaseTimerClass):
         '''Decide if file should go into the zip.
         
         Don't want to zip other zips, internal control files, or the log
-        file currently being written to. More simply stated, we only want
-        to zip rotated log files.
+        file currently being written to. 
         '''
         if fname.endswith('.zip') or fname.startswith('_internal_') or \
-                not re.match(r'\d{8}_\d{6}\.', fname):
+                fname == self.logfile_name:
             return False
         else:
             return True
@@ -388,6 +394,11 @@ class EmailLogSender(BaseTimerClass):
             pass # better luck next time
 
     def needs_emailing(self, fname):
+        '''Decide if file needs emailing.
+        
+        Email only zip files, and only those created since previous email
+        was sent.
+        '''
         if fname.endswith('.zip') and fname > self.latest_zip_emailed:
             return True
         else:

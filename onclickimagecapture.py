@@ -58,8 +58,8 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
         self.task_function = self.process_event
 
         self.imagedimensions = \
-           Point(self.subsettings['General']['Capture Clicks Width'],
-                 self.subsettings['General']['Capture Clicks Height'])
+           Point(self.subsettings['General']['Click Image Width'],
+                 self.subsettings['General']['Click Image Height'])
                  
         # Hook to our display.
         if os.name == 'posix':
@@ -73,8 +73,9 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                     event.MessageName.startswith("mouse right"):
                 self.logger.debug(self.print_event(event))
                 process_name = self.get_process_name(event)
+                username = self.get_username()
                 image_data = self.capture_image(event)
-                self.sst_q.put((process_name, image_data, event))
+                self.sst_q.put((process_name, image_data, username, event))
         except Empty:
             pass
         except:
@@ -133,6 +134,17 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
         if os.name == 'nt':
             return Point(win32api.GetSystemMetrics(0),
                          win32api.GetSystemMetrics (1))
+    
+    def get_username(self):
+        '''Try a few different environment vars to get the username.'''
+        username = None
+        for varname in ['USERNAME','USER','LOGNAME']:
+            username = os.getenv(varname)
+            if username is not None:
+                break
+        if username is None:
+            username = 'none'
+        return username
 
     def get_process_name(self, event):
         '''Acquire the process name from the window handle for use in the log filename.
@@ -199,22 +211,30 @@ class OnClickImageCaptureSecondStage(SecondStageBaseEventClass):
     def process_event(self):
         try:
             #need the timeout so that thread terminates properly when exiting
-            (process_name, image_data, event) = self.q.get(timeout=0.05)
+            (process_name, image_data, username, event) = self.q.get(timeout=0.05)
             savefilename = os.path.join(\
                 self.settings['General']['Log Directory'],
                 self.subsettings['General']['Log Subdirectory'],
-                datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + \
-                str(datetime.datetime.today().microsecond) + "_" + \
-                self.filter.sub(r'__', to_unicode(process_name)) + "." + \
-                self.subsettings['General']['Capture Clicks Image Format'])
+                self.parse_filename(username, process_name))
             image_data.save(savefilename, 
-                quality=self.subsettings['General']['Capture Clicks Image Quality'])
+                quality=self.subsettings['General']['Click Image Quality'])
         except Empty:
             pass
         except:
             self.logger.debug('Error writing image to file',
                             exc_info=True)
 
+    def parse_filename(self, username, process_name):
+        filepattern = self.subsettings['General']['Click Image Filename']
+        fileextension = self.subsettings['General']['Click Image Format']
+        filepattern = re.sub(r'%time%', 
+                datetime.datetime.today().strftime('%Y%m%d_%H%M%S_') + \
+                str(datetime.datetime.today().microsecond), 
+                filepattern)
+        filepattern = re.sub(r'%processname%', process_name, filepattern)
+        filepattern = re.sub(r'%username%', username, filepattern)
+        filepattern = filepattern + '.' + fileextension
+        return filepattern
 
 class Point:
     def __init__(self, x=0, y=0):

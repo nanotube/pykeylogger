@@ -46,7 +46,7 @@ Log Subdirectory = string(max=64, default="detailed_log")
 
 # default: None
 Log Filename Tooltip = string()
-Log Filename = filename_check()
+Log Filename = log_filename_check()
 
 # default: False
 Parse Backspace Tooltip = string()
@@ -239,23 +239,26 @@ Log Subdirectory = string(max=64, default="click_images")
 
 # default: logfile.txt
 Log Filename Tooltip = string()
-Log Filename = string(default="logfile.txt")
+Log Filename = log_filename_check()
+
+Click Image Filename Tooltip = string()
+Click Image Filename = image_filename_check()
 
 # default: 150
-Capture Clicks Width Tooltip = string()
-Capture Clicks Width = integer(min=1, max=65534, default=150)
+Click Image Width Tooltip = string()
+Click Image Width = integer(min=1, max=65534, default=150)
 
 # default: 150
-Capture Clicks Height Tooltip = string()
-Capture Clicks Height = integer(min=1, max=65534, default=150)
+Click Image Height Tooltip = string()
+Click Image Height = integer(min=1, max=65534, default=150)
 
 # default: png
-Capture Clicks Image Format Tooltip = string()
-Capture Clicks Image Format = string(min=3, max=3, default="png")
+Click Image Format Tooltip = string()
+Click Image Format = string(min=3, max=3, default="png")
 
 # default: 75
-Capture Clicks Image Quality Tooltip = string()
-Capture Clicks Image Quality = integer(min=1, max=100, default=75)
+Click Image Quality Tooltip = string()
+Click Image Quality = integer(min=1, max=100, default=75)
 
 [[E-mail]]
 
