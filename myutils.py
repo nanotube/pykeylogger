@@ -93,7 +93,7 @@ def to_unicode(x):
 class VdtValueDetailError(ValidateError):
     def __init__(self, value, reason):
         ValidateError.__init__(self, "the value '%s' is unacceptable.\n"
-                "reason: %s" % (value, reason))
+                "Reason: %s" % (value, reason))
     
 
 def validate_log_filename(value):

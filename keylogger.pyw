@@ -295,7 +295,7 @@ class KeyLogger:
 
         # validate the config file
         errortext=["Some of your input contains errors. "
-                    "Detailed error output below.\n\n",]
+                    "Detailed error output below.",]
         
         val = Validator()
         val.functions['log_filename_check'] = myutils.validate_log_filename
