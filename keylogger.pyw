@@ -115,9 +115,13 @@ class KeyLogger:
         #self.lw.start()
         #self.iw.start()
         for key in self.event_threads.keys():
-            self.logger.debug('Starting thread %s: %s' % \
-                            (key, self.event_threads[key]))
-            self.event_threads[key].start()
+            if self.settings[key]['General']['Enable ' + key]:
+                self.logger.debug('Starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
+                self.event_threads[key].start()
+            else:
+                self.logger.debug('Not starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
         
         if os.name == 'nt':
             pythoncom.PumpMessages()
