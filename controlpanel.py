@@ -350,9 +350,9 @@ class ConfigPanel():
             return True
     
     def apply(self):
-        # this is where we write out the config file to disk
-        #self.settings.write()
-        pass
+        '''This is where we write out the modified config file to disk.''' 
+        self.settings.write()
+        
 
     
 class Command:
