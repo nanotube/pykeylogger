@@ -358,7 +358,7 @@ class EmailLogSender(BaseTimerClass):
             mysmtp = smtplib.SMTP(self.subsettings['E-mail']['SMTP Server'], 
                                     self.subsettings['E-mail']['SMTP Port'])
             
-            if _cmdoptions.debug: 
+            if self.cmdoptions.debug: 
                 mysmtp.set_debuglevel(1)
             if self.subsettings['E-mail']['SMTP Use TLS'] == True:
                 # we find that we need to use two ehlos (one before and one after starttls)
