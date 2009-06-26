@@ -243,6 +243,7 @@ class KeyLogger:
         
         #print threading.enumerate()
         logging.shutdown()
+        time.sleep(0.2) # give all threads time to clean up
         sys.exit()
     
     def parse_options(self):
