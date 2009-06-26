@@ -311,7 +311,7 @@ class KeyLogger:
                 section_string = ','.join(section_list)
                 if error == False:
                     error = 'Missing value or section.'
-                errortext.append('%s = %s' % (section_string, error))
+                errortext.append('%s: %s' % (section_string, error))
             tkMessageBox.showerror("Erros in config file. Exiting.", 
                         '\n\n'.join(errortext), parent=self.dialog.interior())
             sys.exit(1)

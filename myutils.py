@@ -132,8 +132,8 @@ def validate_image_filename(value):
         return value
     else:
         raise VdtValueDetailError(value, 
-                "filename cannot start with '_internal_' and must contain"
-                "%time% to ensure uniqueness")
+                "filename cannot start with '_internal_' and must contain "
+                "'%time%' to ensure uniqueness")
 
 class OnDemandRotatingFileHandler(BaseRotatingHandler):
     '''Handler which allows the rotating of the logfile on demand.
