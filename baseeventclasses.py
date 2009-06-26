@@ -167,9 +167,13 @@ class FirstStageBaseEventClass(BaseEventClass):
         
     def run(self):
         for key in self.timer_threads.keys():
-            self.logger.debug('Starting thread %s: %s' % \
-                    (key, self.timer_threads[key]))
-            self.timer_threads[key].start()
+            if self.subsettings[key]['Enable ' + key]:
+                self.logger.debug('Starting thread %s: %s' % \
+                        (key, self.timer_threads[key]))
+                self.timer_threads[key].start()
+            else:
+                self.logger.debug('Not starting thread %s: %s' % \
+                        (key, self.timer_threads[key]))
         self.sst.start()
         BaseEventClass.run(self)
             

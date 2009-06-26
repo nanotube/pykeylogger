@@ -313,8 +313,8 @@ class KeyLogger:
                 if error == False:
                     error = 'Missing value or section.'
                 errortext.append('%s: %s' % (section_string, error))
-            tkMessageBox.showerror("Erros in config file. Exiting.", 
-                        '\n\n'.join(errortext), parent=self.dialog.interior())
+            tkMessageBox.showerror("Errors in config file. Exiting.", 
+                        '\n\n'.join(errortext))
             sys.exit(1)
 
     def NagscreenLogic(self):
