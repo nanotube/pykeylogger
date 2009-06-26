@@ -345,7 +345,7 @@ class EmailLogSender(BaseTimerClass):
                     part.set_payload(open(os.path.join(self.log_full_dir, fname),"rb").read())
                     Encoders.encode_base64(part)
                     part.add_header('Content-Disposition', 
-                            'attachment; filename="%s"' % os.path.basename(file))
+                            'attachment; filename="%s"' % os.path.basename(fname))
                     msg.attach(part)
         finally:
             self.dir_lock.release()
