@@ -44,7 +44,7 @@ class PyKeyloggerControlPanel:
                 configspec=_cmdoptions['cmdoptions'].configval, 
                 list_values=False)
 
-        self.root = Pmw.initialise(fontScheme='pmw1')
+        self.root = Pmw.initialise(fontScheme='pmw2')
         self.root.withdraw()
         
         # call the password authentication widget
@@ -222,8 +222,7 @@ class ConfigPanel():
         #self.dialog.withdraw()
         
         self.balloon = Pmw.Balloon(self.dialog.interior(),
-                        label_wraplength=400,
-                        label_font = ('Arial',12))
+                        label_wraplength=400)
         
         notebook = Pmw.NoteBook(self.dialog.interior())
         notebook.pack(fill = 'both', expand = 1, padx = 10, pady = 10)
@@ -388,4 +387,5 @@ if __name__ == '__main__':
     klobject=BlankKeylogger()
     cmdoptions=BlankOptions()
     _cmdoptions = {'cmdoptions':cmdoptions}
-    myapp = PyKeyloggerControlPanel(klobject)
+    _mainapp = {'mainapp':klobject}
+    myapp = PyKeyloggerControlPanel()
