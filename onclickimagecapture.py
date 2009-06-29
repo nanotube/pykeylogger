@@ -20,8 +20,7 @@
 ##
 ##############################################################################
 
-from baseeventclasses import (FirstStageBaseEventClass, 
-    SecondStageBaseEventClass)
+from baseeventclasses import *
 
 from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
     to_unicode)

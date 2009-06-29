@@ -26,7 +26,6 @@ import tkMessageBox
 import Pmw
 from configobj import ConfigObj, flatten_errors
 from validate import Validator
-from tooltip import ToolTip
 import myutils
 import webbrowser
 from supportscreen import SupportScreen

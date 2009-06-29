@@ -42,6 +42,9 @@ except ImportError:
 _settings = {}
 # used to store the cmdoptions dict and make it globally accessible.
 _cmdoptions = {}
+# used to store a reference to the main thread and make it globally 
+# accessible
+_mainapp = {}
 
 def password_obfuscate(password):
     return base64.b64encode(zlib.compress(password))

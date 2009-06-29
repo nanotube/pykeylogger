@@ -24,8 +24,7 @@ from threading import Thread, Event, RLock
 from myutils import (_settings, _cmdoptions, OnDemandRotatingFileHandler,
     to_unicode)
 from Queue import Queue, Empty
-from timerthreads import (LogRotator, LogFlusher, OldLogDeleter, LogZipper,
-    EmailLogSender)
+from timerthreads import *
 import os
 import os.path
 import logging
@@ -46,6 +45,8 @@ stick the processed events into another queue.
 The second stage of processing can be slow. All it needs to do is
 massage the info it receives, and then write it out to disk
 in whatever format required.'''
+
+__all__ = ['FirstStageBaseEventClass','SecondStageBaseEventClass']
 
 class BaseEventClass(Thread):
     '''This is the base class for event-based threads.

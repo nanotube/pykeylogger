@@ -37,8 +37,7 @@ else:
     print "OS is not recognised as windows or linux"
     sys.exit()
 
-from baseeventclasses import (FirstStageBaseEventClass, 
-    SecondStageBaseEventClass)
+from baseeventclasses import *
     
 class DetailedLogWriterFirstStage(FirstStageBaseEventClass):
     '''Standard detailed log writer, first stage.
