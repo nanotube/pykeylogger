@@ -219,7 +219,8 @@ class ConfigPanel():
                     defaultbutton = 'OK',
                     title = section + ' Settings',
                     command = self.execute)
-        #self.dialog.withdraw()
+        
+        self.dialog.bind('<Escape>', self.cancel)
         
         self.balloon = Pmw.Balloon(self.dialog.interior(),
                         label_wraplength=400)
@@ -262,7 +263,6 @@ class ConfigPanel():
             self.entrydict = self.entrydict['General']
                 
         notebook.setnaturalsize()
-        #self.dialog.show()
     
     def read_settings(self):
         '''Get a fresh copy of the settings from file.'''
@@ -270,6 +270,9 @@ class ConfigPanel():
                 configspec=_cmdoptions['cmdoptions'].configval, 
                 list_values=False)
         return settings
+    
+    def cancel(self, event):
+        self.execute('Cancel')
     
     def execute(self, button):
         #print 'You clicked on', result
