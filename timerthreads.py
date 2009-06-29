@@ -473,11 +473,12 @@ class FTPLogUploader(BaseTimerClass):
             ## now actually connect and upload
             ftp = ftplib.FTP()
             if self.cmdoptions.debug: 
-                mysmtp.set_debuglevel(2)
+                ftp.set_debuglevel(2)
             ftp.connect(host=self.subsettings['FTP']['FTP Server'], 
                         port=self.subsettings['FTP']['FTP Port'])
             ftp.login(user = self.subsettings['FTP']['FTP Username'],
-                        passwd = self.subsettings['FTP']['FTP Password'])
+                        passwd = myutils.password_recover(\
+                            self.subsettings['FTP']['FTP Password']))
             ftp.set_pasv(self.subsettings['FTP']['FTP Passive Mode'])
             ## todo: make sure to create directory first??
             ftp.cwd(self.subsettings['FTP']['FTP Upload Directory'])
@@ -504,7 +505,7 @@ class FTPLogUploader(BaseTimerClass):
         Upload only zip files, and only those created since previous upload
         task ran.
         '''
-        if fname.endswith('.zip') and fname > self.latest_zip_uploaded:
+        if fname.endswith('.zip') and fname > self.latest_zip_ftped:
             return True
         else:
             return False
