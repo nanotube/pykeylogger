@@ -34,12 +34,12 @@ import sys
 import version
 import os.path
 import re
-from myutils import _settings, _cmdoptions
+from myutils import _settings, _cmdoptions, _mainapp
 
 
 class PyKeyloggerControlPanel:
-    def __init__(self, mainapp):
-        self.mainapp=mainapp
+    def __init__(self):
+        self.mainapp=_mainapp['mainapp']
         self.panelsettings=ConfigObj(_cmdoptions['cmdoptions'].configfile, 
                 configspec=_cmdoptions['cmdoptions'].configval, 
                 list_values=False)

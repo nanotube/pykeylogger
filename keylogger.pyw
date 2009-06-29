@@ -48,7 +48,7 @@ import myutils
 from Queue import Empty, Queue
 import threading
 import logging
-from myutils import _settings, _cmdoptions
+from myutils import _settings, _cmdoptions, _mainapp
 
 # event processing threads
 from detailedlogwriter import DetailedLogWriterFirstStage
@@ -69,6 +69,7 @@ class KeyLogger:
         self.process_settings()
         _settings['settings'] = self.settings
         _cmdoptions['cmdoptions'] = self.cmdoptions
+        _mainapp['mainapp'] = self
         
         self.create_log_directory(self.settings['General']['Log Directory'])
         os.chdir(self.settings['General']['Log Directory'])
@@ -225,7 +226,7 @@ class KeyLogger:
                     logging.getLogger('').debug("starting panel")
                     self.panel = True
                     self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel(self.cmdoptions, self)
+                    PyKeyloggerControlPanel()
         return True
     
     def OnKeyUpEvent(self,event):
@@ -462,7 +463,7 @@ class ControlKeyMonitor(threading.Thread):
                 if not self.mainapp.panel:
                     self.mainapp.panel = True
                     self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel(self.mainapp)
+                    PyKeyloggerControlPanel()
             time.sleep(0.05)
         
     def cancel(self):

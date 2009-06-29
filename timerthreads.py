@@ -27,10 +27,11 @@ import re
 import sys
 import os.path
 import myutils
-from myutils import _settings, _cmdoptions
+from myutils import _settings, _cmdoptions, _mainapp
 import copy
 import zipfile
 import smtplib
+import ftplib
 
 # python 2.5 does some email things differently from python 2.4 and py2exe doesn't like it. 
 # hence, the version check.
@@ -74,6 +75,7 @@ class BaseTimerClass(Thread):
         
         self.settings = _settings['settings']
         self.cmdoptions = _cmdoptions['cmdoptions']
+        self.mainapp = _mainapp['mainapp']
         
         # set this up for clarity
         self.subsettings = self.settings[loggername]
@@ -228,8 +230,7 @@ class LogZipper(BaseTimerClass):
         self.logger.debug('Initiating log zip.')
         
         if not self.subsettings['Log Rotation']['Enable Log Rotation']:
-            lr = LogRotator(self.dir_lock, self.loggername)
-            lr.rotate_logs()
+            self.mainapp.event_threads[self.loggername].timer_threads['Log Rotation'].task_function()
             
         zipfile_name = ("%s." + self.logfile_name + ".zip") % \
                 time.strftime("%Y%m%d_%H%M%S")
@@ -299,7 +300,7 @@ class EmailLogSender(BaseTimerClass):
         self.interval = float(self.subsettings['E-mail']['E-mail Interval'])*60*60
         
         self.task_function = self.send_email
-
+    
     def send_email(self):
         '''Zip and send logfiles by email for the specified logger.
         
@@ -308,8 +309,7 @@ class EmailLogSender(BaseTimerClass):
         self.logger.debug('Initiating log email.')
 
         if self.subsettings['Zip']['Enable Zip'] == False:
-            lz = LogZipper(self.dir_lock, self.loggername)
-            lz.zip_logs()
+            self.mainapp.event_threads[self.loggername].timer_threads['Zip'].task_function()
         
         try:
             self.latest_zip_emailed = "" #in case emaillog doesn't exist.
@@ -422,7 +422,93 @@ class EmailLogSender(BaseTimerClass):
         else:
             return False
             
+class FTPLogUploader(BaseTimerClass):
+    '''Upload logs by FTP to server/directory specified in .ini file.
+    
+    If log zipper is not enabled, we call a zipper here.
+    
+    Otherwise, we just upload all the zips for the specified logger.
+    '''
+    
+    def __init__(self, *args, **kwargs):
+        BaseTimerClass.__init__(self, *args, **kwargs)
         
+        self.interval = float(self.subsettings['FTP']['FTP Interval'])*60*60
+        
+        self.task_function = self.ftp_upload
+        
+    def ftp_upload(self):
+        self.logger.debug('Initiating log ftp.')
+
+        if self.subsettings['Zip']['Enable Zip'] == False:
+            self.mainapp.event_threads[self.loggername].timer_threads['Zip'].task_function()
+    
+        try:
+            self.latest_zip_ftped = "" #in case ftplog doesn't exist.
+            ftplog = open(os.path.join(self.log_full_dir, 
+                    "_internal_ftplog.txt"), 'r')
+            self.latest_zip_ftped = ftpog.readline()
+            ftplog.close()
+        except:
+            self.logger.debug("Cannot open _internal_ftplog.txt. "
+                    "Will ftp all available zip files.", exc_info=True)
+        
+        self.dir_lock.acquire()
+        try:
+            zipfile_list = os.listdir(self.log_full_dir)
+            # removing elements from a list while iterating over it produces 
+            # undesirable results so we make a copy
+            zipfile_list_copy = copy.deepcopy(zipfile_list)
+            self.logger.debug(str(zipfile_list))
+            if len(zipfile_list) > 0:
+                
+                for filename in zipfile_list_copy:
+                    if not self.needs_ftping(filename):
+                        zipfile_list.remove(filename)
+                        self.logger.debug("removing %s from "
+                            "zipfilelist." % filename)
+            
+            self.logger.debug(str(zipfile_list))
+            
+            ## now actually connect and upload
+            ftp = ftplib.FTP()
+            if self.cmdoptions.debug: 
+                mysmtp.set_debuglevel(2)
+            ftp.connect(host=self.subsettings['FTP']['FTP Server'], 
+                        port=self.subsettings['FTP']['FTP Port'])
+            ftp.login(user = self.subsettings['FTP']['FTP Username'],
+                        passwd = self.subsettings['FTP']['FTP Password'])
+            ftp.set_pasv(self.subsettings['FTP']['FTP Passive Mode'])
+            ## todo: make sure to create directory first??
+            ftp.cwd(self.subsettings['FTP']['FTP Upload Directory'])
+            for filename in zipfile_list:
+                ftp.storbinary('STOR ' + filename, 
+                            open(os.path.join(self.log_full_dir, filename)))
+            ftp.quit()
+        except:
+            self.logger.debug('Error in ftp upload.', exc_info=True)
+        finally:
+            self.dir_lock.release()
+            
+        # write the latest ftped zip to log for the future
+        if len(zipfile_list) > 0:
+            zipfile_list.sort()
+            ftplog = open(os.path.join(self.log_full_dir, 
+                    "_internal_ftplog.txt"), 'w')
+            ftplog.write(zipfile_list.pop())
+            ftplog.close()
+    
+    def needs_ftping(self, fname):
+        '''Decide if file needs uploading.
+        
+        Upload only zip files, and only those created since previous upload
+        task ran.
+        '''
+        if fname.endswith('.zip') and fname > self.latest_zip_uploaded:
+            return True
+        else:
+            return False
+    
 if __name__ == '__main__':
     # some basic testing code
     class TestTimerClass(BaseTimerClass):
@@ -448,7 +534,8 @@ if __name__ == '__main__':
     loghandler.setFormatter(logformatter)
     logger.addHandler(loghandler)
     
-    ttc = TestTimerClass('dirlock','loggername','even more stuff', 'myname', 'some other name')
+    ttc = TestTimerClass('dirlock','loggername','even more stuff', 
+                            'myname', 'some other name')
     ttc.start()
     time.sleep(5)
     ttc.cancel()

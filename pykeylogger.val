@@ -143,41 +143,44 @@ Enable Zip = boolean(default=False)
 Zip Interval Tooltip = string(default="Set this to the time interval between automatic zip events, in HOURS.")
 Zip Interval = float(min=0.016, default=4.0)
 
-#~ [FTP]
+[[FTP]]
 
-#~ # default: False
-#~ FTP Enable Tooltip = string(default="Set to True to enable automatic periodic uploading of a zipped archive of logfiles by FTP.")
-#~ FTP Enable = boolean(default=False)
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="FTPLogUploader")
 
-#~ # default: your.FTP.server
-#~ FTP Server Tooltip = string(default="Set to the hostname of your FTP server.")
-#~ FTP Server = string(default="your.FTP.server")
+# default: False
+Enable FTP Tooltip = string()
+Enable FTP = boolean(default=False)
 
-#~ # default: 21
-#~ FTP Port Tooltip = string(default="Set to the port number of your FTP server (most FTP servers run on port 21).")
-#~ FTP Port = integer(min=1, max=65534, default=21)
+# default: your.FTP.server
+FTP Server Tooltip = string()
+FTP Server = string(default="your.FTP.server")
 
-#~ # default: pykeylogger
-#~ FTP Upload Directory Tooltip = string(default="Set to the directory on the server where you would like to upload (relative or full path accepted).")
-#~ FTP Upload Directory = string(default="pykeylogger")
+# default: 21
+FTP Port Tooltip = string()
+FTP Port = integer(min=1, max=65534, default=21)
 
-#~ # default: anonymous
-#~ FTP Username Tooltip = string(default="Set to your username on the target FTP server.")
-#~ FTP Username = string(default="anonymous")
+# default: anonymous
+FTP Username Tooltip = string()
+FTP Username = string(default="anonymous")
 
-#~ # For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
-#~ # Setting it here directly will not work.
-#~ # default: anonymous@
-#~ FTP Password Tooltip = string(default="Set to your password on the target FTP server.")
-#~ FTP Password = string(default="anonymous@")
+# For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
+# Setting it here directly will not work.
+# default: anonymous@
+FTP Password Tooltip = string()
+FTP Password = string()
 
-#~ # default: True
-#~ FTP Passive Tooltip = string(default="Set to True to enable passive mode file transfer (recommended).")
-#~ FTP Passive = boolean(default=True)
+# default: pykeylogger
+FTP Upload Directory Tooltip = string()
+FTP Upload Directory = string(default="pykeylogger")
 
-#~ # default: 4.0
-#~ FTP Interval Tooltip = string(default="Set this to the time interval between automatic FTP events, in HOURS.")
-#~ FTP Interval = float(min=0.016, default=4.0)
+# default: True
+FTP Passive Mode Tooltip = string()
+FTP Passive Mode = boolean(default=True)
+
+# default: 4.0
+FTP Interval Tooltip = string()
+FTP Interval = float(min=0.016, default=4.0)
 
 [[Old Log Deletion]]
 
@@ -326,6 +329,44 @@ Enable Zip = boolean(default=False)
 Zip Interval Tooltip = string(default="Set this to the time interval between automatic zip events, in HOURS.")
 Zip Interval = float(min=0.016, default=4.0)
 
+[[FTP]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="FTPLogUploader")
+
+# default: False
+Enable FTP Tooltip = string()
+Enable FTP = boolean(default=False)
+
+# default: your.FTP.server
+FTP Server Tooltip = string()
+FTP Server = string(default="your.FTP.server")
+
+# default: 21
+FTP Port Tooltip = string()
+FTP Port = integer(min=1, max=65534, default=21)
+
+# default: anonymous
+FTP Username Tooltip = string()
+FTP Username = string(default="anonymous")
+
+# For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
+# Setting it here directly will not work.
+# default: anonymous@
+FTP Password Tooltip = string()
+FTP Password = string()
+
+# default: pykeylogger
+FTP Upload Directory Tooltip = string()
+FTP Upload Directory = string(default="pykeylogger")
+
+# default: True
+FTP Passive Mode Tooltip = string()
+FTP Passive Mode = boolean(default=True)
+
+# default: 4.0
+FTP Interval Tooltip = string()
+FTP Interval = float(min=0.016, default=4.0)
 
 [[Old Log Deletion]]
 
