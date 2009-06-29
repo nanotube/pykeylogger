@@ -57,7 +57,7 @@ if sys.version_info[0] == 2 and sys.version_info[1] < 5:
     from email import Encoders
 
 __all__ = ['LogRotator','LogFlusher','OldLogDeleter','LogZipper',
-        'EmailLogSender']
+        'EmailLogSender','FTPLogUploader']
 
 class BaseTimerClass(Thread):
     '''This is the base class for timer (delay) based threads.
