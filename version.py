@@ -5,7 +5,7 @@ name = "pykeylogger"
 # Change this for stealth.
 description = "Simple Python Keylogger"
 
-version = "1.0.4"
+version = "1.0.5"
 url = "http://pykeylogger.sourceforge.net"
 license = "GPL"
 author = "Daniel Folkinshteyn"
