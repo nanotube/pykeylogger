@@ -1,6 +1,14 @@
 PyKeylogger Changelog
 ---------------------
 
+Version 1.0.5 (2009-06-29)
+
+*) Improve username getter to work with other variants of Linux environment variables.
+*) Email sending no longer hangs on errors.
+*) Fix a number of unicode parsing errors.
+*) Fix bug on Linux when hookkeyboard is set to False.
+*) A number code style changes (thanks to Christophe Gragnic) to bring the code more in line with python PEP8.
+
 -----
 Version 1.0.4 (2008-08-07)
 
