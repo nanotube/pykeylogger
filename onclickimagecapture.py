@@ -182,7 +182,7 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                       "MessageName: %s\n"
             return str_tpl % (to_unicode(event.Window),
                               to_unicode(event.WindowName),
-                              to_unicode(self.getProcessName(event)),
+                              to_unicode(self.get_process_name(event)),
                               to_unicode(event.Position),
                               to_unicode(event.MessageName))
 
@@ -211,6 +211,7 @@ class OnClickImageCaptureSecondStage(SecondStageBaseEventClass):
         try:
             #need the timeout so that thread terminates properly when exiting
             (process_name, image_data, username, event) = self.q.get(timeout=0.05)
+            process_name = self.filter.sub(r'__', process_name)
             savefilename = os.path.join(\
                 self.settings['General']['Log Directory'],
                 self.subsettings['General']['Log Subdirectory'],
