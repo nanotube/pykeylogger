@@ -14,7 +14,7 @@ def setversion(version):
 
 def setalphaversions(*alpha_versions):
     if alpha_versions != ():
-	raise ValueError, 'Dynamic versioning not available'
+        raise ValueError, 'Dynamic versioning not available'
 
 def version(alpha = 0):
     if alpha:

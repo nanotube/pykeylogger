@@ -177,9 +177,15 @@ class KeyLogger:
         else:
             loglevel = logging.CRITICAL
         
-        logging.basicConfig(level=loglevel,
-                format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                stream = sys.stdout) 
+        logformatter = logging.Formatter("%(asctime)s %(name)-25s "
+                "%(levelname)-10s %(filename)-25s %(lineno)-5d "
+                "%(funcName)s %(message)s")
+        rootlogger = logging.getLogger('')
+        rootlogger.setLevel(logging.DEBUG)
+        consolehandler = logging.StreamHandler(sys.stdout)
+        consolehandler.setLevel(loglevel)
+        consolehandler.setFormatter(logformatter)
+        rootlogger.addHandler(consolehandler)
         
         # configure the "systemlog" handler to log all debug messages to file
         if self.settings['General']['System Log'] != 'None':
@@ -188,11 +194,10 @@ class KeyLogger:
                     self.settings['General']['System Log'])
             systemloghandler = logging.FileHandler(systemlogpath)
             systemloghandler.setLevel(logging.DEBUG)
-            systemlogformatter = logging.Formatter('%(asctime)s %(name)-12s %(levelname)-8s %(message)s')
-            systemloghandler.setFormatter(systemlogformatter)
-            logging.getLogger('').addHandler(systemloghandler)
+            systemloghandler.setFormatter(logformatter)
+            rootlogger.addHandler(systemloghandler)
             
-        self.logger = logging.getLogger('')
+        self.logger = rootlogger
     
     def push_event_to_queues(self, event):
         for key in self.queues.keys():
