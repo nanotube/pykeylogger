@@ -48,7 +48,7 @@
 
     ;--------------------------------
     ;Program Icon
-    !define MUI_ICON "${PYKEYLOGGER_EXENAME}-${PYKEYLOGGER_VERSION}\${PYKEYLOGGER_EXENAME}icon.ico"
+    !define MUI_ICON "pykeylogger-${PYKEYLOGGER_VERSION}\${PYKEYLOGGER_EXENAME}icon.ico"
 
 ;--------------------------------
 ;Pages
