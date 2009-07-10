@@ -46,7 +46,9 @@
 ;--------------------------------
 ;Interface Settings
 
-    ;!define MUI_ABORTWARNING
+    ;--------------------------------
+    ;Program Icon
+    !define MUI_ICON "pykeylogger-${PYKEYLOGGER_VERSION}\pykeyloggericon.ico"
 
 ;--------------------------------
 ;Pages
@@ -62,7 +64,7 @@
     ; License page
     !define MUI_LICENSEPAGE_BUTTON		"Next >"
     !define MUI_LICENSEPAGE_TEXT_BOTTOM	"PyKeylogger is licensed under the GPL, a license designed to guarantee your continued freedom to use and modify this software. You need /not/ accept the license merely to use this program - only if you wish to modify and redistribute it."
-    !insertmacro MUI_PAGE_LICENSE "license.txt"
+    !insertmacro MUI_PAGE_LICENSE "doc\LICENSE.txt"
 
     !insertmacro MUI_PAGE_COMPONENTS
     !insertmacro MUI_PAGE_DIRECTORY
