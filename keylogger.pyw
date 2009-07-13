@@ -82,9 +82,11 @@ class KeyLogger:
             try:
                 self.panel_trigger.acquire()
                 self.logger.debug("Starting Control Panel")
-                self.control_key_hash.reset()
+                #self.control_key_hash.reset()
                 PyKeyloggerControlPanel()
                 self.panel_trigger.release()
+            except SystemExit:
+                raise
             except:
                 self.logger.exception("Some exception happened in the "
                                         "control panel.")
@@ -295,6 +297,7 @@ class HookHub(threading.Thread):
     def __init__(self, panel_trigger):
         threading.Thread.__init__(self)
         
+        self.panel_trigger = panel_trigger
         self.settings = _settings['settings']
         self.cmdoptions = _cmdoptions['cmdoptions']
         self.mainapp = _mainapp['mainapp']
@@ -351,7 +354,7 @@ class HookHub(threading.Thread):
         return True
     
     def OnKeyUpEvent(self,event):
-        self.ControlKeyHash.update(event)
+        self.control_key_hash.update(event)
         return True
     
     def OnMouseDownEvent(self,event):
@@ -380,7 +383,7 @@ class HookHub(threading.Thread):
         if os.name == 'posix':
             self.hm.start()
 
-    def stop(self):
+    def cancel(self):
         '''Exit cleanly.'''
         self.hashchecker.cancel()
         
@@ -452,7 +455,7 @@ class ControlKeyHash:
             
         if self.cmdoptions.debug:
             logging.getLogger('').debug("control key status: " + \
-                    str(self.ControlKeyHash))
+                    str(self.controlKeyHash))
 
     def reset(self):
         for key in self.controlKeyHash.keys():
@@ -460,6 +463,7 @@ class ControlKeyHash:
     
     def check(self):
         if self.controlKeyHash.values() == [True] * len(self.controlKeyHash):
+            logging.getLogger('').debug('Control key combo detected.')
             return True
         else:
             return False
@@ -485,6 +489,7 @@ class ControlKeyMonitor(threading.Thread):
         
     def run(self):
         while not self.finished.isSet():
+            time.sleep(0.05)
             if self.control_key_hash.check():
                 try:
                     logging.getLogger('').debug("Triggering Control Panel")
