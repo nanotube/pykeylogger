@@ -366,7 +366,7 @@ class HookHub(threading.Thread):
             self.logger.debug('Sticking event into queue %s' % key)
             self.queues[key].put(event)
 
-    def start(self):
+    def run(self):
         for key in self.event_threads.keys():
             if self.settings[key]['General']['Enable ' + key]:
                 self.logger.debug('Starting thread %s: %s' % \
