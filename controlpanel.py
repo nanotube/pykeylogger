@@ -77,7 +77,7 @@ class PyKeyloggerControlPanel:
                     message="This feature has not yet been implemented")
     
     def initiate_timer_action(self, loggername, actionname):
-        self.mainapp.hookhub.event_threads[loggername].timer_threads[actionname].task_function()
+        self.mainapp.event_threads[loggername].timer_threads[actionname].task_function()
             
     def initialize_main_panel(self):
         #create the main panel window
