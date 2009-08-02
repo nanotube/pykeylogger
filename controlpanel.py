@@ -88,6 +88,8 @@ class PyKeyloggerControlPanel:
         self.root.title("PyKeylogger Control Panel")
         self.root.config(height=200, width=200)
         
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
+        
         # Display the version in main window
         g = Pmw.Group(self.root, tag_pyclass = None)
         g.pack(fill = 'both', expand = 1, padx = 6, pady = 6)
