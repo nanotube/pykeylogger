@@ -1,6 +1,10 @@
 PyKeylogger Changelog
 ---------------------
 
+Version 1.1.1 (2009-08-03)
+
+*) Fix bug where panel status was not properly reset if panel was closed using the window's 'x' button. 
+
 Version 1.1.0 (2009-07-09)
 
 *) Major code refactoring, to allow for ease in implementing additional functionality. 
