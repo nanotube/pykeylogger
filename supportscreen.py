@@ -26,7 +26,7 @@ import tkSimpleDialog
 import ScrolledText
 import version
 
-BASE_SF_URL = "http://pykeylogger.wiki.sourceforge.net"
+BASE_SF_URL = "http://pykeylogger.sourceforge.net"
 
 class SupportScreen(tkSimpleDialog.Dialog):
     
