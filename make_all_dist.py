@@ -3,7 +3,7 @@ import os
 import sys
 import re
 import shutil
-
+import subprocess
 from optparse import OptionParser
 
 import zipfile
@@ -40,7 +40,7 @@ class DistributionBuilderController:
         parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
         parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print extra debug output) [default: %default]")
         parser.add_option("-t", "--disttype", action="store", dest="disttype", help="type of distribution to build ('standard', 'nonag', 'stealth', or 'all'). [default: %default]")
-        parser.add_option("-u", "--uploadonly", action="store", dest="uploadonly", help="only upload the release, don't do the build. [default: %default]")
+        parser.add_option("-u", "--uploadonly", action="store_true", dest="uploadonly", help="only upload the release, don't do the build. [default: %default]")
         
         parser.set_defaults(debug=False, 
                             disttype="all",
