@@ -71,8 +71,8 @@ class DistributionBuilderController:
 cd /home/frs/project/p/py/pykeylogger/pykeylogger
 mkdir %(version)s
 cd %(version)s
-mput ../pykeylogger-releases/pykeylogger-%(version)s_src*
-mput ../pykeylogger-releases/pykeylogger-%(version)s_win32*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_src*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_win32*
 put ./doc/CHANGELOG.TXT changelog_%(version)s.txt
 exit
 MYINPUT''' % {'version': version.version}, shell=True)
@@ -82,8 +82,8 @@ MYINPUT''' % {'version': version.version}, shell=True)
         
         returncode = subprocess.call('''sftp -b - nanotube,pykeylogger@web.sourceforge.net << MYINPUT
 cd htdocs/bin
-mput ../pykeylogger-releases/pykeylogger-%(version)s_stealth*
-mput ../pykeylogger-releases/pykeylogger-%(version)s_nonag*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_stealth*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_nonag*
 exit
 MYINPUT''' % {'version': version.version}, shell=True)
         
