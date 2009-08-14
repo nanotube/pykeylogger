@@ -144,11 +144,11 @@ class TimedScreenshotSecondStage(SecondStageBaseEventClass):
             options_dict = {}
             if self.subsettings['General']['Screenshot Image Format'].lower() in ['jpg','jpeg']:
                 self.subsettings['General']['Screenshot Image Format'] = 'jpeg'
-                options_dict = {'quality':to_unicode(self.subsettings['General']['Screenshot Image Quality'])}
+                save_options_dict = {'quality':to_unicode(self.subsettings['General']['Screenshot Image Quality'])}
             
             screengrab.save(savefilename, 
                     self.subsettings['General']['Screenshot Image Format'],
-                    {'quality':to_unicode(self.subsettings['General']['Screenshot Image Quality'])})
+                    save_options_dict)
 
         if os.name == 'nt':
             image_data = ImageGrab.grab((cropbox.topleft.x, cropbox.topleft.y, cropbox.bottomright.x, cropbox.bottomright.y))

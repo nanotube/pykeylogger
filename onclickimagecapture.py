@@ -75,6 +75,8 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                 username = self.get_username()
                 image_data = self.capture_image(event)
                 self.sst_q.put((process_name, image_data, username, event))
+            else:
+                self.logger.debug('not a useful event')
         except Empty:
             pass
         except:
