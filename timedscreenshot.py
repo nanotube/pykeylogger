@@ -141,7 +141,7 @@ class TimedScreenshotSecondStage(SecondStageBaseEventClass):
                 screensize.x,
                 screensize.y)
             
-            options_dict = {}
+            save_options_dict = {}
             if self.subsettings['General']['Screenshot Image Format'].lower() in ['jpg','jpeg']:
                 self.subsettings['General']['Screenshot Image Format'] = 'jpeg'
                 save_options_dict = {'quality':to_unicode(self.subsettings['General']['Screenshot Image Quality'])}
