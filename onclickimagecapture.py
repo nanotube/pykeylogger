@@ -132,7 +132,7 @@ class OnClickImageCaptureFirstStage(FirstStageBaseEventClass):
                          self.rootwin.get_geometry().height)
         if os.name == 'nt':
             return Point(win32api.GetSystemMetrics(0),
-                         win32api.GetSystemMetrics (1))
+                         win32api.GetSystemMetrics(1))
     
     def get_username(self):
         '''Try a few different environment vars to get the username.'''

@@ -32,12 +32,14 @@ import re
 if os.name == 'posix':
     pass
 elif os.name == 'nt':
-    import win32api, win32con, win32process
+    import win32api
 else:
     print "OS is not recognised as windows or linux"
     sys.exit()
 
 from baseeventclasses import *
+
+from onclickimagecapture import CropBox, Point
     
 class TimedScreenshotFirstStage(FirstStageBaseEventClass):
     '''Takes screenshots at fixed interval.
@@ -145,7 +147,7 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
                          self.rootwin.get_geometry().height)
         if os.name == 'nt':
             return Point(win32api.GetSystemMetrics(0),
-                         win32api.GetSystemMetrics (1))
+                         win32api.GetSystemMetrics(1))
 
     def parse_filename(self):
         filepattern = self.subsettings['General']['Screenshot Image Filename']
