@@ -38,10 +38,10 @@ setup(
                         version.name+"icon.ico",
                         version.name+"icon.svg",
                         version.name+"icon_big.gif",
-                        "CHANGELOG.TXT",
-                        "LICENSE.txt",
-                        "README.txt",
-                        "TODO.txt"])],
+                        "doc/CHANGELOG.TXT",
+                        "doc/LICENSE.txt",
+                        "doc/README.txt",
+                        "doc/TODO.txt"])],
     # targets to build
     console = [
         {

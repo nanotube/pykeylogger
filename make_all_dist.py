@@ -3,7 +3,7 @@ import os
 import sys
 import re
 import shutil
-
+import subprocess
 from optparse import OptionParser
 
 import zipfile
@@ -17,28 +17,34 @@ class DistributionBuilderController:
         
         self.version_check()
         
-        if self.cmdoptions.disttype in ['standard', 'all']:
-            print "Running standard build..."
-            db = DistributionBuilder('standard')
-            db.run()
-        if self.cmdoptions.disttype in ['nonag', 'all']:
-            print "Running nonag build..."
-            db = DistributionBuilder('nonag')
-            db.run()
-        if self.cmdoptions.disttype in ['stealth', 'all']:
-            print "Running stealth build..."
-            db = DistributionBuilder('stealth')
-            db.run()
+        if not self.cmdoptions.uploadonly:
+        
+            if self.cmdoptions.disttype in ['standard', 'all']:
+                print "Running standard build..."
+                db = DistributionBuilder('standard')
+                db.run()
+            if self.cmdoptions.disttype in ['nonag', 'all']:
+                print "Running nonag build..."
+                db = DistributionBuilder('nonag')
+                db.run()
+            if self.cmdoptions.disttype in ['stealth', 'all']:
+                print "Running stealth build..."
+                db = DistributionBuilder('stealth')
+                db.run()
+                
+        self.upload_release()
     
     def ParseOptions(self):
         '''Read command line options
         '''
         parser = OptionParser(version=version.description + " version " + version.version + " (" + version.url + ").")
         parser.add_option("-d", "--debug", action="store_true", dest="debug", help="debug mode (print extra debug output) [default: %default]")
-        parser.add_option("-t", "--disttype", action="store", dest="disttype", help="type of distribution to build ('standard', 'nonag', 'stealth', or 'all'. [default: %default]")
+        parser.add_option("-t", "--disttype", action="store", dest="disttype", help="type of distribution to build ('standard', 'nonag', 'stealth', or 'all'). [default: %default]")
+        parser.add_option("-u", "--uploadonly", action="store_true", dest="uploadonly", help="only upload the release, don't do the build. [default: %default]")
         
         parser.set_defaults(debug=False, 
-                            disttype="all")
+                            disttype="all",
+                            uploadonly=False)
         
         (self.cmdoptions, args) = parser.parse_args()
     
@@ -47,6 +53,40 @@ class DistributionBuilderController:
             pass
         else:
             sys.exit()
+            
+    def upload_release(self):
+        '''upload files for release'''
+        
+        while 1:
+            ans = raw_input("Do you want to upload now? [y/n] ")
+            if ans in ['y','Y','n','N']:
+                ans = ans.lower()
+                break
+        if ans == 'n':
+            return()
+        
+        print "uploading regular release files..."
+        
+        returncode = subprocess.call('''sftp -b - nanotube,pykeylogger@frs.sourceforge.net << MYINPUT
+cd /home/frs/project/p/py/pykeylogger/pykeylogger
+mkdir %(version)s
+cd %(version)s
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_src*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_win32*
+put ./doc/CHANGELOG.TXT changelog_%(version)s.txt
+exit
+MYINPUT''' % {'version': version.version}, shell=True)
+
+        
+        print "uploading stealth and nonag release files"
+        
+        returncode = subprocess.call('''sftp -b - nanotube,pykeylogger@web.sourceforge.net << MYINPUT
+cd htdocs/bin
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_stealth*
+mput ../pykeylogger-releases/%(version)s/pykeylogger-%(version)s_nonag*
+exit
+MYINPUT''' % {'version': version.version}, shell=True)
+        
     
 class DistributionBuilder:
     def __init__(self, disttype):
