@@ -1,6 +1,10 @@
 PyKeylogger Changelog
 ---------------------
 
+Version 1.2.0 (2009-08-14)
+
+*) Implement timed screenshotter. Takes screenshots at set intervals, if user activity is detected. User activity includes keyboard and mouse clicks, but excludes mouse motion.
+
 Version 1.1.1 (2009-08-03)
 
 *) Fix bug where panel status was not properly reset if panel was closed using the window's 'x' button. 
