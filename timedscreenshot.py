@@ -36,9 +36,6 @@ if os.name == 'nt':
     import win32api
     import ImageGrab
 elif os.name == 'posix':
-    from Xlib import X, XK, display, error
-    from Xlib.ext import record
-    from Xlib.protocol import rq
     import gtk
 else:
     print "OS is not recognised as windows or linux"
@@ -83,11 +80,7 @@ class TimedScreenshotFirstStage(FirstStageBaseEventClass):
 class TimedScreenshotSecondStage(SecondStageBaseEventClass):
     def __init__(self, dir_lock, *args, **kwargs):
         SecondStageBaseEventClass.__init__(self, dir_lock, *args, **kwargs)
-        
-        # Hook to our display.
-        if os.name == 'posix':
-            self.local_dpy = display.Display()
-        
+                
         self.task_function = self.process_event
                 
         self.logger = logging.getLogger(self.loggername)
