@@ -447,7 +447,7 @@ class FTPLogUploader(BaseTimerClass):
             self.latest_zip_ftped = "" #in case ftplog doesn't exist.
             ftplog = open(os.path.join(self.log_full_dir, 
                     "_internal_ftplog.txt"), 'r')
-            self.latest_zip_ftped = ftpog.readline()
+            self.latest_zip_ftped = ftplog.readline()
             ftplog.close()
         except:
             self.logger.debug("Cannot open _internal_ftplog.txt. "
