@@ -484,7 +484,7 @@ class FTPLogUploader(BaseTimerClass):
             ftp.cwd(self.subsettings['FTP']['FTP Upload Directory'])
             for filename in zipfile_list:
                 ftp.storbinary('STOR ' + filename, 
-                            open(os.path.join(self.log_full_dir, filename)))
+                        open(os.path.join(self.log_full_dir, filename), 'rb'))
             ftp.quit()
         except:
             self.logger.debug('Error in ftp upload.', exc_info=True)
