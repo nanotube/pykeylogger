@@ -171,7 +171,13 @@ class DetailedLogWriterSecondStage(SecondStageBaseEventClass):
                 self.write_to_logfile()
                 self.eventlist = eventlisttmp
         except Empty:
-            pass #let's keep iterating
+            # check if the minute has rolled over, if so, write it out
+            if self.eventlist[:2] != range(2) and \
+                self.eventlist[:2] != [to_unicode(time.strftime('%Y%m%d')), 
+                to_unicode(time.strftime('%H%M'))]:
+                self.write_to_logfile()
+                self.eventlist = range(7) # blank it out after writing
+            
         except:
             self.logger.debug("some exception was caught in the "
                 "logwriter loop...\nhere it is:\n", exc_info=True)
