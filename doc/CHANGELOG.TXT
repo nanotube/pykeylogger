@@ -1,6 +1,12 @@
 PyKeylogger Changelog
 ---------------------
 
+Version 1.2.1 (2009-11-22)
+
+*) Fix bug in log ftp transfer, which caused the same files to be uploaded multiple times over subsequent runs.
+*) Write data to file when minute rolls over, even when there are no events. 
+*) Explicitly open files for ftp transfer in binary mode, even though it's probably not necessary.
+
 Version 1.2.0 (2009-08-14)
 
 *) Implement timed screenshotter. Takes screenshots at set intervals, if user activity is detected. User activity includes keyboard and mouse clicks, but excludes mouse motion.
