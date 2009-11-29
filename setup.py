@@ -10,7 +10,7 @@
 from distutils.core import setup
 import sys
 
-if sys.argv[1] == 'py2exe':
+if len(sys.argv) > 1 and sys.argv[1] == 'py2exe':
     import py2exe
 
 import version
@@ -58,4 +58,9 @@ setup(
             "icon_resources": [(0, version.name+"icon.ico")]
        }
     ],
+    options={
+        "py2exe":{
+            "excludes": ["gtk"] # don't need this under windows
+        }
+    }
     )
